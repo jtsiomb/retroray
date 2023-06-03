@@ -25,6 +25,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "app.h"
 #include "options.h"
 #include "font.h"
+#include "util.h"
 
 static void txdraw(struct dtx_vertex *v, int vcount, struct dtx_pixmap *pixmap, void *cls);
 
@@ -38,7 +39,7 @@ long time_msec;
 
 struct app_screen *cur_scr;
 
-struct font *font;
+struct font *uifont;
 
 /* available screens */
 #define MAX_SCREENS	8
@@ -65,7 +66,7 @@ int app_init(void)
 
 	dtx_target_user(txdraw, 0);
 
-	font = malloc_nf(sizeof *font);
+	uifont = malloc_nf(sizeof *uifont);
 	if(load_font(uifont, "data/uifont.gmp") == -1) {
 		free(uifont);
 		return -1;
@@ -92,7 +93,7 @@ int app_init(void)
 		}
 	}
 	if(!cur_scr) {
-		app_chscr(&scr_logo);
+		app_chscr(&scr_model);
 	}
 
 	return 0;
@@ -104,7 +105,7 @@ void app_shutdown(void)
 
 	putchar('\n');
 
-	save_options(GAME_CFG_FILE);
+	save_options("retroray.cfg");
 
 	for(i=0; i<num_screens; i++) {
 		if(screens[i]->destroy) {
@@ -118,8 +119,6 @@ void app_shutdown(void)
 
 void app_display(void)
 {
-	static long nframes, interv, prev_msec;
-
 	time_msec = app_getmsec();
 
 	cur_scr->display();
@@ -151,8 +150,8 @@ void app_keyboard(int key, int press)
 
 		case '\n':
 		case '\r':
-			if(modkeys & GKEY_MOD_ALT) {
-		case GKEY_F11:
+			if(modkeys & KEY_MOD_ALT) {
+		case KEY_F11:
 				app_fullscreen(-1);
 				return;
 			}
@@ -229,6 +228,7 @@ void app_chscr(struct app_screen *scr)
 
 static void txdraw(struct dtx_vertex *v, int vcount, struct dtx_pixmap *pixmap, void *cls)
 {
+	/*
 	int i, aref, npix;
 	unsigned char *src, *dest;
 	struct texture *tex = pixmap->udata;
@@ -278,4 +278,5 @@ static void txdraw(struct dtx_vertex *v, int vcount, struct dtx_pixmap *pixmap, 
 
 	gaw_restore();
 	gaw_set_tex2d(0);
+	*/
 }

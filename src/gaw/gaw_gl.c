@@ -18,7 +18,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <string.h>
 #include "util.h"
 #include "gaw.h"
-#include "opengl.h"
+
+#if defined(WIN32) || defined(__WIN32)
+#include <windows.h>
+#endif
+#ifdef __APPLE__
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
+#else
+#include <GL/gl.h>
+#include <GL/glu.h>
+#endif
 
 
 static const float *vertex_ptr, *normal_ptr, *texcoord_ptr, *color_ptr;
