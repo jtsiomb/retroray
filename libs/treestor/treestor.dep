@@ -1,0 +1,14 @@
+# Microsoft Developer Studio Generated Dependency File, included by treestor.mak
+
+.\src\dynarr.c : \
+	".\src\dynarr.h"\
+	
+
+.\src\text.c : \
+	".\include\treestor.h"\
+	".\src\dynarr.h"\
+	
+
+.\src\treestor.c : \
+	".\include\treestor.h"\
+	

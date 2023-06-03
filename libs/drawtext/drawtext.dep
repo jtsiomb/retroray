@@ -1,0 +1,25 @@
+# Microsoft Developer Studio Generated Dependency File, included by drawtext.mak
+
+.\draw.c : \
+	".\drawtext.h"\
+	".\drawtext_impl.h"\
+	
+
+.\drawgl.c : \
+	".\drawtext.h"\
+	".\drawtext_impl.h"\
+	
+
+.\drawrast.c : \
+	".\drawtext.h"\
+	".\drawtext_impl.h"\
+	
+
+.\font.c : \
+	".\drawtext.h"\
+	".\drawtext_impl.h"\
+	
+
+.\utf8.c : \
+	".\drawtext.h"\
+	

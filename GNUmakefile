@@ -1,0 +1,75 @@
+-include config.mk
+
+# --- default build option values ---
+build_gfx ?= gl
+build_opt ?= false
+build_dbg ?= true
+# -----------------------------------
+
+gawsrc_gl = src/gaw/gaw_gl.c
+gawsrc_sw = src/gaw/gaw_sw.c src/gaw/gawswtnl.c src/gaw/polyfill.c src/gaw/polyclip.c
+
+src = $(wildcard src/*.c) $(wildcard src/modern/*.c) $(gawsrc_$(build_gfx))
+obj = $(src:.c=.o)
+dep = $(src:.c=.d)
+bin = game
+
+warn = -pedantic -Wall
+dbg = -g
+#opt = -O3
+def = -DMINIGLUT_USE_LIBC
+inc = -Isrc -Isrc/modern -Ilibs -Ilibs/imago/src -Ilibs/treestor/include -Ilibs/drawtext
+libs = libs/unix/imago.a libs/unix/treestor.a libs/unix/drawtext.a
+
+CFLAGS = $(warn) $(dbg) $(opt) $(inc) $(def) $(cflags_$(rend)) -MMD
+LDFLAGS = $(ldsys_pre) $(libs) $(ldsys)
+
+sys := $(shell uname -s | sed 's/MINGW.*/mingw/')
+ifeq ($(sys), mingw)
+	bin = game.exe
+
+	ldsys = -lopengl32 -lglu32 -lgdi32 -lwinmm
+	ldsys_pre = -static-libgcc -lmingw32 -mconsole
+else
+	ldsys = -lGL -lGLU -lX11
+endif
+
+$(bin): $(obj) libs
+	$(CC) -o $@ $(obj) $(LDFLAGS)
+
+-include $(dep)
+
+.c.o:
+	$(CC) $(CFLAGS) -c $< -o $@
+
+.PHONY: clean
+clean:
+	rm -f $(obj) $(bin)
+
+.PHONY: cleandep
+cleandep:
+	rm -f $(dep)
+
+.PHONY: libs
+libs:
+	$(MAKE) -C libs
+
+.PHONY: clean-libs
+clean-libs:
+	$(MAKE) -C libs clean
+
+.PHONY: data
+data:
+	tools/procdata
+
+.PHONY: crosswin
+crosswin:
+	$(MAKE) CC=i686-w64-mingw32-gcc sys=mingw
+
+.PHONY: crosswin-clean
+crosswin-clean:
+	$(MAKE) CC=i686-w64-mingw32-gcc sys=mingw clean
+
+.PHONY: crosswin-cleandep
+crosswin-cleandep:
+	$(MAKE) CC=i686-w64-mingw32-gcc sys=mingw cleandep
