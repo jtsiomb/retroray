@@ -67,7 +67,7 @@ int app_init(void)
 	dtx_target_user(txdraw, 0);
 
 	uifont = malloc_nf(sizeof *uifont);
-	if(load_font(uifont, "data/uifont.gmp") == -1) {
+	if(load_font(uifont, "data/uifont12.gmp") == -1) {
 		free(uifont);
 		return -1;
 	}

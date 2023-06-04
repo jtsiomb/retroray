@@ -12,7 +12,7 @@ gawsrc_sw = src/gaw/gaw_sw.c src/gaw/gawswtnl.c src/gaw/polyfill.c src/gaw/polyc
 src = $(wildcard src/*.c) $(wildcard src/modern/*.c) $(gawsrc_$(build_gfx))
 obj = $(src:.c=.o)
 dep = $(src:.c=.d)
-bin = retrorend
+bin = retroray
 
 warn = -pedantic -Wall
 dbg = -g

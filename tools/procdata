@@ -1,0 +1,11 @@
+#!/bin/sh
+
+genglyphmap()
+{
+	echo "generate glyphmap: $1 -> $2"
+	font2glyphmap -size $3 -padding 5 -range $4 -o $2 $1
+}
+
+genglyphmap data/src/sans.ttf data/uifont12.gmp 12 32-128
+
+exit 0

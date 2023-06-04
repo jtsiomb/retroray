@@ -48,7 +48,7 @@ static PROC wgl_swap_interval_ext;
 int main(int argc, char **argv)
 {
 	glutInit(&argc, argv);
-	glutInitWindowSize(1024, 768);
+	glutInitWindowSize(640, 480);
 	glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
 	glutCreateWindow("RetroRay");
 

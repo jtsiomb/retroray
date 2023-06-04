@@ -24,7 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #define DEF_XRES		640
 #define DEF_YRES		480
 #define DEF_VSYNC		1
-#define DEF_FULLSCR		1
+#define DEF_FULLSCR		0
 #define DEF_MOUSE_SPEED	50
 #define DEF_SBALL_SPEED	50
 
