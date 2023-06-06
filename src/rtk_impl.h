@@ -2,17 +2,26 @@
 #define RTK_IMPL_H_
 
 #include <assert.h>
+#include "inttypes.h"
 #include "rtk.h"
+
+enum {
+	VISIBLE		= 0x001,
+	ENABLED		= 0x002,
+	GEOMCHG		= 0x100,
+	DIRTY		= 0x200
+};
 
 typedef struct rtk_any {
 	int type;
 	int x, y, width, height;
 	char *text;
-	int visible, enabled;
+	int value;
+	unsigned int flags;
 	union rtk_widget *par, *next;
 	rtk_callback cbfunc;
 	void *cbcls;
-} rtk_any, rtk_label;
+} rtk_any;
 
 typedef struct rtk_window {
 	rtk_any any;
@@ -22,23 +31,30 @@ typedef struct rtk_window {
 
 typedef struct rtk_button {
 	rtk_any any;
-	struct image *icon;
+	rtk_icon *icon;
 } rtk_button;
-
-typedef struct rtk_checkbox {
-	rtk_any any;
-	int chk;
-} rtk_checkbox;
 
 typedef union rtk_widget {
 	int type;
 	rtk_any any;
 	rtk_window win;
 	rtk_button bn;
-	rtk_label lb;
-	rtk_checkbox chk;
 } rtk_widget;
 
+typedef struct rtk_icon {
+	char *name;
+	int width, height, scanlen;
+	uint32_t *pixels;
+
+	struct rtk_icon *next;
+} rtk_icon;
+
+typedef struct rtk_iconsheet {
+	int width, height;
+	uint32_t *pixels;
+
+	struct rtk_icon *icons;
+} rtk_iconsheet;
 
 #define RTK_ASSERT_TYPE(w, t)	assert(w->any.type == t)
 

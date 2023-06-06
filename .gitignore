@@ -3,5 +3,7 @@
 *.swp
 *.a
 *.lib
-retrorend
+retroray
+*.cfg
+data/
 *.exe

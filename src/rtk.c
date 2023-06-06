@@ -1,6 +1,16 @@
 #include <stdlib.h>
 #include <string.h>
+#include "imago2.h"
 #include "rtk_impl.h"
+
+static rtk_draw_ops gfx;
+
+static void calc_widget_rect(rtk_widget *w, rtk_rect *rect);
+
+void rtk_setup(rtk_draw_ops *drawop)
+{
+	gfx = *drawop;
+}
 
 rtk_widget *rtk_create_widget(void)
 {
@@ -9,7 +19,7 @@ rtk_widget *rtk_create_widget(void)
 	if(!(w = calloc(1, sizeof *w))) {
 		return 0;
 	}
-	w->any.visible = w->any.enabled = 1;
+	w->any.flags = VISIBLE | ENABLED | GEOMCHG | DIRTY;
 	return w;
 }
 
@@ -38,6 +48,7 @@ void rtk_move(rtk_widget *w, int x, int y)
 {
 	w->any.x = x;
 	w->any.y = y;
+	w->any.flags |= GEOMCHG;
 }
 
 void rtk_pos(rtk_widget *w, int *xptr, int *yptr)
@@ -50,6 +61,7 @@ void rtk_resize(rtk_widget *w, int xsz, int ysz)
 {
 	w->any.width = xsz;
 	w->any.height = ysz;
+	w->any.flags |= GEOMCHG;
 }
 
 void rtk_size(rtk_widget *w, int *xptr, int *yptr)
@@ -60,17 +72,31 @@ void rtk_size(rtk_widget *w, int *xptr, int *yptr)
 
 int rtk_set_text(rtk_widget *w, const char *str)
 {
+	rtk_rect rect;
 	char *s = strdup(str);
 	if(!s) return -1;
 
 	free(w->any.text);
 	w->any.text = s;
+
+	calc_widget_rect(w, &rect);
+	rtk_resize(w, rect.width, rect.height);
 	return 0;
 }
 
 const char *rtk_get_text(rtk_widget *w)
 {
 	return w->any.text;
+}
+
+void rtk_set_value(rtk_widget *w, int val)
+{
+	w->any.value = val;
+}
+
+int rtk_get_value(rtk_widget *w)
+{
+	return w->any.value;
 }
 
 void rtk_set_callback(rtk_widget *w, rtk_callback cbfunc, void *cls)
@@ -159,27 +185,309 @@ int rtk_win_has(rtk_widget *par, rtk_widget *child)
 	return 0;
 }
 
-rtk_widget *rtk_create_window(rtk_widget *par, const char *title, int x, int y, int w, int h)
+/* --- button functions --- */
+
+void rtk_bn_set_icon(rtk_widget *w, rtk_icon *icon)
 {
-	return 0;
+	RTK_ASSERT_TYPE(w, RTK_BUTTON);
+	w->bn.icon = icon;
+}
+
+rtk_icon *rtk_bn_get_icon(rtk_widget *w)
+{
+	RTK_ASSERT_TYPE(w, RTK_BUTTON);
+	return w->bn.icon;
+}
+
+/* --- constructors --- */
+
+rtk_widget *rtk_create_window(rtk_widget *par, const char *title, int x, int y, int width, int height)
+{
+	rtk_widget *w;
+
+	if(!(w = rtk_create_widget())) {
+		return 0;
+	}
+	if(par) rtk_win_add(par, w);
+	rtk_set_text(w, title);
+	rtk_move(w, x, y);
+	rtk_resize(w, width, height);
+	return w;
 }
 
 rtk_widget *rtk_create_button(rtk_widget *par, const char *str, rtk_callback cbfunc)
 {
-	return 0;
+	rtk_widget *w;
+
+	if(!(w = rtk_create_widget())) {
+		return 0;
+	}
+	if(par) rtk_win_add(par, w);
+	rtk_set_text(w, str);
+	rtk_set_callback(w, cbfunc, 0);
+	return w;
 }
 
-rtk_widget *rtk_create_iconbutton(rtk_widget *par, struct image *img, rtk_callback cbfunc)
+rtk_widget *rtk_create_iconbutton(rtk_widget *par, rtk_icon *icon, rtk_callback cbfunc)
 {
-	return 0;
+	rtk_widget *w;
+
+	if(!(w = rtk_create_widget())) {
+		return 0;
+	}
+	if(par) rtk_win_add(par, w);
+	rtk_bn_set_icon(w, icon);
+	rtk_set_callback(w, cbfunc, 0);
+	return w;
 }
 
 rtk_widget *rtk_create_label(rtk_widget *par, const char *text)
 {
-	return 0;
+	rtk_widget *w;
+
+	if(!(w = rtk_create_widget())) {
+		return 0;
+	}
+	if(par) rtk_win_add(par, w);
+	rtk_set_text(w, text);
+	return w;
 }
 
 rtk_widget *rtk_create_checkbox(rtk_widget *par, const char *text, int chk, rtk_callback cbfunc)
 {
+	rtk_widget *w;
+
+	if(!(w = rtk_create_widget())) {
+		return 0;
+	}
+	if(par) rtk_win_add(par, w);
+	rtk_set_text(w, text);
+	rtk_set_value(w, chk ? 1 : 0);
+	rtk_set_callback(w, cbfunc, 0);
+	return w;
+}
+
+/* --- icon functions --- */
+rtk_iconsheet *rtk_load_iconsheet(const char *fname)
+{
+	 rtk_iconsheet *is;
+
+	if(!(is = malloc(sizeof *is))) {
+		return 0;
+	}
+	is->icons = 0;
+
+	if(!(is->pixels = img_load_pixels(fname, &is->width, &is->height, IMG_FMT_RGBA32))) {
+		free(is);
+		return 0;
+	}
+	return is;
+}
+
+void rtk_free_iconsheet(rtk_iconsheet *is)
+{
+	rtk_icon *icon;
+
+	img_free_pixels(is->pixels);
+
+	while(is->icons) {
+		icon = is->icons;
+		is->icons = is->icons->next;
+		free(icon->name);
+		free(icon);
+	}
+	free(is);
+}
+
+rtk_icon *rtk_define_icon(rtk_iconsheet *is, const char *name, int x, int y, int w, int h)
+{
+	rtk_icon *icon;
+
+	if(!(icon = malloc(sizeof *icon))) {
+		return 0;
+	}
+	if(!(icon->name = strdup(name))) {
+		free(icon);
+		return 0;
+	}
+	icon->width = w;
+	icon->height = h;
+	icon->scanlen = is->width;
+	icon->pixels = is->pixels + y * is->width + x;
+	return icon;
+}
+
+#define BEVELSZ		1
+#define PAD			2
+#define OFFS		(BEVELSZ + PAD)
+#define CHKBOXSZ	(BEVELSZ * 2 + 8)
+
+static void calc_widget_rect(rtk_widget *w, rtk_rect *rect)
+{
+	rtk_rect txrect = {0};
+
+	rect->x = w->any.x;
+	rect->y = w->any.y;
+
+	if(w->any.text) {
+		gfx.textrect(w->any.text, &txrect);
+	}
+
+	switch(w->type) {
+	case RTK_BUTTON:
+		if(w->bn.icon) {
+			rect->width = w->bn.icon->width + OFFS * 2;
+			rect->height = w->bn.icon->height + OFFS * 2;
+		} else {
+			rect->width = txrect.width + OFFS * 2;
+			rect->height = txrect.height + OFFS * 2;
+		}
+		break;
+
+	case RTK_CHECKBOX:
+		rect->width = txrect.width + CHKBOXSZ + OFFS * 2 + PAD;
+		rect->height = txrect.height + OFFS * 2;
+		break;
+
+	case RTK_LABEL:
+		rect->width = txrect.width + PAD * 2;
+		rect->height = txrect.height + PAD * 2;
+		break;
+
+	default:
+		rect->width = rect->height = 0;
+	}
+}
+
+static int need_relayout(rtk_widget *w)
+{
+	rtk_widget *c;
+
+	if(w->any.flags & GEOMCHG) {
+		return 1;
+	}
+
+	if(w->any.type == RTK_WIN) {
+		c = w->win.clist;
+		while(c) {
+			if(need_relayout(c)) {
+				return 1;
+			}
+			c = c->any.next;
+		}
+	}
 	return 0;
+}
+
+static void calc_layout(rtk_widget *w)
+{
+	int x, y;
+	rtk_widget *c;
+
+	if(w->any.type == RTK_WIN && w->win.layout != RTK_NONE) {
+		x = y = PAD;
+
+		c = w->win.clist;
+		while(c) {
+			rtk_move(c, x, y);
+			calc_layout(c);
+
+			if(w->win.layout == RTK_VBOX) {
+				y += c->any.height + PAD;
+			} else {
+				x += c->any.width + PAD;
+			}
+
+			c = c->any.next;
+		}
+	}
+
+	w->any.flags = (w->any.flags & ~GEOMCHG) | DIRTY;
+}
+
+static void draw_window(rtk_widget *w);
+static void draw_button(rtk_widget *w);
+static void draw_checkbox(rtk_widget *w);
+
+void rtk_draw_widget(rtk_widget *w)
+{
+	if(need_relayout(w)) {
+		calc_layout(w);
+	}
+
+	switch(w->any.type) {
+	case RTK_WIN:
+		draw_window(w);
+		break;
+
+	case RTK_BUTTON:
+		draw_button(w);
+		break;
+
+	case RTK_CHECKBOX:
+		draw_checkbox(w);
+		break;
+
+	default:
+		break;
+	}
+
+	w->any.flags &= ~DIRTY;
+}
+
+static void widget_rect(rtk_widget *w, rtk_rect *rect)
+{
+	rect->x = w->any.x;
+	rect->y = w->any.y;
+	rect->width = w->any.width;
+	rect->height = w->any.height;
+}
+
+static void abs_pos(rtk_widget *w, int *xpos, int *ypos)
+{
+	int x, y, px, py;
+
+	x = w->any.x;
+	y = w->any.y;
+
+	if(w->any.par) {
+		abs_pos(w->any.par, &px, &py);
+		x += px;
+		y += py;
+	}
+
+	*xpos = x;
+	*ypos = y;
+}
+
+#define COL_BG		0xa0a0a0
+#define COL_LBEV	0xcccccc
+#define COL_SBEV	0x202020
+#define COL_TEXT	0
+
+static void draw_window(rtk_widget *w)
+{
+	rtk_rect rect;
+
+	widget_rect(w, &rect);
+	gfx.fill(&rect, COL_BG);
+}
+
+static void draw_button(rtk_widget *w)
+{
+	rtk_rect rect;
+
+	widget_rect(w, &rect);
+	abs_pos(w, &rect.x, &rect.y);
+
+	gfx.fill(&rect, COL_BG);
+	if(w->bn.icon) {
+		gfx.blit(rect.x + OFFS, rect.y + OFFS, w->bn.icon);
+	} else {
+		gfx.fill(&rect, 0x802020);
+	}
+}
+
+static void draw_checkbox(rtk_widget *w)
+{
 }
