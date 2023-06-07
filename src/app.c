@@ -26,7 +26,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "options.h"
 #include "font.h"
 #include "util.h"
+#include "rtk.h"
 
+#ifdef GFX_SW
+#include "gaw/gaw_sw.h"
+#endif
+
+static void gui_fill(rtk_rect *rect, uint32_t color);
+static void gui_blit(int x, int y, rtk_icon *icon);
+static void gui_drawtext(int x, int y, const char *str);
+static void gui_textrect(const char *str, rtk_rect *rect);
 static void txdraw(struct dtx_vertex *v, int vcount, struct dtx_pixmap *pixmap, void *cls);
 
 int mouse_x, mouse_y, mouse_state[3];
@@ -41,6 +50,9 @@ struct app_screen *cur_scr;
 
 struct font *uifont;
 
+uint32_t *framebuf;
+
+
 /* available screens */
 #define MAX_SCREENS	8
 static struct app_screen *screens[MAX_SCREENS];
@@ -51,6 +63,9 @@ int app_init(void)
 {
 	int i;
 	char *start_scr_name;
+	static rtk_draw_ops guigfx = {gui_fill, gui_blit, gui_drawtext, gui_textrect};
+
+	init_logger();
 
 #if !defined(NDEBUG) && defined(DBG_FPEXCEPT)
 	printf("floating point exceptions enabled\n");
@@ -71,6 +86,8 @@ int app_init(void)
 		free(uifont);
 		return -1;
 	}
+
+	rtk_setup(&guigfx);
 
 	/* initialize screens */
 	screens[num_screens++] = &scr_model;
@@ -115,6 +132,8 @@ void app_shutdown(void)
 
 	destroy_font(uifont);
 	free(uifont);
+
+	cleanup_logger();
 }
 
 void app_display(void)
@@ -128,6 +147,21 @@ void app_display(void)
 
 void app_reshape(int x, int y)
 {
+	int numpix = x * y;
+	int prev_numpix = win_width * win_height;
+
+	if(numpix > prev_numpix) {
+		void *tmp;
+		if(!(tmp = realloc(framebuf, numpix * sizeof *framebuf))) {
+			errormsg("failed to resize framebuffer to %dx%d\n", x, y);
+			return;
+		}
+		framebuf = tmp;
+	}
+#ifdef GFX_SW
+	gaw_sw_framebuffer(x, y, framebuf);
+#endif
+
 	win_width = x;
 	win_height = y;
 	win_aspect = (float)x / (float)y;
@@ -226,57 +260,50 @@ void app_chscr(struct app_screen *scr)
 	cur_scr = scr;
 }
 
+static void gui_fill(rtk_rect *rect, uint32_t color)
+{
+	int i, j;
+	uint32_t *fb = framebuf + rect->y * win_width + rect->x;
+
+	for(i=0; i<rect->height; i++) {
+		for(j=0; j<rect->width; j++) {
+			fb[j] = color;
+		}
+		fb += win_width;
+	}
+}
+
+static void gui_blit(int x, int y, rtk_icon *icon)
+{
+	int i, j;
+	uint32_t *dest, *src;
+
+	dest = framebuf + y * win_width + x;
+	src = icon->pixels;
+
+	for(i=0; i<icon->height; i++) {
+		for(j=0; j<icon->width; j++) {
+			int r = src[j] & 0xff;
+			int g = (src[j] >> 8) & 0xff;
+			int b = (src[j] >> 16) & 0xff;
+			dest[j] = 0xff000000 | (r << 16) | (g << 8) | b;
+		}
+		dest += win_width;
+		src += icon->scanlen;
+	}
+}
+
+static void gui_drawtext(int x, int y, const char *str)
+{
+}
+
+static void gui_textrect(const char *str, rtk_rect *rect)
+{
+	rect->x = rect->y = 0;
+	rect->width = 20;
+	rect->height = 10;/* TODO */
+}
+
 static void txdraw(struct dtx_vertex *v, int vcount, struct dtx_pixmap *pixmap, void *cls)
 {
-	/*
-	int i, aref, npix;
-	unsigned char *src, *dest;
-	struct texture *tex = pixmap->udata;
-
-	if(!tex) {
-		struct img_pixmap *img = img_create();
-		img_set_pixels(img, pixmap->width, pixmap->height, IMG_FMT_RGBA32, 0);
-
-		npix = pixmap->width * pixmap->height;
-		src = pixmap->pixels;
-		dest = img->pixels;
-		for(i=0; i<npix; i++) {
-			dest[0] = dest[1] = dest[2] = 0xff;
-			dest[3] = *src++;
-			dest += 4;
-		}
-
-		if(!(tex = tex_image(img))) {
-			return;
-		}
-		pixmap->udata = tex;
-	}
-
-	gaw_save();
-	if(dtx_get(DTX_GL_BLEND)) {
-		gaw_enable(GAW_BLEND);
-		gaw_blend_func(GAW_SRC_ALPHA, GAW_ONE_MINUS_SRC_ALPHA);
-	} else {
-		gaw_disable(GAW_BLEND);
-	}
-	if((aref = dtx_get(DTX_GL_ALPHATEST))) {
-		gaw_enable(GAW_ALPHA_TEST);
-		gaw_alpha_func(GAW_GREATER, aref);
-	} else {
-		gaw_disable(GAW_ALPHA_TEST);
-	}
-
-	gaw_set_tex2d(tex->texid);
-
-	gaw_begin(GAW_TRIANGLES);
-	for(i=0; i<vcount; i++) {
-		gaw_texcoord2f(v->s, v->t);
-		gaw_vertex2f(v->x, v->y);
-		v++;
-	}
-	gaw_end();
-
-	gaw_restore();
-	gaw_set_tex2d(0);
-	*/
 }

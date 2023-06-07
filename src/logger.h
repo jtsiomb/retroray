@@ -15,12 +15,28 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#ifndef GAW_GLIDE_H_
-#define GAW_GLIDE_H_
+#ifndef LOGGER_H_
+#define LOGGER_H_
 
-void gaw_glide_init(int xsz, int ysz);
-void gaw_glide_reset(void);
-void gaw_glide_destroy(void);
+#include <stdio.h>
+#include <stdarg.h>
 
+void init_logger(void);
+void cleanup_logger(void);
 
-#endif	/* GAW_GLIDE_H_ */
+int add_log_file(const char *fname);
+int add_log_stream(FILE *fp);
+int add_log_console(const char *devname);
+int add_log_callback(void (*cbfunc)(const char*, void*), void *cls);
+
+void errormsg(const char *fmt, ...);
+void warnmsg(const char *fmt, ...);
+void infomsg(const char *fmt, ...);
+void dbgmsg(const char *fmt, ...);
+
+void verrormsg(const char *fmt, va_list ap);
+void vwarnmsg(const char *fmt, va_list ap);
+void vinfomsg(const char *fmt, va_list ap);
+void vdbgmsg(const char *fmt, va_list ap);
+
+#endif	/* LOGGER_H_ */

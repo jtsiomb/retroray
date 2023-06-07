@@ -1,5 +1,5 @@
 /*
-Deep Runner - 6dof shooter game for the SGI O2.
+RetroRay - integrated standalone vintage modeller/renderer
 Copyright (C) 2023  John Tsiombikas <nuclear@mutantstargoat.com>
 
 This program is free software: you can redistribute it and/or modify
@@ -144,6 +144,7 @@ void gaw_texcoord1f(float u);
 void gaw_texcoord2f(float u, float v);
 void gaw_vertex2f(float x, float y);
 void gaw_vertex3f(float x, float y, float z);
+void gaw_vertex4f(float x, float y, float z, float w);
 
 void gaw_rect(float x1, float y1, float x2, float y2);
 

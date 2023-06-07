@@ -18,6 +18,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #ifndef APP_H_
 #define APP_H_
 
+#include "sizeint.h"
+#include "logger.h"
+
 enum {
 	KEY_ESC	= 27,
 	KEY_DEL	= 127,
@@ -66,6 +69,9 @@ extern struct app_screen scr_model, scr_rend;
 
 struct font;
 extern struct font *uifont;
+
+extern uint32_t *framebuf;
+
 
 int app_init(void);
 void app_shutdown(void);

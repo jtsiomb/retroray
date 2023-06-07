@@ -41,14 +41,6 @@ typedef union rtk_widget {
 	rtk_button bn;
 } rtk_widget;
 
-typedef struct rtk_icon {
-	char *name;
-	int width, height, scanlen;
-	uint32_t *pixels;
-
-	struct rtk_icon *next;
-} rtk_icon;
-
 typedef struct rtk_iconsheet {
 	int width, height;
 	uint32_t *pixels;

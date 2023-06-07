@@ -99,6 +99,23 @@ void app_redisplay(void)
 
 void app_swap_buffers(void)
 {
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	glRasterPos2i(-1, 1);
+	glPixelZoom(1, -1);
+	glEnable(GL_ALPHA_TEST);
+	glAlphaFunc(GL_GREATER, 0.5f);
+	glDrawPixels(win_width, win_height, GL_BGRA, GL_UNSIGNED_BYTE, framebuf);
+	glDisable(GL_ALPHA_TEST);
+
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+
 	glutSwapBuffers();
 	assert(glGetError() == GL_NO_ERROR);
 }

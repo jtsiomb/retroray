@@ -2,7 +2,7 @@
 #define RTK_H_
 
 /* widget type */
-enum { RTK_ANY, RTK_WIN, RTK_BUTTON, RTK_LABEL, RTK_CHECKBOX, RTK_SLIDER };
+enum { RTK_ANY, RTK_WIN, RTK_BUTTON, RTK_LABEL, RTK_CHECKBOX, RTK_SLIDER, RTK_SEP };
 /* window layout */
 enum { RTK_NONE, RTK_VBOX, RTK_HBOX };
 
@@ -13,6 +13,15 @@ typedef struct rtk_iconsheet rtk_iconsheet;
 typedef struct rtk_rect {
 	int x, y, width, height;
 } rtk_rect;
+
+typedef struct rtk_icon {
+	char *name;
+	int width, height, scanlen;
+	uint32_t *pixels;
+
+	struct rtk_icon *next;
+} rtk_icon;
+
 
 typedef struct rtk_draw_ops {
 	void (*fill)(rtk_rect *rect, uint32_t color);
@@ -32,6 +41,7 @@ rtk_widget *rtk_create_widget(void);
 void rtk_free_widget(rtk_widget *w);
 
 int rtk_type(rtk_widget *w);
+rtk_widget *rtk_parent(rtk_widget *w);
 
 void rtk_move(rtk_widget *w, int x, int y);
 void rtk_pos(rtk_widget *w, int *xptr, int *yptr);
@@ -62,12 +72,14 @@ rtk_widget *rtk_create_button(rtk_widget *par, const char *str, rtk_callback cbf
 rtk_widget *rtk_create_iconbutton(rtk_widget *par, rtk_icon *icon, rtk_callback cbfunc);
 rtk_widget *rtk_create_label(rtk_widget *par, const char *text);
 rtk_widget *rtk_create_checkbox(rtk_widget *par, const char *text, int chk, rtk_callback cbfunc);
+rtk_widget *rtk_create_separator(rtk_widget *par);
 
 /* icon functions */
 rtk_iconsheet *rtk_load_iconsheet(const char *fname);
 void rtk_free_iconsheet(rtk_iconsheet *is);
 
 rtk_icon *rtk_define_icon(rtk_iconsheet *is, const char *name, int x, int y, int w, int h);
+rtk_icon *rtk_lookup_icon(rtk_iconsheet *is, const char *name);
 
 
 void rtk_draw_widget(rtk_widget *w);

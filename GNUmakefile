@@ -9,6 +9,9 @@ build_dbg ?= true
 gawsrc_gl = src/gaw/gaw_gl.c
 gawsrc_sw = src/gaw/gaw_sw.c src/gaw/gawswtnl.c src/gaw/polyfill.c src/gaw/polyclip.c
 
+gawdef_gl = -DGFX_GL
+gawdef_sw = -DGFX_SW
+
 src = $(wildcard src/*.c) $(wildcard src/modern/*.c) $(gawsrc_$(build_gfx))
 obj = $(src:.c=.o)
 dep = $(src:.c=.d)
@@ -17,7 +20,7 @@ bin = retroray
 warn = -pedantic -Wall
 dbg = -g
 #opt = -O3
-def = -DMINIGLUT_USE_LIBC
+def = -DMINIGLUT_USE_LIBC $(gawdef_$(build_gfx))
 inc = -Isrc -Isrc/modern -Ilibs -Ilibs/imago/src -Ilibs/treestor/include -Ilibs/drawtext
 libs = libs/unix/imago.a libs/unix/treestor.a libs/unix/drawtext.a
 
