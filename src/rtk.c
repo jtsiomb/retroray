@@ -361,6 +361,11 @@ static void calc_widget_rect(rtk_widget *w, rtk_rect *rect)
 	}
 
 	switch(w->type) {
+	case RTK_WIN:
+		rect->width = w->any.width;
+		rect->height = w->any.height;
+		break;
+
 	case RTK_BUTTON:
 		if(w->bn.icon) {
 			rect->width = w->bn.icon->width + OFFS * 2;
@@ -384,9 +389,9 @@ static void calc_widget_rect(rtk_widget *w, rtk_rect *rect)
 	case RTK_SEP:
 		if(w->any.par->win.layout == RTK_VBOX) {
 			rect->width = w->any.par->any.width - PAD * 2;
-			rect->height = (PAD + BEVELSZ) * 2;
+			rect->height = PAD * 4 + BEVELSZ * 2;
 		} else if(w->any.par->win.layout == RTK_HBOX) {
-			rect->width = (PAD + BEVELSZ) * 2;
+			rect->width = PAD * 4 + BEVELSZ * 2;
 			rect->height = w->any.par->any.height - PAD * 2;
 		} else {
 			rect->width = rect->height = 0;
@@ -422,6 +427,7 @@ static void calc_layout(rtk_widget *w)
 {
 	int x, y;
 	rtk_widget *c;
+	rtk_rect rect;
 
 	if(w->any.type == RTK_WIN && w->win.layout != RTK_NONE) {
 		x = y = PAD;
@@ -432,14 +438,18 @@ static void calc_layout(rtk_widget *w)
 			calc_layout(c);
 
 			if(w->win.layout == RTK_VBOX) {
-				y += c->any.height + PAD;
+				y += c->any.height + PAD * 2;
 			} else {
-				x += c->any.width + PAD;
+				x += c->any.width + PAD * 2;
 			}
 
 			c = c->any.next;
 		}
 	}
+
+	calc_widget_rect(w, &rect);
+	w->any.width = rect.width;
+	w->any.height = rect.height;
 
 	w->any.flags = (w->any.flags & ~GEOMCHG) | DIRTY;
 }
@@ -501,7 +511,7 @@ static void abs_pos(rtk_widget *w, int *xpos, int *ypos)
 
 #define COL_BG		0xff666666
 #define COL_LBEV	0xffaaaaaa
-#define COL_SBEV	0xff333333
+#define COL_SBEV	0xff222222
 #define COL_TEXT	0xff000000
 
 static void hline(int x, int y, int sz, uint32_t col)
@@ -600,8 +610,25 @@ static void draw_separator(rtk_widget *w)
 	rtk_widget *win = w->any.par;
 	rtk_rect rect;
 
+	if(!win) return;
+
 	widget_rect(w, &rect);
 	abs_pos(w, &rect.x, &rect.y);
+
+	switch(win->win.layout) {
+	case RTK_VBOX:
+		rect.y += PAD * 2;
+		rect.height = 2;
+		break;
+
+	case RTK_HBOX:
+		rect.x += PAD * 2;
+		rect.width = 2;
+		break;
+
+	default:
+		break;
+	}
 
 	draw_frame(&rect, FRM_INSET);
 }

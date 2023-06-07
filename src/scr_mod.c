@@ -84,6 +84,8 @@ static int mdl_init(void)
 		if(tbn_icon_name[i]) {
 			tbn_icons[i] = rtk_define_icon(icons, tbn_icon_name[i],
 					tbn_icon_pos[i][0], tbn_icon_pos[i][1], 16, 16);
+		} else {
+			tbn_icons[i] = 0;
 		}
 	}
 
