@@ -77,7 +77,9 @@ int main(int argc, char **argv)
 	wgl_swap_interval_ext = wglGetProcAddress("wglSwapIntervalEXT");
 #endif
 
-	app_reshape(glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT));
+	win_width = glutGet(GLUT_WINDOW_WIDTH);
+	win_height = glutGet(GLUT_WINDOW_HEIGHT);
+	win_aspect = (float)win_width / win_height;
 
 	if(app_init() == -1) {
 		return 1;

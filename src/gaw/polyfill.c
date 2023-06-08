@@ -415,3 +415,58 @@ void polyfill_add_tex_wire(struct pvertex *verts, int nverts)
 #include "polytmpl.h"
 #undef POLYFILL
 
+
+void draw_line(struct pvertex *verts)
+{
+	int32_t x0, y0, x1, y1;
+	int i, dx, dy, x_inc, y_inc, error;
+	uint32_t *fb = pfill_fb.pixels;
+	uint32_t color = PACK_RGB(verts[0].r, verts[0].g, verts[0].b);
+
+	x0 = verts[0].x >> 8;
+	y0 = verts[0].y >> 8;
+	x1 = verts[1].x >> 8;
+	y1 = verts[1].y >> 8;
+
+	fb += y0 * pfill_fb.width + x0;
+
+	dx = x1 - x0;
+	dy = y1 - y0;
+
+	if(dx >= 0) {
+		x_inc = 1;
+	} else {
+		x_inc = -1;
+		dx = -dx;
+	}
+	if(dy >= 0) {
+		y_inc = pfill_fb.width;
+	} else {
+		y_inc = -pfill_fb.width;
+		dy = -dy;
+	}
+
+	if(dx > dy) {
+		error = dy * 2 - dx;
+		for(i=0; i<=dx; i++) {
+			*fb = color;
+			if(error >= 0) {
+				error -= dx * 2;
+				fb += y_inc;
+			}
+			error += dy * 2;
+			fb += x_inc;
+		}
+	} else {
+		error = dx * 2 - dy;
+		for(i=0; i<=dy; i++) {
+			*fb = color;
+			if(error >= 0) {
+				error -= dy * 2;
+				fb += x_inc;
+			}
+			error += dx * 2;
+			fb += y_inc;
+		}
+	}
+}

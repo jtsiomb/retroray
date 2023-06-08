@@ -15,6 +15,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+#include <stdio.h>
 #include <string.h>
 #include "gaw.h"
 #include "gawswtnl.h"
@@ -319,8 +320,7 @@ void gaw_swtnl_drawprim(int prim, struct vertex *v, int vnum)
 	for(i=0; i<vnum; i++) {
 		/* viewport transformation */
 		v[i].x = (v[i].x * 0.5f + 0.5f) * (float)ST->vport[2] + ST->vport[0];
-		v[i].y = (v[i].y * 0.5f + 0.5f) * (float)ST->vport[3] + ST->vport[1];
-		v[i].y = pfill_fb.height - v[i].y - 1;
+		v[i].y = (v[i].y * -0.5f + 0.5f) * (float)ST->vport[3] + ST->vport[1] - 1;
 
 		/* convert pos to 24.8 fixed point */
 		pv[i].x = cround64(v[i].x * 256.0f);
@@ -362,6 +362,7 @@ void gaw_swtnl_drawprim(int prim, struct vertex *v, int vnum)
 		break;
 
 	case GAW_LINES:
+		draw_line(pv);
 		break;
 
 	default:

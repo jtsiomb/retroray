@@ -532,12 +532,11 @@ void gaw_draw_indexed(int prim, const unsigned int *idxarr, int nidx)
 		if(!vnum) continue;
 
 		for(i=0; i<vnum; i++) {
-			if(v[i].w != 0.0f) {
-				v[i].x /= v[i].w;
-				v[i].y /= v[i].w;
-				if(st.opt & (1 << GAW_DEPTH_TEST)) {
-					v[i].z /= v[i].w;
-				}
+			float oow = 1.0f / v[i].w;
+			v[i].x *= oow;
+			v[i].y *= oow;
+			if(st.opt & (1 << GAW_DEPTH_TEST)) {
+				v[i].z *= oow;
 			}
 		}
 
@@ -548,7 +547,7 @@ void gaw_draw_indexed(int prim, const unsigned int *idxarr, int nidx)
 void gaw_begin(int prim)
 {
 	st.imm_prim = prim;
-	st.imm_pcount = prim;
+	st.imm_pcount = prim_vcount[st.imm_prim];
 	st.imm_numv = 0;
 }
 
@@ -623,6 +622,7 @@ void gaw_vertex2f(float x, float y)
 void gaw_vertex3f(float x, float y, float z)
 {
 	gaw_vertex4f(x, y, z, 1);
+}
 
 void gaw_vertex4f(float x, float y, float z, float w)
 {

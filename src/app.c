@@ -72,6 +72,10 @@ int app_init(void)
 	enable_fpexcept();
 #endif
 
+#ifdef GFX_SW
+	gaw_sw_init();
+#endif
+
 	load_options("retroray.cfg");
 	app_resize(opt.xres, opt.yres);
 	app_vsync(opt.vsync);
@@ -133,6 +137,10 @@ void app_shutdown(void)
 	destroy_font(uifont);
 	free(uifont);
 
+#ifdef GFX_SW
+	gaw_sw_destroy();
+#endif
+
 	cleanup_logger();
 }
 
@@ -150,7 +158,9 @@ void app_reshape(int x, int y)
 	int numpix = x * y;
 	int prev_numpix = win_width * win_height;
 
-	if(numpix > prev_numpix) {
+	printf("reshape(%d, %d)\n", x, y);
+
+	if(!framebuf || numpix > prev_numpix) {
 		void *tmp;
 		if(!(tmp = realloc(framebuf, numpix * sizeof *framebuf))) {
 			errormsg("failed to resize framebuffer to %dx%d\n", x, y);

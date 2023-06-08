@@ -81,7 +81,7 @@ enum {
 typedef uint32_t gaw_pixel;
 
 #define PACK_RGB(r, g, b) \
-	(((r) << 16) | ((g) << 8) | (b))
+	(0xff000000 | ((r) << 16) | ((g) << 8) | (b))
 #define PACK_RGBA(r, g, b, a) \
 	(((a) << 24) | ((r) << 16) | ((g) << 8) | (b))
 #define UNPACK_R(pix)	((pix) & 0xff)
@@ -150,5 +150,7 @@ void polyfill_add_flat_zbuf(struct pvertex *verts, int nverts);
 void polyfill_add_gouraud_zbuf(struct pvertex *verts, int nverts);
 void polyfill_add_tex_flat_zbuf(struct pvertex *verts, int nverts);
 void polyfill_add_tex_gouraud_zbuf(struct pvertex *verts, int nverts);
+
+void draw_line(struct pvertex *verts);
 
 #endif	/* POLYFILL_H_ */

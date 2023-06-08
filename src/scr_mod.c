@@ -137,17 +137,6 @@ static void mdl_display(void)
 
 	draw_grid();
 
-	gaw_begin(GAW_QUADS);
-	gaw_color3f(1, 0, 0);
-	gaw_vertex2f(-1, -1);
-	gaw_color3f(0, 1, 0);
-	gaw_vertex2f(1, -1);
-	gaw_color3f(0, 0, 1);
-	gaw_vertex2f(1, 1);
-	gaw_color3f(1, 1, 0);
-	gaw_vertex2f(-1, 1);
-	gaw_end();
-
 	gaw_viewport(0, 0, win_width, win_height);
 }
 
@@ -156,14 +145,14 @@ static void draw_grid(void)
 	gaw_begin(GAW_LINES);
 	gaw_color3f(0.5, 0, 0);
 	gaw_vertex4f(0, 0, 0, 1);
-	gaw_vertex4f(-1, 0, 0, 0);
+	gaw_vertex4f(-100, 0, 0, 1);
 	gaw_vertex4f(0, 0, 0, 1);
-	gaw_vertex4f(1, 0, 0, 0);
+	gaw_vertex4f(100, 0, 0, 1);
 	gaw_color3f(0, 0.5, 0);
 	gaw_vertex4f(0, 0, 0, 1);
-	gaw_vertex4f(0, 0, -1, 0);
+	gaw_vertex4f(0, 0, -100, 1);
 	gaw_vertex4f(0, 0, 0, 1);
-	gaw_vertex4f(0, 0, 1, 0);
+	gaw_vertex4f(0, 0, 100, 1);
 	gaw_end();
 }
 
