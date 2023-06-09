@@ -487,7 +487,7 @@ void draw_line_zbuf(struct pvertex *verts)
 	int32_t x0, y0, x1, y1, z0, z1, z, dz, zslope;
 	int i, dx, dy, x_inc, y_inc, error;
 	uint32_t *fb = pfill_fb.pixels;
-	uint32_t *zptr;
+	uint32_t *zptr = pfill_zbuf;
 	uint32_t color = PACK_RGB(verts[0].r, verts[0].g, verts[0].b);
 
 	x0 = verts[0].x >> 8;
@@ -498,7 +498,7 @@ void draw_line_zbuf(struct pvertex *verts)
 	z1 = verts[1].z;
 
 	fb += y0 * pfill_fb.width + x0;
-	zptr = pfill_zbuf + y0 * pfill_fb.width + x0;
+	zptr += y0 * pfill_fb.width + x0;
 
 	dx = x1 - x0;
 	dy = y1 - y0;
@@ -517,8 +517,10 @@ void draw_line_zbuf(struct pvertex *verts)
 		dy = -dy;
 	}
 
+	z = z0;
+
 	if(dx > dy) {
-		zslope = dx ? (dz << 8) / dx : 0;
+		zslope = dx ? (dz << 8) / (verts[1].x - verts[0].x) : 0;
 		error = dy * 2 - dx;
 		for(i=0; i<=dx; i++) {
 			if(z <= *zptr) {
@@ -537,7 +539,7 @@ void draw_line_zbuf(struct pvertex *verts)
 			z += zslope;
 		}
 	} else {
-		zslope = dy ? (dz << 8) / dy : 0;
+		zslope = dy ? (dz << 8) / (verts[1].y - verts[0].y) : 0;
 		error = dx * 2 - dy;
 		for(i=0; i<=dy; i++) {
 			if(z <= *zptr) {
