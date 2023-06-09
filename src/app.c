@@ -52,6 +52,7 @@ struct font *uifont;
 
 uint32_t *framebuf;
 
+struct scene *scn;
 
 /* available screens */
 #define MAX_SCREENS	8
@@ -92,6 +93,10 @@ int app_init(void)
 	}
 
 	rtk_setup(&guigfx);
+
+	if(!(scn = create_scene())) {
+		return -1;
+	}
 
 	/* initialize screens */
 	screens[num_screens++] = &scr_model;
@@ -140,6 +145,8 @@ void app_shutdown(void)
 #ifdef GFX_SW
 	gaw_sw_destroy();
 #endif
+
+	free_scene(scn);
 
 	cleanup_logger();
 }

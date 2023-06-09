@@ -138,19 +138,27 @@ void polyfill_add_gouraud(struct pvertex *verts, int nverts);
 void polyfill_add_tex_wire(struct pvertex *verts, int nverts);
 void polyfill_add_tex_flat(struct pvertex *verts, int nverts);
 void polyfill_add_tex_gouraud(struct pvertex *verts, int nverts);
+
+void polyfill_wire_zbuf(struct pvertex *verts, int nverts);
 void polyfill_flat_zbuf(struct pvertex *verts, int nverts);
 void polyfill_gouraud_zbuf(struct pvertex *verts, int nverts);
+void polyfill_tex_wire_zbuf(struct pvertex *verts, int nverts);
 void polyfill_tex_flat_zbuf(struct pvertex *verts, int nverts);
 void polyfill_tex_gouraud_zbuf(struct pvertex *verts, int nverts);
+void polyfill_alpha_wire_zbuf(struct pvertex *verts, int nverts);
 void polyfill_alpha_flat_zbuf(struct pvertex *verts, int nverts);
 void polyfill_alpha_gouraud_zbuf(struct pvertex *verts, int nverts);
+void polyfill_alpha_tex_wire_zbuf(struct pvertex *verts, int nverts);
 void polyfill_alpha_tex_flat_zbuf(struct pvertex *verts, int nverts);
 void polyfill_alpha_tex_gouraud_zbuf(struct pvertex *verts, int nverts);
+void polyfill_add_wire_zbuf(struct pvertex *verts, int nverts);
 void polyfill_add_flat_zbuf(struct pvertex *verts, int nverts);
 void polyfill_add_gouraud_zbuf(struct pvertex *verts, int nverts);
+void polyfill_add_tex_wire_zbuf(struct pvertex *verts, int nverts);
 void polyfill_add_tex_flat_zbuf(struct pvertex *verts, int nverts);
 void polyfill_add_tex_gouraud_zbuf(struct pvertex *verts, int nverts);
 
 void draw_line(struct pvertex *verts);
+void draw_line_zbuf(struct pvertex *verts);
 
 #endif	/* POLYFILL_H_ */

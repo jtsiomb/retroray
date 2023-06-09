@@ -8,6 +8,8 @@
 enum {
 	VISIBLE		= 0x001,
 	ENABLED		= 0x002,
+	HOVER		= 0x010,
+	PRESS		= 0x020,
 	GEOMCHG		= 0x100,
 	DIRTY		= 0x200
 };

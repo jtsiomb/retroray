@@ -18,12 +18,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "gaw/gaw.h"
 #include "app.h"
 #include "rtk.h"
+#include "scene.h"
+#include "cmesh.h"
+#include "meshgen.h"
 
 enum {
 	TBN_NEW, TBN_OPEN, TBN_SAVE, TBN_SEP1,
-	TBN_SEL, TBN_MOVE, TBL_ROT, TBN_SCALE, TBN_SEP2,
-	TBL_ADD, TBL_RM, TBN_SEP3,
-	TBN_MTL, TBN_REND, TBL_VIEWREND, TBN_SEP4, TBL_CFG,
+	TBN_SEL, TBN_MOVE, TBN_ROT, TBN_SCALE, TBN_SEP2,
+	TBN_ADD, TBN_RM, TBN_SEP3,
+	TBN_MTL, TBN_REND, TBN_VIEWREND, TBN_SEP4, TBN_CFG,
 
 	NUM_TOOL_BUTTONS
 };
@@ -55,7 +58,7 @@ static void mdl_mouse(int bn, int press, int x, int y);
 static void mdl_motion(int x, int y);
 
 static void draw_grid(void);
-
+static void tbn_callback(rtk_widget *w, void *cls);
 
 struct app_screen scr_model = {
 	"modeller",
@@ -67,6 +70,8 @@ struct app_screen scr_model = {
 
 static rtk_widget *toolbar;
 static rtk_iconsheet *icons;
+
+static struct cmesh *mesh_sph;
 
 static float cam_theta, cam_phi = 20, cam_dist = 8;
 
@@ -101,19 +106,32 @@ static int mdl_init(void)
 			if(!(w = rtk_create_iconbutton(toolbar, tbn_icons[i], 0))) {
 				return -1;
 			}
+			rtk_set_callback(w, tbn_callback, (void*)i);
 		}
 	}
+
+	if(!(mesh_sph = cmesh_alloc())) {
+		errormsg("failed to allocate sphere vis mesh\n");
+		return -1;
+	}
+	gen_sphere(mesh_sph, 1.0f, 16, 8, 1.0f, 1.0f);
 	return 0;
 }
 
 static void mdl_destroy(void)
 {
+	cmesh_free(mesh_sph);
 	rtk_free_iconsheet(icons);
 }
 
 static int mdl_start(void)
 {
 	gaw_clear_color(0.125, 0.125, 0.125, 1);
+
+	gaw_enable(GAW_DEPTH_TEST);
+	gaw_enable(GAW_CULL_FACE);
+	gaw_enable(GAW_LIGHTING);
+	gaw_enable(GAW_LIGHT0);
 	return 0;
 }
 
@@ -123,6 +141,8 @@ static void mdl_stop(void)
 
 static void mdl_display(void)
 {
+	int i, num;
+
 	gaw_clear(GAW_COLORBUF | GAW_DEPTHBUF);
 
 	rtk_draw_widget(toolbar);
@@ -137,23 +157,55 @@ static void mdl_display(void)
 
 	draw_grid();
 
+	gaw_poly_wire();
+
+	num = scn_num_objects(scn);
+	for(i=0; i<num; i++) {
+		struct object *obj = scn->objects[i];
+		struct sphere *sph;
+
+		calc_object_matrix(obj);
+		gaw_push_matrix();
+		gaw_mult_matrix(obj->xform);
+
+		switch(obj->type) {
+		case OBJ_SPHERE:
+			sph = (struct sphere*)obj;
+			gaw_scale(sph->rad, sph->rad, sph->rad);
+			cmesh_draw(mesh_sph);
+			break;
+
+		default:
+			break;
+		}
+
+		gaw_pop_matrix();
+	}
+
+	gaw_poly_gouraud();
+
 	gaw_viewport(0, 0, win_width, win_height);
 }
 
 static void draw_grid(void)
 {
+	gaw_save();
+	gaw_disable(GAW_LIGHTING);
+
 	gaw_begin(GAW_LINES);
 	gaw_color3f(0.5, 0, 0);
-	gaw_vertex4f(0, 0, 0, 1);
-	gaw_vertex4f(-100, 0, 0, 1);
-	gaw_vertex4f(0, 0, 0, 1);
-	gaw_vertex4f(100, 0, 0, 1);
+	gaw_vertex3f(0, 0, 0);
+	gaw_vertex3f(-100, 0, 0);
+	gaw_vertex3f(0, 0, 0);
+	gaw_vertex3f(100, 0, 0);
 	gaw_color3f(0, 0.5, 0);
-	gaw_vertex4f(0, 0, 0, 1);
-	gaw_vertex4f(0, 0, -100, 1);
-	gaw_vertex4f(0, 0, 0, 1);
-	gaw_vertex4f(0, 0, 100, 1);
+	gaw_vertex3f(0, 0, 0);
+	gaw_vertex3f(0, 0, -100);
+	gaw_vertex3f(0, 0, 0);
+	gaw_vertex3f(0, 0, 100);
 	gaw_end();
+
+	gaw_restore();
 }
 
 static void mdl_reshape(int x, int y)
@@ -169,16 +221,39 @@ static void mdl_reshape(int x, int y)
 
 static void mdl_keyb(int key, int press)
 {
+	if(rtk_input_key(toolbar, key, press)) {
+		app_redisplay();
+		return;
+	}
 }
+
+static int vpdrag;
 
 static void mdl_mouse(int bn, int press, int x, int y)
 {
+	if(!vpdrag && rtk_input_mbutton(toolbar, bn, press, x, y)) {
+		app_redisplay();
+		return;
+	}
+
+	if(press) {
+		vpdrag |= (1 << bn);
+	} else {
+		vpdrag &= ~(1 << bn);
+	}
 }
 
 static void mdl_motion(int x, int y)
 {
-	int dx = x - mouse_x;
-	int dy = y - mouse_y;
+	int dx, dy;
+
+	if(!vpdrag && rtk_input_mmotion(toolbar, x, y)) {
+		app_redisplay();
+		return;
+	}
+
+	dx = x - mouse_x;
+	dy = y - mouse_y;
 
 	if((dx | dy) == 0) return;
 
@@ -194,5 +269,29 @@ static void mdl_motion(int x, int y)
 		cam_dist += dy * 0.1f;
 		if(cam_dist < 0) cam_dist = 0;
 		app_redisplay();
+	}
+}
+
+static void add_sphere(void)
+{
+	struct object *obj;
+
+	if(!(obj = create_object(OBJ_SPHERE))) {
+		return;
+	}
+	scn_add_object(scn, obj);
+}
+
+static void tbn_callback(rtk_widget *w, void *cls)
+{
+	int id = (intptr_t)cls;
+
+	switch(id) {
+	case TBN_ADD:
+		add_sphere();
+		break;
+
+	default:
+		break;
 	}
 }

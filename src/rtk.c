@@ -11,6 +11,10 @@ static void draw_button(rtk_widget *w);
 static void draw_checkbox(rtk_widget *w);
 static void draw_separator(rtk_widget *w);
 
+
+static rtk_widget *hover, *focused, *pressed;
+
+
 void rtk_setup(rtk_draw_ops *drawop)
 {
 	gfx = *drawop;
@@ -510,6 +514,7 @@ static void abs_pos(rtk_widget *w, int *xpos, int *ypos)
 }
 
 #define COL_BG		0xff666666
+#define COL_BGHL	0xff808080
 #define COL_LBEV	0xffaaaaaa
 #define COL_SBEV	0xff222222
 #define COL_TEXT	0xff000000
@@ -585,7 +590,7 @@ static void draw_button(rtk_widget *w)
 	abs_pos(w, &rect.x, &rect.y);
 
 	if(rect.width > 2 && rect.height > 2) {
-		draw_frame(&rect, FRM_OUTSET);
+		draw_frame(&rect, w->any.flags & PRESS ? FRM_INSET : FRM_OUTSET);
 
 		rect.x++;
 		rect.y++;
@@ -593,9 +598,10 @@ static void draw_button(rtk_widget *w)
 		rect.height -= 2;
 	}
 
-	gfx.fill(&rect, COL_BG);
+	gfx.fill(&rect, w->any.flags & HOVER ? COL_BGHL : COL_BG);
 	if(w->bn.icon) {
-		gfx.blit(rect.x + OFFS, rect.y + OFFS, w->bn.icon);
+		int offs = w->any.flags & PRESS ? PAD + 1 : PAD;
+		gfx.blit(rect.x + offs, rect.y + offs, w->bn.icon);
 	} else {
 		gfx.fill(&rect, 0xff802020);
 	}
@@ -631,4 +637,105 @@ static void draw_separator(rtk_widget *w)
 	}
 
 	draw_frame(&rect, FRM_INSET);
+}
+
+
+static int hittest(rtk_widget *w, int x, int y)
+{
+	if(x < w->any.x || y < w->any.y) return 0;
+	if(x >= w->any.x + w->any.width) return 0;
+	if(y >= w->any.y + w->any.height) return 0;
+	return 1;
+}
+
+static void sethover(rtk_widget *w)
+{
+	if(hover == w) return;
+
+	if(hover) {
+		hover->any.flags &= ~HOVER;
+	}
+	hover = w;
+	if(w) {
+		w->any.flags |= HOVER;
+	}
+}
+
+static void setpress(rtk_widget *w)
+{
+	if(pressed == w) return;
+
+	if(pressed) {
+		pressed->any.flags &= ~PRESS;
+	}
+	pressed = w;
+	if(w) {
+		w->any.flags |= PRESS;
+	}
+}
+
+static void click(rtk_widget *w, int x, int y)
+{
+	switch(w->type) {
+	case RTK_CHECKBOX:
+		w->any.value ^= 1;
+	case RTK_BUTTON:
+		if(w->any.cbfunc) {
+			w->any.cbfunc(w, w->any.cbcls);
+		}
+		break;
+
+	default:
+		break;
+	}
+}
+
+int rtk_input_key(rtk_widget *w, int key, int press)
+{
+	return 0;
+}
+
+int rtk_input_mbutton(rtk_widget *w, int bn, int press, int x, int y)
+{
+	if(!hittest(w, x, y)) {
+		return 0;
+	}
+
+	if(press) {
+		if(hover && hittest(hover, x, y)) {
+			setpress(hover);
+		}
+	} else {
+		if(pressed && hittest(pressed, x, y)) {
+			click(pressed, x, y);
+		}
+		setpress(0);
+	}
+
+	return 1;
+}
+
+int rtk_input_mmotion(rtk_widget *w, int x, int y)
+{
+	rtk_widget *c;
+
+	if(!hittest(w, x, y)) {
+		int res = hover ? 1 : 0;
+		sethover(0);
+		return res;
+	}
+
+	sethover(w);
+
+	if(w->type == RTK_WIN) {
+		c = w->win.clist;
+		while(c) {
+			if(hittest(c, x, y)) {
+				return rtk_input_mmotion(c, x, y);
+			}
+			c = c->any.next;
+		}
+	}
+
+	return 1;
 }

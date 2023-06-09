@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "sizeint.h"
 #include "logger.h"
+#include "scene.h"
 
 enum {
 	KEY_ESC	= 27,
@@ -71,6 +72,8 @@ struct font;
 extern struct font *uifont;
 
 extern uint32_t *framebuf;
+
+extern struct scene *scn;
 
 
 int app_init(void);

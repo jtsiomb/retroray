@@ -56,27 +56,27 @@ void (*fillfunc[])(struct pvertex*, int) = {
 	polyfill_add_tex_flat,
 	polyfill_add_tex_gouraud,
 	0, 0, 0, 0, 0, 0, 0, 0, 0,
-	polyfill_wire,
+	polyfill_wire_zbuf,
 	polyfill_flat_zbuf,
 	polyfill_gouraud_zbuf,
 	0,
-	polyfill_tex_wire,
+	polyfill_tex_wire_zbuf,
 	polyfill_tex_flat_zbuf,
 	polyfill_tex_gouraud_zbuf,
 	0,
-	polyfill_alpha_wire,
+	polyfill_alpha_wire_zbuf,
 	polyfill_alpha_flat_zbuf,
 	polyfill_alpha_gouraud_zbuf,
 	0,
-	polyfill_alpha_tex_wire,
+	polyfill_alpha_tex_wire_zbuf,
 	polyfill_alpha_tex_flat_zbuf,
 	polyfill_alpha_tex_gouraud_zbuf,
 	0,
-	polyfill_add_wire,
+	polyfill_add_wire_zbuf,
 	polyfill_add_flat_zbuf,
 	polyfill_add_gouraud_zbuf,
 	0,
-	polyfill_add_tex_wire,
+	polyfill_add_tex_wire_zbuf,
 	polyfill_add_tex_flat_zbuf,
 	polyfill_add_tex_gouraud_zbuf,
 	0, 0, 0, 0, 0, 0, 0, 0, 0
@@ -139,27 +139,7 @@ void polyfill(int mode, struct pvertex *verts, int nverts)
 
 void polyfill_wire(struct pvertex *verts, int nverts)
 {
-	/*
-	int i, x0, y0, x1, y1;
-	struct pvertex *v = verts;
-	uint32_t color = PACK_RGB(v->r, v->g, v->b);
-
-	for(i=0; i<nverts - 1; i++) {
-		x0 = v->x >> 8;
-		y0 = v->y >> 8;
-		++v;
-		x1 = v->x >> 8;
-		y1 = v->y >> 8;
-		if(clip_line(&x0, &y0, &x1, &y1, 0, 0, pfill_fb.width, pfill_fb.height)) {
-			draw_line(x0, y0, x1, y1, color);
-		}
-	}
-	x0 = verts[0].x >> 8;
-	y0 = verts[0].y >> 8;
-	if(clip_line(&x1, &y1, &x0, &y0, 0, 0, pfill_fb.width, pfill_fb.height)) {
-		draw_line(x1, y1, x0, y0, color);
-	}
-	*/
+	draw_line(verts);
 }
 
 void polyfill_tex_wire(struct pvertex *verts, int nverts)
@@ -186,6 +166,37 @@ void polyfill_add_tex_wire(struct pvertex *verts, int nverts)
 {
 	polyfill_wire(verts, nverts);	/* TODO */
 }
+
+void polyfill_wire_zbuf(struct pvertex *verts, int nverts)
+{
+	draw_line_zbuf(verts);
+}
+
+void polyfill_tex_wire_zbuf(struct pvertex *verts, int nverts)
+{
+	polyfill_wire_zbuf(verts, nverts);	/* TODO */
+}
+
+void polyfill_alpha_wire_zbuf(struct pvertex *verts, int nverts)
+{
+	polyfill_wire_zbuf(verts, nverts);	/* TODO */
+}
+
+void polyfill_alpha_tex_wire_zbuf(struct pvertex *verts, int nverts)
+{
+	polyfill_wire_zbuf(verts, nverts);	/* TODO */
+}
+
+void polyfill_add_wire_zbuf(struct pvertex *verts, int nverts)
+{
+	polyfill_wire_zbuf(verts, nverts);	/* TODO */
+}
+
+void polyfill_add_tex_wire_zbuf(struct pvertex *verts, int nverts)
+{
+	polyfill_wire_zbuf(verts, nverts);	/* TODO */
+}
+
 
 #define VNEXT(p)	(((p) == vlast) ? varr : (p) + 1)
 #define VPREV(p)	((p) == varr ? vlast : (p) - 1)
@@ -467,6 +478,82 @@ void draw_line(struct pvertex *verts)
 			}
 			error += dx * 2;
 			fb += y_inc;
+		}
+	}
+}
+
+void draw_line_zbuf(struct pvertex *verts)
+{
+	int32_t x0, y0, x1, y1, z0, z1, z, dz, zslope;
+	int i, dx, dy, x_inc, y_inc, error;
+	uint32_t *fb = pfill_fb.pixels;
+	uint32_t *zptr;
+	uint32_t color = PACK_RGB(verts[0].r, verts[0].g, verts[0].b);
+
+	x0 = verts[0].x >> 8;
+	y0 = verts[0].y >> 8;
+	x1 = verts[1].x >> 8;
+	y1 = verts[1].y >> 8;
+	z0 = verts[0].z;
+	z1 = verts[1].z;
+
+	fb += y0 * pfill_fb.width + x0;
+	zptr = pfill_zbuf + y0 * pfill_fb.width + x0;
+
+	dx = x1 - x0;
+	dy = y1 - y0;
+	dz = z1 - z0;
+
+	if(dx >= 0) {
+		x_inc = 1;
+	} else {
+		x_inc = -1;
+		dx = -dx;
+	}
+	if(dy >= 0) {
+		y_inc = pfill_fb.width;
+	} else {
+		y_inc = -pfill_fb.width;
+		dy = -dy;
+	}
+
+	if(dx > dy) {
+		zslope = dx ? (dz << 8) / dx : 0;
+		error = dy * 2 - dx;
+		for(i=0; i<=dx; i++) {
+			if(z <= *zptr) {
+				*fb = color;
+				*zptr = z;
+			}
+			if(error >= 0) {
+				error -= dx * 2;
+				fb += y_inc;
+				zptr += y_inc;
+			}
+			error += dy * 2;
+			fb += x_inc;
+
+			zptr += x_inc;
+			z += zslope;
+		}
+	} else {
+		zslope = dy ? (dz << 8) / dy : 0;
+		error = dx * 2 - dy;
+		for(i=0; i<=dy; i++) {
+			if(z <= *zptr) {
+				*fb = color;
+				*zptr = z;
+			}
+			if(error >= 0) {
+				error -= dy * 2;
+				fb += x_inc;
+				zptr += x_inc;
+			}
+			error += dx * 2;
+			fb += y_inc;
+
+			zptr += y_inc;
+			z += zslope;
 		}
 	}
 }

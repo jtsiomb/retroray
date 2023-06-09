@@ -6,6 +6,7 @@ enum { RTK_ANY, RTK_WIN, RTK_BUTTON, RTK_LABEL, RTK_CHECKBOX, RTK_SLIDER, RTK_SE
 /* window layout */
 enum { RTK_NONE, RTK_VBOX, RTK_HBOX };
 
+typedef struct rtk_screen rtk_screen;
 typedef union rtk_widget rtk_widget;
 typedef struct rtk_icon rtk_icon;
 typedef struct rtk_iconsheet rtk_iconsheet;
@@ -36,7 +37,6 @@ typedef void (*rtk_callback)(rtk_widget*, void*);
 void rtk_setup(rtk_draw_ops *drawop);
 
 /* widget functions */
-
 rtk_widget *rtk_create_widget(void);
 void rtk_free_widget(rtk_widget *w);
 
@@ -84,5 +84,9 @@ rtk_icon *rtk_lookup_icon(rtk_iconsheet *is, const char *name);
 
 void rtk_draw_widget(rtk_widget *w);
 
+/* input events */
+int rtk_input_key(rtk_widget *w, int key, int press);
+int rtk_input_mbutton(rtk_widget *w, int bn, int press, int x, int y);
+int rtk_input_mmotion(rtk_widget *w, int x, int y);
 
 #endif	/* RTK_H_ */
