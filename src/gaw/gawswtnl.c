@@ -316,6 +316,11 @@ void gaw_alpha_func(int func, float ref)
 	/* TODO */
 }
 
+void gaw_zoffset(float offs)
+{
+	st.zoffs = offs;
+}
+
 #define CLAMP(x, a, b)		((x) < (a) ? (a) : ((x) > (b) ? (b) : (x)))
 
 void gaw_clear_color(float r, float g, float b, float a)
@@ -535,6 +540,7 @@ void gaw_draw_indexed(int prim, const unsigned int *idxarr, int nidx)
 			float oow = 1.0f / v[i].w;
 			v[i].x *= oow;
 			v[i].y *= oow;
+			v[i].z += st.zoffs;
 			if(st.opt & (1 << GAW_DEPTH_TEST)) {
 				v[i].z *= oow;
 			}

@@ -123,6 +123,8 @@ void gaw_depth_func(int func);
 void gaw_blend_func(int src, int dest);
 void gaw_alpha_func(int func, float ref);
 
+void gaw_zoffset(float offs);
+
 void gaw_clear_color(float r, float g, float b, float a);
 void gaw_clear(unsigned int flags);
 void gaw_depth_mask(int mask);

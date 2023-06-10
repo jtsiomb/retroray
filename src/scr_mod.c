@@ -43,8 +43,11 @@ static int tbn_icon_pos[][2] = {
 	{48,16}, {64,16}, {80,16}, {-1,-1}, {96,16}
 };
 static rtk_icon *tbn_icons[NUM_TOOL_BUTTONS];
+static rtk_widget *tbn_buttons[NUM_TOOL_BUTTONS];
 
 #define TOOLBAR_HEIGHT	26
+
+enum {TOOL_SEL, TOOL_MOVE, TOOL_ROT, TOOL_SCALE, NUM_TOOLS};
 
 
 static int mdl_init(void);
@@ -74,6 +77,9 @@ static rtk_iconsheet *icons;
 static struct cmesh *mesh_sph;
 
 static float cam_theta, cam_phi = 20, cam_dist = 8;
+
+static int tool;
+static int selobj = -1;
 
 
 static int mdl_init(void)
@@ -106,7 +112,14 @@ static int mdl_init(void)
 			if(!(w = rtk_create_iconbutton(toolbar, tbn_icons[i], 0))) {
 				return -1;
 			}
+			tbn_buttons[i] = w;
 			rtk_set_callback(w, tbn_callback, (void*)i);
+			if(i >= TBN_SEL && i <= TBN_SCALE) {
+				rtk_bn_mode(w, RTK_TOGGLEBN);
+			}
+			if(i == TBN_SEL) {
+				rtk_set_value(w, 1);
+			}
 		}
 	}
 
@@ -157,8 +170,6 @@ static void mdl_display(void)
 
 	draw_grid();
 
-	gaw_poly_wire();
-
 	num = scn_num_objects(scn);
 	for(i=0; i<num; i++) {
 		struct object *obj = scn->objects[i];
@@ -172,7 +183,17 @@ static void mdl_display(void)
 		case OBJ_SPHERE:
 			sph = (struct sphere*)obj;
 			gaw_scale(sph->rad, sph->rad, sph->rad);
+			gaw_zoffset(0.1);
 			cmesh_draw(mesh_sph);
+			gaw_zoffset(0);
+
+			gaw_save();
+			gaw_disable(GAW_LIGHTING);
+			gaw_poly_wire();
+			gaw_color3f(0, 1, 0);
+			cmesh_draw(mesh_sph);
+			gaw_poly_gouraud();
+			gaw_restore();
 			break;
 
 		default:
@@ -181,8 +202,6 @@ static void mdl_display(void)
 
 		gaw_pop_matrix();
 	}
-
-	gaw_poly_gouraud();
 
 	gaw_viewport(0, 0, win_width, win_height);
 }
@@ -284,11 +303,26 @@ static void add_sphere(void)
 
 static void tbn_callback(rtk_widget *w, void *cls)
 {
-	int id = (intptr_t)cls;
+	int i, id = (intptr_t)cls;
+	int idx;
 
 	switch(id) {
+	case TBN_SEL:
+	case TBN_MOVE:
+	case TBN_ROT:
+	case TBN_SCALE:
+		tool = id - TBN_SEL;
+		for(i=0; i<NUM_TOOLS; i++) {
+			if(i != tool) {
+				rtk_set_value(tbn_buttons[i + TBN_SEL], 0);
+			}
+		}
+		break;
+
 	case TBN_ADD:
+		idx = scn_num_objects(scn);
 		add_sphere();
+		selobj = idx;
 		break;
 
 	default:

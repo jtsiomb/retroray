@@ -2,9 +2,19 @@
 #define RTK_H_
 
 /* widget type */
-enum { RTK_ANY, RTK_WIN, RTK_BUTTON, RTK_LABEL, RTK_CHECKBOX, RTK_SLIDER, RTK_SEP };
+enum {
+	RTK_ANY,
+	RTK_WIN,
+	RTK_BUTTON,
+	RTK_LABEL,
+	RTK_CHECKBOX,
+	RTK_SLIDER,
+	RTK_SEP
+};
 /* window layout */
 enum { RTK_NONE, RTK_VBOX, RTK_HBOX };
+/* button mode */
+enum { RTK_PUSHBN, RTK_TOGGLEBN };
 
 typedef struct rtk_screen rtk_screen;
 typedef union rtk_widget rtk_widget;
@@ -64,6 +74,7 @@ void rtk_win_rm(rtk_widget *par, rtk_widget *child);
 int rtk_win_has(rtk_widget *par, rtk_widget *child);
 
 /* button functions */
+void rtk_bn_mode(rtk_widget *w, int mode);
 void rtk_bn_set_icon(rtk_widget *w, rtk_icon *icon);
 rtk_icon *rtk_bn_get_icon(rtk_widget *w);
 

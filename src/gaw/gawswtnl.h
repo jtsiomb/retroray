@@ -89,6 +89,8 @@ struct gaw_state {
 	int vertex_nelem, texcoord_nelem, color_nelem;
 	int vertex_stride, normal_stride, texcoord_stride, color_stride;
 
+	float zoffs;
+
 	/* immediate mode */
 	int imm_prim;
 	int imm_numv, imm_pcount;

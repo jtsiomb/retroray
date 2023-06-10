@@ -33,6 +33,7 @@ typedef struct rtk_window {
 
 typedef struct rtk_button {
 	rtk_any any;
+	int mode;
 	rtk_icon *icon;
 } rtk_button;
 

@@ -194,6 +194,11 @@ int rtk_win_has(rtk_widget *par, rtk_widget *child)
 }
 
 /* --- button functions --- */
+void rtk_bn_mode(rtk_widget *w, int mode)
+{
+	RTK_ASSERT_TYPE(w, RTK_BUTTON);
+	w->bn.mode = mode;
+}
 
 void rtk_bn_set_icon(rtk_widget *w, rtk_icon *icon)
 {
@@ -584,13 +589,20 @@ static void draw_window(rtk_widget *w)
 
 static void draw_button(rtk_widget *w)
 {
+	int pressed;
 	rtk_rect rect;
 
 	widget_rect(w, &rect);
 	abs_pos(w, &rect.x, &rect.y);
 
+	if(w->bn.mode == RTK_TOGGLEBN) {
+		pressed = w->any.value;
+	} else {
+		pressed = w->any.flags & PRESS;
+	}
+
 	if(rect.width > 2 && rect.height > 2) {
-		draw_frame(&rect, w->any.flags & PRESS ? FRM_INSET : FRM_OUTSET);
+		draw_frame(&rect, pressed ? FRM_INSET : FRM_OUTSET);
 
 		rect.x++;
 		rect.y++;
@@ -677,9 +689,11 @@ static void setpress(rtk_widget *w)
 static void click(rtk_widget *w, int x, int y)
 {
 	switch(w->type) {
-	case RTK_CHECKBOX:
-		w->any.value ^= 1;
 	case RTK_BUTTON:
+		if(w->bn.mode == RTK_TOGGLEBN) {
+	case RTK_CHECKBOX:
+			w->any.value ^= 1;
+		}
 		if(w->any.cbfunc) {
 			w->any.cbfunc(w, w->any.cbcls);
 		}
