@@ -90,16 +90,15 @@ int scn_object_index(const struct scene *scn, const struct object *obj)
 int scn_intersect(const struct scene *scn, const cgm_ray *ray, struct rayhit *hit)
 {
 	int i, numobj;
-	struct rayhit hit0;
-	struct csghit chit;
+	struct rayhit hit0, tmphit;
 
 	hit0.t = FLT_MAX;
 	hit0.obj = 0;
 
 	numobj = darr_size(scn->objects);
 	for(i=0; i<numobj; i++) {
-		if(ray_object(ray, scn->objects[i], &chit) && chit.ivlist[0].a.t < hit0.t) {
-			hit0 = chit.ivlist[0].a;
+		if(ray_object(ray, scn->objects[i], &tmphit) && tmphit.t < hit0.t) {
+			hit0 = tmphit;
 		}
 	}
 
@@ -117,10 +116,24 @@ struct object *create_object(int type)
 	char buf[32];
 	static int objid;
 
-	if(!(obj = calloc(1, sizeof *obj))) {
-		errormsg("failed to allocate object\n");
-		return 0;
+	switch(type) {
+	case OBJ_SPHERE:
+		if(!(obj = calloc(1, sizeof *sph))) {
+			goto err;
+		}
+		sph = (struct sphere*)obj;
+		sph->rad = 1.0f;
+		sprintf(buf, "sphere%03d", objid);
+		break;
+
+	default:
+		if(!(obj = calloc(1, sizeof *obj))) {
+			goto err;
+		}
+		sprintf(buf, "object%03d", objid);
+		break;
 	}
+
 	obj->type = type;
 
 	cgm_vcons(&obj->pos, 0, 0, 0);
@@ -129,22 +142,15 @@ struct object *create_object(int type)
 	cgm_vcons(&obj->pivot, 0, 0, 0);
 	cgm_midentity(obj->xform);
 	cgm_midentity(obj->inv_xform);
-
-	switch(type) {
-	case OBJ_SPHERE:
-		sph = (struct sphere*)obj;
-		sph->rad = 1.0f;
-		sprintf(buf, "sphere%03d", objid);
-		break;
-
-	default:
-		sprintf(buf, "object%03d", objid);
-		break;
-	}
+	obj->xform_valid = 1;
 
 	set_object_name(obj, buf);
 	objid++;
 	return obj;
+
+err:
+	errormsg("failed to allocate object\n");
+	return 0;
 }
 
 void free_object(struct object *obj)
@@ -189,4 +195,6 @@ void calc_object_matrix(struct object *obj)
 
 	cgm_mcopy(obj->inv_xform, mat);
 	cgm_minverse(obj->inv_xform);
+
+	obj->xform_valid = 1;
 }

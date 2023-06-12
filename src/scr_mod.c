@@ -83,6 +83,7 @@ static void tbn_callback(rtk_widget *w, void *cls);
 
 static void draw_rband(void);
 static void primray(cgm_ray *ray, int x, int y);
+static void moveobj(struct object *obj, int px0, int py0, int px1, int py1);
 
 
 struct app_screen scr_model = {
@@ -109,6 +110,7 @@ static int selobj = -1;
 
 static rtk_rect rband;
 static int rband_valid;
+
 
 static int mdl_init(void)
 {
@@ -233,7 +235,9 @@ static void draw_object(struct object *obj)
 {
 	struct sphere *sph;
 
-	calc_object_matrix(obj);
+	if(!obj->xform_valid) {
+		calc_object_matrix(obj);
+	}
 	gaw_push_matrix();
 	gaw_mult_matrix(obj->xform);
 
@@ -362,10 +366,24 @@ static void mdl_motion(int x, int y)
 		}
 	} else {
 		if(mouse_state[0]) {
-			if(rband.x != x || rband.y != y) {
-				rband.width = x - rband.x;
-				rband.height = y - rband.y;
-				rband_valid = 1;
+			switch(cur_tool) {
+			case TOOL_SEL:
+				if(rband.x != x || rband.y != y) {
+					rband.width = x - rband.x;
+					rband.height = y - rband.y;
+					rband_valid = 1;
+				}
+				break;
+
+			case TOOL_MOVE:
+				if(selobj >= 0) {
+					struct object *obj = scn->objects[selobj];
+					moveobj(obj, mouse_x, mouse_y, x, y);
+				}
+				break;
+
+			default:
+				break;
 			}
 		}
 		app_redisplay();
@@ -483,4 +501,23 @@ static void primray(cgm_ray *ray, int x, int y)
 	ray->dir.x = farpt.x - ray->origin.x;
 	ray->dir.y = farpt.y - ray->origin.y;
 	ray->dir.z = farpt.z - ray->origin.z;
+}
+
+static void moveobj(struct object *obj, int px0, int py0, int px1, int py1)
+{
+	cgm_ray ray;
+	float dist;
+	cgm_vec3 p0, p1;
+
+	primray(&ray, px0, py0);
+	cgm_vnormalize(&ray.dir);
+	dist = ray_object_dist(&ray, obj);
+	cgm_raypos(&p0, &ray, dist);
+	primray(&ray, px1, py1);
+	cgm_vnormalize(&ray.dir);
+	cgm_raypos(&p1, &ray, dist);
+
+	cgm_vsub(&p1, &p0);
+	cgm_vadd(&obj->pos, &p1);
+	obj->xform_valid = 0;
 }
