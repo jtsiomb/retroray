@@ -44,6 +44,11 @@ void gaw_viewport(int x, int y, int w, int h)
 	glViewport(x, y, w, h);
 }
 
+void gaw_get_viewport(int *vp)
+{
+	glGetIntegerv(GL_VIEWPORT, vp);
+}
+
 void gaw_matrix_mode(int mode)
 {
 	mode += GL_MODELVIEW;
@@ -167,6 +172,9 @@ void gaw_enable(int st)
 	case GAW_TEXTURE_2D:
 		glEnable(GL_TEXTURE_2D);
 		break;
+	case GAW_POLYGON_OFFSET:
+		glEnable(GL_POLYGON_OFFSET_FILL);
+		break;
 	default:
 		break;
 	}
@@ -214,6 +222,9 @@ void gaw_disable(int st)
 	case GAW_TEXTURE_2D:
 		glDisable(GL_TEXTURE_2D);
 		break;
+	case GAW_POLYGON_OFFSET:
+		glDisable(GL_POLYGON_OFFSET_FILL);
+		break;
 	default:
 		break;
 	}
@@ -233,6 +244,11 @@ void gaw_blend_func(int src, int dest)
 void gaw_alpha_func(int func, float ref)
 {
 	glAlphaFunc(func + GL_NEVER, ref);
+}
+
+void gaw_zoffset(float offs)
+{
+	glPolygonOffset(1, offs);
 }
 
 void gaw_clear_color(float r, float g, float b, float a)

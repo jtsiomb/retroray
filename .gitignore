@@ -7,3 +7,4 @@ retroray
 *.cfg
 data/
 *.exe
+config.mk

@@ -58,7 +58,8 @@ enum {
 	GAW_LIGHT2,
 	GAW_LIGHT3,
 	GAW_TEXTURE_1D,
-	GAW_TEXTURE_2D
+	GAW_TEXTURE_2D,
+	GAW_POLYGON_OFFSET
 };
 
 enum {
@@ -97,6 +98,7 @@ enum {
 };
 
 void gaw_viewport(int x, int y, int w, int h);
+void gaw_get_viewport(int *vp);
 
 void gaw_matrix_mode(int mode);
 void gaw_load_identity(void);

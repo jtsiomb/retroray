@@ -100,6 +100,11 @@ void gaw_viewport(int x, int y, int w, int h)
 	st.vport[3] = h;
 }
 
+void gaw_get_viewport(int *vp)
+{
+	memcpy(vp, st.vport, sizeof st.vport);
+}
+
 void gaw_matrix_mode(int mode)
 {
 	st.mmode = mode;
@@ -318,7 +323,7 @@ void gaw_alpha_func(int func, float ref)
 
 void gaw_zoffset(float offs)
 {
-	st.zoffs = offs;
+	st.zoffs = offs * 0.1;
 }
 
 #define CLAMP(x, a, b)		((x) < (a) ? (a) : ((x) > (b) ? (b) : (x)))
@@ -540,7 +545,9 @@ void gaw_draw_indexed(int prim, const unsigned int *idxarr, int nidx)
 			float oow = 1.0f / v[i].w;
 			v[i].x *= oow;
 			v[i].y *= oow;
-			v[i].z += st.zoffs;
+			if(st.opt & (1 << GAW_POLYGON_OFFSET)) {
+				v[i].z += st.zoffs;
+			}
 			if(st.opt & (1 << GAW_DEPTH_TEST)) {
 				v[i].z *= oow;
 			}

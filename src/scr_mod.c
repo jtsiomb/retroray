@@ -15,10 +15,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+#include <assert.h>
 #include "gaw/gaw.h"
 #include "app.h"
 #include "rtk.h"
 #include "scene.h"
+#include "rt.h"
 #include "cmesh.h"
 #include "meshgen.h"
 
@@ -26,7 +28,8 @@ enum {
 	TBN_NEW, TBN_OPEN, TBN_SAVE, TBN_SEP1,
 	TBN_SEL, TBN_MOVE, TBN_ROT, TBN_SCALE, TBN_SEP2,
 	TBN_ADD, TBN_RM, TBN_SEP3,
-	TBN_MTL, TBN_REND, TBN_VIEWREND, TBN_SEP4, TBN_CFG,
+	TBN_UNION, TBN_ISECT, TBN_DIFF, TBN_SEP4,
+	TBN_MTL, TBN_REND, TBN_VIEWREND, TBN_SEP5, TBN_CFG,
 
 	NUM_TOOL_BUTTONS
 };
@@ -34,20 +37,34 @@ static const char *tbn_icon_name[] = {
 	"new", "open", "save", 0,
 	"sel", "move", "rot", "scale", 0,
 	"add", "remove", 0,
+	"union", "isect", "diff", 0,
 	"mtl", "rend", "viewrend", 0, "cfg"
 };
 static int tbn_icon_pos[][2] = {
 	{0,0}, {16,0}, {32,0}, {-1,-1},
 	{48,0}, {64,0}, {80,0}, {96,0}, {-1,-1},
 	{112,0}, {112,16}, {-1,-1},
+	{0,16}, {16,16}, {32,16}, {-1,-1},
 	{48,16}, {64,16}, {80,16}, {-1,-1}, {96,16}
+};
+static int tbn_istool[] = {
+	0, 0, 0, 0,
+	1, 1, 1, 1, 0,
+	0, 0, 0,
+	1, 1, 1, 0,
+	0, 0, 0, 0, 0
 };
 static rtk_icon *tbn_icons[NUM_TOOL_BUTTONS];
 static rtk_widget *tbn_buttons[NUM_TOOL_BUTTONS];
 
 #define TOOLBAR_HEIGHT	26
 
-enum {TOOL_SEL, TOOL_MOVE, TOOL_ROT, TOOL_SCALE, NUM_TOOLS};
+enum {
+	TOOL_SEL, TOOL_MOVE, TOOL_ROT, TOOL_SCALE,
+	TOOL_UNION, TOOL_ISECT, TOOL_DIFF,
+	NUM_TOOLS
+};
+static rtk_widget *tools[NUM_TOOLS];
 
 
 static int mdl_init(void);
@@ -60,8 +77,13 @@ static void mdl_keyb(int key, int press);
 static void mdl_mouse(int bn, int press, int x, int y);
 static void mdl_motion(int x, int y);
 
+static void draw_object(struct object *obj);
 static void draw_grid(void);
 static void tbn_callback(rtk_widget *w, void *cls);
+
+static void draw_rband(void);
+static void primray(cgm_ray *ray, int x, int y);
+
 
 struct app_screen scr_model = {
 	"modeller",
@@ -77,14 +99,20 @@ static rtk_iconsheet *icons;
 static struct cmesh *mesh_sph;
 
 static float cam_theta, cam_phi = 20, cam_dist = 8;
+static float view_matrix[16], proj_matrix[16];
+static float view_matrix_inv[16], proj_matrix_inv[16];
+static int viewport[4];
+static cgm_ray pickray;
 
-static int tool;
+static int cur_tool;
 static int selobj = -1;
 
+static rtk_rect rband;
+static int rband_valid;
 
 static int mdl_init(void)
 {
-	int i;
+	int i, toolidx;
 	rtk_widget *w;
 
 	if(!(icons = rtk_load_iconsheet("data/icons.png"))) {
@@ -105,6 +133,7 @@ static int mdl_init(void)
 	}
 	rtk_win_layout(toolbar, RTK_HBOX);
 
+	toolidx = 0;
 	for(i=0; i<NUM_TOOL_BUTTONS; i++) {
 		if(!tbn_icons[i]) {
 			rtk_create_separator(toolbar);
@@ -113,15 +142,17 @@ static int mdl_init(void)
 				return -1;
 			}
 			tbn_buttons[i] = w;
-			rtk_set_callback(w, tbn_callback, (void*)i);
-			if(i >= TBN_SEL && i <= TBN_SCALE) {
+			rtk_set_callback(w, tbn_callback, (void*)(intptr_t)i);
+			if(tbn_istool[i]) {
 				rtk_bn_mode(w, RTK_TOGGLEBN);
+				tools[toolidx++] = w;
 			}
 			if(i == TBN_SEL) {
 				rtk_set_value(w, 1);
 			}
 		}
 	}
+	assert(toolidx == NUM_TOOLS);
 
 	if(!(mesh_sph = cmesh_alloc())) {
 		errormsg("failed to allocate sphere vis mesh\n");
@@ -160,50 +191,64 @@ static void mdl_display(void)
 
 	rtk_draw_widget(toolbar);
 
-	gaw_viewport(0, TOOLBAR_HEIGHT, win_width, win_height - TOOLBAR_HEIGHT);
-
 	gaw_matrix_mode(GAW_MODELVIEW);
 	gaw_load_identity();
 	gaw_translate(0, 0, -cam_dist);
 	gaw_rotate(cam_phi, 1, 0, 0);
 	gaw_rotate(cam_theta, 0, 1, 0);
+	gaw_get_modelview(view_matrix);
+	cgm_mcopy(view_matrix_inv, view_matrix);
+	cgm_minverse(view_matrix_inv);
 
 	draw_grid();
 
+	gaw_mtl_diffuse(0.5, 0.5, 0.5, 1);
+
 	num = scn_num_objects(scn);
 	for(i=0; i<num; i++) {
-		struct object *obj = scn->objects[i];
-		struct sphere *sph;
-
-		calc_object_matrix(obj);
-		gaw_push_matrix();
-		gaw_mult_matrix(obj->xform);
-
-		switch(obj->type) {
-		case OBJ_SPHERE:
-			sph = (struct sphere*)obj;
-			gaw_scale(sph->rad, sph->rad, sph->rad);
-			gaw_zoffset(0.1);
-			cmesh_draw(mesh_sph);
-			gaw_zoffset(0);
+		if(i == selobj) {
+			gaw_zoffset(1);
+			gaw_enable(GAW_POLYGON_OFFSET);
+			draw_object(scn->objects[i]);
+			gaw_disable(GAW_POLYGON_OFFSET);
 
 			gaw_save();
 			gaw_disable(GAW_LIGHTING);
 			gaw_poly_wire();
 			gaw_color3f(0, 1, 0);
-			cmesh_draw(mesh_sph);
+			draw_object(scn->objects[i]);
 			gaw_poly_gouraud();
 			gaw_restore();
-			break;
-
-		default:
-			break;
+		} else {
+			draw_object(scn->objects[i]);
 		}
-
-		gaw_pop_matrix();
 	}
 
-	gaw_viewport(0, 0, win_width, win_height);
+	if(rband_valid) {
+		draw_rband();
+	}
+}
+
+static void draw_object(struct object *obj)
+{
+	struct sphere *sph;
+
+	calc_object_matrix(obj);
+	gaw_push_matrix();
+	gaw_mult_matrix(obj->xform);
+
+	switch(obj->type) {
+	case OBJ_SPHERE:
+		sph = (struct sphere*)obj;
+		gaw_scale(sph->rad, sph->rad, sph->rad);
+		cmesh_draw(mesh_sph);
+		break;
+
+	default:
+		break;
+	}
+
+	gaw_pop_matrix();
 }
 
 static void draw_grid(void)
@@ -231,9 +276,18 @@ static void mdl_reshape(int x, int y)
 {
 	float aspect = (float)x / (float)(y - TOOLBAR_HEIGHT);
 
+	viewport[0] = 0;
+	viewport[1] = TOOLBAR_HEIGHT;
+	viewport[2] = x;
+	viewport[3] = y - TOOLBAR_HEIGHT;
+	gaw_viewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+
 	gaw_matrix_mode(GAW_PROJECTION);
 	gaw_load_identity();
 	gaw_perspective(50, aspect, 0.5, 100.0);
+	gaw_get_projection(proj_matrix);
+	cgm_mcopy(proj_matrix_inv, proj_matrix);
+	cgm_minverse(proj_matrix_inv);
 
 	rtk_resize(toolbar, win_width, TOOLBAR_HEIGHT);
 }
@@ -250,15 +304,32 @@ static int vpdrag;
 
 static void mdl_mouse(int bn, int press, int x, int y)
 {
+	struct rayhit hit;
 	if(!vpdrag && rtk_input_mbutton(toolbar, bn, press, x, y)) {
 		app_redisplay();
 		return;
 	}
 
 	if(press) {
+		rband.x = x;
+		rband.y = y;
 		vpdrag |= (1 << bn);
 	} else {
 		vpdrag &= ~(1 << bn);
+
+		if(rband_valid) {
+			printf("rubber band: %d,%d %dx%d\n", rband.x, rband.y, rband.width, rband.height);
+			rband_valid = 0;
+
+		} else if(bn == 0 && x == rband.x && y == rband.y) {
+			primray(&pickray, x, y);
+			if(scn_intersect(scn, &pickray, &hit)) {
+				selobj = scn_object_index(scn, hit.obj);
+			} else {
+				selobj = -1;
+			}
+		}
+		app_redisplay();
 	}
 }
 
@@ -274,19 +345,29 @@ static void mdl_motion(int x, int y)
 	dx = x - mouse_x;
 	dy = y - mouse_y;
 
-	if((dx | dy) == 0) return;
+	if(modkeys) {
+		/* navigation */
+		if(mouse_state[0]) {
+			cam_theta += dx * 0.5f;
+			cam_phi += dy * 0.5f;
+			if(cam_phi < -90) cam_phi = -90;
+			if(cam_phi > 90) cam_phi = 90;
+			app_redisplay();
+		}
 
-	if(mouse_state[0]) {
-		cam_theta += dx * 0.5f;
-		cam_phi += dy * 0.5f;
-		if(cam_phi < -90) cam_phi = -90;
-		if(cam_phi > 90) cam_phi = 90;
-		app_redisplay();
-	}
-
-	if(mouse_state[2]) {
-		cam_dist += dy * 0.1f;
-		if(cam_dist < 0) cam_dist = 0;
+		if(mouse_state[2]) {
+			cam_dist += dy * 0.1f;
+			if(cam_dist < 0) cam_dist = 0;
+			app_redisplay();
+		}
+	} else {
+		if(mouse_state[0]) {
+			if(rband.x != x || rband.y != y) {
+				rband.width = x - rband.x;
+				rband.height = y - rband.y;
+				rband_valid = 1;
+			}
+		}
 		app_redisplay();
 	}
 }
@@ -311,10 +392,17 @@ static void tbn_callback(rtk_widget *w, void *cls)
 	case TBN_MOVE:
 	case TBN_ROT:
 	case TBN_SCALE:
-		tool = id - TBN_SEL;
+		idx = id - TBN_SEL;
+		if(0) {
+	case TBN_UNION:
+	case TBN_ISECT:
+	case TBN_DIFF:
+			idx = id - TBN_UNION + TOOL_UNION;
+		}
+		cur_tool = idx;
 		for(i=0; i<NUM_TOOLS; i++) {
-			if(i != tool) {
-				rtk_set_value(tbn_buttons[i + TBN_SEL], 0);
+			if(i != cur_tool) {
+				rtk_set_value(tools[i], 0);
 			}
 		}
 		break;
@@ -325,7 +413,74 @@ static void tbn_callback(rtk_widget *w, void *cls)
 		selobj = idx;
 		break;
 
+	case TBN_RM:
+		if(selobj >= 0) {
+			scn_rm_object(scn, selobj);
+			selobj = -1;
+			app_redisplay();
+		}
+		break;
+
 	default:
 		break;
 	}
+}
+
+static void draw_rband(void)
+{
+	int i, x, y, w, h;
+	uint32_t *fbptr, *bptr;
+
+	x = rband.x;
+	y = rband.y;
+
+	if(rband.width < 0) {
+		w = -rband.width;
+		x += rband.width;
+	} else {
+		w = rband.width;
+	}
+	if(rband.height < 0) {
+		h = -rband.height;
+		y += rband.height;
+	} else {
+		h = rband.height;
+	}
+
+	fbptr = framebuf + y * win_width + x;
+	bptr = fbptr + win_width * (h - 1);
+
+	for(i=0; i<w; i++) {
+		fbptr[i] ^= 0xffffff;
+		bptr[i] ^= 0xffffff;
+	}
+	fbptr += win_width;
+	for(i=0; i<h-2; i++) {
+		fbptr[0] ^= 0xffffff;
+		fbptr[w - 1] ^= 0xffffff;
+		fbptr += win_width;
+	}
+}
+
+static void primray(cgm_ray *ray, int x, int y)
+{
+	float nx, ny;
+	cgm_vec3 npos, farpt;
+	float inv_pv[16];
+
+	y = win_height - y;
+	nx = (float)(x - viewport[0]) / (float)viewport[2];
+	ny = (float)(y - viewport[1]) / (float)viewport[3];
+
+	cgm_mcopy(inv_pv, proj_matrix_inv);
+	cgm_mmul(inv_pv, view_matrix_inv);
+
+	cgm_vcons(&npos, nx, ny, 0.0f);
+	cgm_unproject(&ray->origin, &npos, inv_pv);
+	npos.z = 1.0f;
+	cgm_unproject(&farpt, &npos, inv_pv);
+
+	ray->dir.x = farpt.x - ray->origin.x;
+	ray->dir.y = farpt.y - ray->origin.y;
+	ray->dir.z = farpt.z - ray->origin.z;
 }

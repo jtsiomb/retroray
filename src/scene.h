@@ -22,7 +22,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 enum {
 	OBJ_NULL,
-	OBJ_SPHERE
+	OBJ_SPHERE,
+	OBJ_CSG
 };
 
 #define OBJ_COMMON_ATTR \
@@ -30,7 +31,7 @@ enum {
 	char *name; \
 	cgm_vec3 pos, scale, pivot; \
 	cgm_quat rot; \
-	float xform[16]
+	float xform[16], inv_xform[16]
 
 struct object {
 	OBJ_COMMON_ATTR;
@@ -41,15 +42,27 @@ struct sphere {
 	float rad;
 };
 
+struct csgnode {
+	OBJ_COMMON_ATTR;
+	int op;
+	struct object *subobj;	/* darr */
+};
+
 struct scene {
 	struct object **objects;	/* darr */
 };
+
+struct rayhit;	/* declared in rt.h */
 
 struct scene *create_scene(void);
 void free_scene(struct scene *scn);
 
 int scn_add_object(struct scene *scn, struct object *obj);
-int scn_num_objects(struct scene *scn);
+int scn_rm_object(struct scene *scn, int idx);
+int scn_num_objects(const struct scene *scn);
+int scn_object_index(const struct scene *scn, const struct object *obj);
+
+int scn_intersect(const struct scene *scn, const cgm_ray *ray, struct rayhit *hit);
 
 struct object *create_object(int type);
 void free_object(struct object *obj);

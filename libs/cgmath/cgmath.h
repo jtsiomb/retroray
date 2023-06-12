@@ -1,5 +1,5 @@
 /* gph-cmath - C graphics math library
- * Copyright (C) 2018 John Tsiombikas <nuclear@member.fsf.org>
+ * Copyright (C) 2018-2023 John Tsiombikas <nuclear@member.fsf.org>
  *
  * This program is free software. Feel free to use, modify, and/or redistribute
  * it under the terms of the MIT/X11 license. See LICENSE for details.
@@ -23,16 +23,10 @@
 #ifndef CGMATH_H_
 #define CGMATH_H_
 
-#if defined(_MSC_VER) && !defined(_USE_MATH_DEFINES)
-#define _USE_MATH_DEFINES
-#endif
-
 #include <math.h>
 #include <string.h>
 
-#ifndef M_PI
-#define M_PI	3.141592653589793
-#endif
+#define CGM_PI	3.141592653589793
 
 typedef struct {
 	float x, y;
@@ -66,6 +60,8 @@ typedef enum cgm_euler_mode {
 } cgm_euler_mode;
 
 #ifdef __cplusplus
+#define CGM_INLINE inline
+
 extern "C" {
 #else
 
@@ -269,10 +265,6 @@ static CGM_INLINE void cgm_bary(cgm_vec3 *bary, const cgm_vec3 *a,
 /* convert between unit vectors and spherical coordinates */
 static CGM_INLINE void cgm_uvec_to_sph(float *theta, float *phi, const cgm_vec3 *v);
 static CGM_INLINE void cgm_sph_to_uvec(cgm_vec3 *v, float theta, float phi);
-
-#ifdef _MSC_VER
-#pragma warning (disable: 4244)
-#endif
 
 #include "cgmvec3.inl"
 #include "cgmvec4.inl"

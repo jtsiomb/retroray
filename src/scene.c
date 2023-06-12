@@ -16,7 +16,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #include <stdlib.h>
+#include <float.h>
 #include "scene.h"
+#include "rt.h"
 #include "darray.h"
 #include "logger.h"
 
@@ -52,9 +54,60 @@ int scn_add_object(struct scene *scn, struct object *obj)
 	return 0;
 }
 
-int scn_num_objects(struct scene *scn)
+int scn_rm_object(struct scene *scn, int idx)
+{
+	int numobj = darr_size(scn->objects);
+
+	if(idx < 0 || idx >= numobj) {
+		return -1;
+	}
+
+	free_object(scn->objects[idx]);
+
+	if(idx < numobj - 1) {
+		scn->objects[idx] = scn->objects[numobj - 1];
+	}
+	darr_pop(scn->objects);
+	return 0;
+}
+
+int scn_num_objects(const struct scene *scn)
 {
 	return darr_size(scn->objects);
+}
+
+int scn_object_index(const struct scene *scn, const struct object *obj)
+{
+	int i, num = darr_size(scn->objects);
+	for(i=0; i<num; i++) {
+		if(scn->objects[i] == obj) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+int scn_intersect(const struct scene *scn, const cgm_ray *ray, struct rayhit *hit)
+{
+	int i, numobj;
+	struct rayhit hit0;
+	struct csghit chit;
+
+	hit0.t = FLT_MAX;
+	hit0.obj = 0;
+
+	numobj = darr_size(scn->objects);
+	for(i=0; i<numobj; i++) {
+		if(ray_object(ray, scn->objects[i], &chit) && chit.ivlist[0].a.t < hit0.t) {
+			hit0 = chit.ivlist[0].a;
+		}
+	}
+
+	if(hit0.obj) {
+		if(hit) *hit = hit0;
+		return 1;
+	}
+	return 0;
 }
 
 struct object *create_object(int type)
@@ -64,7 +117,7 @@ struct object *create_object(int type)
 	char buf[32];
 	static int objid;
 
-	if(!(obj = malloc(sizeof *obj))) {
+	if(!(obj = calloc(1, sizeof *obj))) {
 		errormsg("failed to allocate object\n");
 		return 0;
 	}
@@ -75,6 +128,7 @@ struct object *create_object(int type)
 	cgm_vcons(&obj->scale, 1, 1, 1);
 	cgm_vcons(&obj->pivot, 0, 0, 0);
 	cgm_midentity(obj->xform);
+	cgm_midentity(obj->inv_xform);
 
 	switch(type) {
 	case OBJ_SPHERE:
@@ -131,6 +185,8 @@ void calc_object_matrix(struct object *obj)
 	mat[2] *= obj->scale.x; mat[6] *= obj->scale.y; mat[10] *= obj->scale.z; mat[14] += obj->pos.z;
 
 	cgm_mpretranslate(mat, -obj->pivot.x, -obj->pivot.y, -obj->pivot.z);
-
 	/* that's basically: pivot * rotation * translation * scaling * -pivot */
+
+	cgm_mcopy(obj->inv_xform, mat);
+	cgm_minverse(obj->inv_xform);
 }

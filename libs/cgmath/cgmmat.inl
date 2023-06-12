@@ -1,5 +1,5 @@
 /* gph-cmath - C graphics math library
- * Copyright (C) 2018 John Tsiombikas <nuclear@member.fsf.org>
+ * Copyright (C) 2018-2023 John Tsiombikas <nuclear@member.fsf.org>
  *
  * This program is free software. Feel free to use, modify, and/or redistribute
  * it under the terms of the MIT/X11 license. See LICENSE for details.
@@ -486,22 +486,6 @@ static CGM_INLINE void cgm_mget_scaling(const float *m, cgm_vec3 *res)
 
 static CGM_INLINE void cgm_mget_frustum_plane(const float *m, int p, cgm_vec4 *res)
 {
-	/*
-	int row = p >> 1;
-	const float *rowptr = m + row * 4;
-
-	if((p & 1) == 0) {
-		res->x = m[12] + rowptr[0];
-		res->y = m[13] + rowptr[1];
-		res->z = m[14] + rowptr[2];
-		res->w = m[15] + rowptr[3];
-	} else {
-		res->x = m[12] - rowptr[0];
-		res->y = m[13] - rowptr[1];
-		res->z = m[14] - rowptr[2];
-		res->w = m[15] - rowptr[3];
-	}
-	*/
 	switch(p) {
 	case 0:
 		res->x = m[3] + m[0];
