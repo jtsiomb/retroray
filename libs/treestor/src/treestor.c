@@ -11,7 +11,7 @@
 #include <alloca.h>
 #endif
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__WATCOMC__)
 #define snprintf _snprintf
 #endif
 

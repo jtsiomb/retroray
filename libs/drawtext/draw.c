@@ -83,7 +83,7 @@ void dtx_substring(const char *str, int start, int end)
 	}
 }
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__WATCOMC__)
 #define vsnprintf _vsnprintf
 #endif
 
