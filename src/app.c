@@ -66,8 +66,6 @@ int app_init(void)
 	char *start_scr_name;
 	static rtk_draw_ops guigfx = {gui_fill, gui_blit, gui_drawtext, gui_textrect};
 
-	init_logger();
-
 #if !defined(NDEBUG) && defined(DBG_FPEXCEPT)
 	printf("floating point exceptions enabled\n");
 	enable_fpexcept();

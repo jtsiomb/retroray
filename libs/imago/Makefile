@@ -19,8 +19,8 @@ jpeglib = jpeglib/jcapimin.obj jpeglib/jcapistd.obj jpeglib/jccoefct.obj &
 	jpeglib/jidctint.obj jpeglib/jidctred.obj jpeglib/jmemmgr.obj jpeglib/jmemnobs.obj &
 	jpeglib/jquant1.obj jpeglib/jquant2.obj jpeglib/jutils.obj
 obj = src/conv.obj src/filejpeg.obj src/filepng.obj src/fileppm.obj src/filergbe.obj &
-	src/filetga.obj src/ftmodule.obj src/imago2.obj src/modules.obj &
-	$(libpng) $(zlib) $(jpeglib)
+	src/filetga.obj src/filelbm.obj src/ftmodule.obj src/imago2.obj src/modules.obj &
+	src/byteord.obj $(libpng) $(zlib) $(jpeglib)
 
 alib = ../../imago.lib
 !else
@@ -44,8 +44,8 @@ jpeglib = jpeglib\jcapimin.obj jpeglib\jcapistd.obj jpeglib\jccoefct.obj &
 	jpeglib\jidctint.obj jpeglib\jidctred.obj jpeglib\jmemmgr.obj jpeglib\jmemnobs.obj &
 	jpeglib\jquant1.obj jpeglib\jquant2.obj jpeglib\jutils.obj
 obj = src\conv.obj src\filejpeg.obj src\filepng.obj src\fileppm.obj src\filergbe.obj &
-	src\filetga.obj src\ftmodule.obj src\imago2.obj src\modules.obj &
-	$(libpng) $(zlib) $(jpeglib)
+	src\filetga.obj src\filelbm.obj src\ftmodule.obj src\imago2.obj src\modules.obj &
+	src\byteord.obj $(libpng) $(zlib) $(jpeglib)
 
 alib = ..\..\imago.lib
 !endif

@@ -27,6 +27,19 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <alloca.h>
 #endif
 
+#ifdef __GNUC__
+#define PACKED __attribute__((packed))
+#else
+#define PACKED
+#endif
+
+unsigned int get_cs(void);
+#define get_cpl()	((int)(get_cs() & 3))
+
+void get_msr(uint32_t msr, uint32_t *low, uint32_t *high);
+void set_msr(uint32_t msr, uint32_t low, uint32_t high);
+
+
 /* Non-failing versions of malloc/calloc/realloc. They never return 0, they call
  * demo_abort on failure. Use the macros, don't call the *_impl functions.
  */

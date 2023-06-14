@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <assert.h>
 #include "miniglut.h"
 #include "app.h"
+#include "logger.h"
 
 static void reshape(int x, int y);
 static void keydown(unsigned char key, int x, int y);
@@ -80,6 +81,8 @@ int main(int argc, char **argv)
 	win_width = glutGet(GLUT_WINDOW_WIDTH);
 	win_height = glutGet(GLUT_WINDOW_HEIGHT);
 	win_aspect = (float)win_width / win_height;
+
+	init_logger();
 
 	if(app_init() == -1) {
 		return 1;

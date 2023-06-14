@@ -22,6 +22,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #if defined(__MSDOS__) || defined(MSDOS)
 static int setup_serial(int sdev);
+
+void ser_putchar(int c);
+void ser_puts(const char *s);
+void ser_printf(const char *fmt, ...);
 #else
 #define USE_STD
 #endif
@@ -179,6 +183,7 @@ static void logmsg(int type, const char *fmt, va_list ap)
 		case LOG_FILE:
 		case LOG_STREAM:
 			fputs(buf, outputs[i].out.fp);
+			fflush(outputs[i].out.fp);
 			break;
 
 #if defined(MSDOS) || defined(__MSDOS__)
@@ -250,6 +255,8 @@ void vdbgmsg(const char *fmt, va_list ap)
 
 
 #if defined(MSDOS) || defined(__MSDOS__)
+#include <conio.h>
+
 #define UART1_BASE	0x3f8
 #define UART2_BASE	0x2f8
 

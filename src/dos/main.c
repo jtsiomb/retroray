@@ -24,7 +24,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "gfx.h"
 #include "cdpmi.h"
 #include "mouse.h"
+#include "logger.h"
 #include "options.h"
+#include "cpuid.h"
 
 static uint32_t *vmem;
 static int quit, disp_pending;
@@ -40,6 +42,12 @@ int main(int argc, char **argv)
 	__djgpp_nearptr_enable();
 #endif
 
+	init_logger();
+
+	if(read_cpuid(&cpuid) == 0) {
+		print_cpuid(&cpuid);
+	}
+
 	kb_init(32);
 
 	if(!have_mouse()) {
@@ -48,6 +56,8 @@ int main(int argc, char **argv)
 	}
 	set_mouse_limits(0, 0, 639, 479);
 	set_mouse(320, 240);
+
+	add_log_file("retroray.log");
 
 	if(init_video() == -1) {
 		return 1;

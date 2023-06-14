@@ -35,11 +35,11 @@ along with the program. If not, see <http://www.gnu.org/licenses/>
 
 #include "keyb.h"
 #include "scancode.h"
-#include "inttypes.h"
+#include "sizeint.h"
 #include "dosutil.h"
 
-#define KB_INTR		0x9
-#define KB_PORT		0x60
+#define KEY_INTR		0x9
+#define KEY_PORT		0x60
 
 #define PIC1_CMD_PORT	0x20
 #define OCW2_EOI		(1 << 5)
@@ -90,15 +90,15 @@ int kb_init(int bufsz)
 	/* set our interrupt handler */
 	_disable();
 #ifdef __WATCOMC__
-	prev_handler = _dos_getvect(KB_INTR);
-	_dos_setvect(KB_INTR, kbintr);
+	prev_handler = _dos_getvect(KEY_INTR);
+	_dos_setvect(KEY_INTR, kbintr);
 #endif
 #ifdef __DJGPP__
-	_go32_dpmi_get_protected_mode_interrupt_vector(KB_INTR, &prev_intr);
+	_go32_dpmi_get_protected_mode_interrupt_vector(KEY_INTR, &prev_intr);
 	intr.pm_offset = (intptr_t)kbintr;
 	intr.pm_selector = _go32_my_cs();
 	_go32_dpmi_allocate_iret_wrapper(&intr);
-	_go32_dpmi_set_protected_mode_interrupt_vector(KB_INTR, &intr);
+	_go32_dpmi_set_protected_mode_interrupt_vector(KEY_INTR, &intr);
 #endif
 	_enable();
 
@@ -114,10 +114,10 @@ void kb_shutdown(void)
 	/* restore the original interrupt handler */
 	_disable();
 #ifdef __WATCOMC__
-	_dos_setvect(KB_INTR, prev_handler);
+	_dos_setvect(KEY_INTR, prev_handler);
 #endif
 #ifdef __DJGPP__
-	_go32_dpmi_set_protected_mode_interrupt_vector(KB_INTR, &prev_intr);
+	_go32_dpmi_set_protected_mode_interrupt_vector(KEY_INTR, &prev_intr);
 	_go32_dpmi_free_iret_wrapper(&intr);
 #endif
 	_enable();
@@ -128,14 +128,14 @@ void kb_shutdown(void)
 int kb_isdown(int key)
 {
 	switch(key) {
-	case KB_ANY:
+	case KEY_ANY:
 		return num_pressed;
 
-	case KB_ALT:
-		return keystate[KB_LALT] + keystate[KB_RALT];
+	case KEY_ALT:
+		return keystate[KEY_LALT] + keystate[KEY_RALT];
 
-	case KB_CTRL:
-		return keystate[KB_LCTRL] + keystate[KB_RCTRL];
+	case KEY_CTRL:
+		return keystate[KEY_LCTRL] + keystate[KEY_RCTRL];
 	}
 
 	if(isalpha(key)) {
@@ -214,7 +214,7 @@ static void INTERRUPT kbintr()
 	int key, c, press;
 	static int ext;
 
-	code = inp(KB_PORT);
+	code = inp(KEY_PORT);
 
 	if(code == 0xe0) {
 		ext = 1;
@@ -240,7 +240,7 @@ static void INTERRUPT kbintr()
 		ext = 0;
 	} else {
 		key = scantbl[code];
-		c = (keystate[KB_LSHIFT] | keystate[KB_RSHIFT]) ? scantbl_shift[code] : key;
+		c = (keystate[KEY_LSHIFT] | keystate[KEY_RSHIFT]) ? scantbl_shift[code] : key;
 	}
 
 	if(press) {

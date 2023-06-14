@@ -21,26 +21,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /* table with rough translations from set 1 scancodes to ASCII-ish */
 static int scantbl[] = {
-	0, KB_ESC, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',		/* 0 - e */
+	0, KEY_ESC, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',		/* 0 - e */
 	'\t', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',			/* f - 1c */
-	KB_LCTRL, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`',				/* 1d - 29 */
-	KB_LSHIFT, '\\', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', KB_RSHIFT,			/* 2a - 36 */
-	KB_NUM_MUL, KB_LALT, ' ', KB_CAPSLK, KB_F1, KB_F2, KB_F3, KB_F4, KB_F5, KB_F6, KB_F7, KB_F8, KB_F9, KB_F10,			/* 37 - 44 */
-	KB_NUMLK, KB_SCRLK, KB_NUM_7, KB_NUM_8, KB_NUM_9, KB_NUM_MINUS, KB_NUM_4, KB_NUM_5, KB_NUM_6, KB_NUM_PLUS,	/* 45 - 4e */
-	KB_NUM_1, KB_NUM_2, KB_NUM_3, KB_NUM_0, KB_NUM_DOT, KB_SYSRQ, 0, 0, KB_F11, KB_F12,						/* 4d - 58 */
+	KEY_LCTRL, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`',				/* 1d - 29 */
+	KEY_LSHIFT, '\\', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', KEY_RSHIFT,			/* 2a - 36 */
+	KEY_NUM_MUL, KEY_LALT, ' ', KEY_CAPSLK, KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10,			/* 37 - 44 */
+	KEY_NUMLK, KEY_SCRLK, KEY_NUM_7, KEY_NUM_8, KEY_NUM_9, KEY_NUM_MINUS, KEY_NUM_4, KEY_NUM_5, KEY_NUM_6, KEY_NUM_PLUS,	/* 45 - 4e */
+	KEY_NUM_1, KEY_NUM_2, KEY_NUM_3, KEY_NUM_0, KEY_NUM_DOT, KEY_SYSRQ, 0, 0, KEY_F11, KEY_F12,						/* 4d - 58 */
 	0, 0, 0, 0, 0, 0, 0,															/* 59 - 5f */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,									/* 60 - 6f */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0									/* 70 - 7f */
 };
 
 static int scantbl_shift[] = {
-	0, KB_ESC, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '\b',		/* 0 - e */
+	0, KEY_ESC, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '\b',		/* 0 - e */
 	'\t', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '\n',			/* f - 1c */
-	KB_LCTRL, 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '"', '~',				/* 1d - 29 */
-	KB_LSHIFT, '|', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', KB_RSHIFT,			/* 2a - 36 */
-	KB_NUM_MUL, KB_LALT, ' ', KB_CAPSLK, KB_F1, KB_F2, KB_F3, KB_F4, KB_F5, KB_F6, KB_F7, KB_F8, KB_F9, KB_F10,			/* 37 - 44 */
-	KB_NUMLK, KB_SCRLK, KB_NUM_7, KB_NUM_8, KB_NUM_9, KB_NUM_MINUS, KB_NUM_4, KB_NUM_5, KB_NUM_6, KB_NUM_PLUS,	/* 45 - 4e */
-	KB_NUM_1, KB_NUM_2, KB_NUM_3, KB_NUM_0, KB_NUM_DOT, KB_SYSRQ, 0, 0, KB_F11, KB_F12,						/* 4d - 58 */
+	KEY_LCTRL, 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '"', '~',				/* 1d - 29 */
+	KEY_LSHIFT, '|', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', KEY_RSHIFT,			/* 2a - 36 */
+	KEY_NUM_MUL, KEY_LALT, ' ', KEY_CAPSLK, KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10,			/* 37 - 44 */
+	KEY_NUMLK, KEY_SCRLK, KEY_NUM_7, KEY_NUM_8, KEY_NUM_9, KEY_NUM_MINUS, KEY_NUM_4, KEY_NUM_5, KEY_NUM_6, KEY_NUM_PLUS,	/* 45 - 4e */
+	KEY_NUM_1, KEY_NUM_2, KEY_NUM_3, KEY_NUM_0, KEY_NUM_DOT, KEY_SYSRQ, 0, 0, KEY_F11, KEY_F12,						/* 4d - 58 */
 	0, 0, 0, 0, 0, 0, 0,															/* 59 - 5f */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,									/* 60 - 6f */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0									/* 70 - 7f */
@@ -50,11 +50,11 @@ static int scantbl_shift[] = {
 /* extended scancodes, after the 0xe0 prefix */
 static int scantbl_ext[] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,			/* 0 - f */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '\r', KB_RCTRL, 0, 0,			/* 10 - 1f */
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '\r', KEY_RCTRL, 0, 0,			/* 10 - 1f */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,			/* 20 - 2f */
-	0, 0, 0, 0, 0, KB_NUM_MINUS, 0, KB_SYSRQ, KB_RALT, 0, 0, 0, 0, 0, 0, 0,			/* 30 - 3f */
-	0, 0, 0, 0, 0, 0, 0, KB_HOME, KB_UP, KB_PGUP, 0, KB_LEFT, 0, KB_RIGHT, 0, KB_END,	/* 40 - 4f */
-	KB_DOWN, KB_PGDN, KB_INSERT, KB_DEL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,			/* 50 - 5f */
+	0, 0, 0, 0, 0, KEY_NUM_MINUS, 0, KEY_SYSRQ, KEY_RALT, 0, 0, 0, 0, 0, 0, 0,			/* 30 - 3f */
+	0, 0, 0, 0, 0, 0, 0, KEY_HOME, KEY_UP, KEY_PGUP, 0, KEY_LEFT, 0, KEY_RIGHT, 0, KEY_END,	/* 40 - 4f */
+	KEY_DOWN, KEY_PGDN, KEY_INS, KEY_DEL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,			/* 50 - 5f */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,			/* 60 - 6f */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,			/* 70 - 7f */
 };
