@@ -101,7 +101,7 @@ SOURCE=.\drawtext.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\drawtext_impl.h
+SOURCE=.\dtximpl.h
 # End Source File
 # Begin Source File
 

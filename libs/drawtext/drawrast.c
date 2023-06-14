@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdlib.h>
 #include <string.h>
 #include "drawtext.h"
-#include "drawtext_impl.h"
+#include "dtximpl.h"
 
 static const char *drawchar(const char *str, float *xpos, float *ypos, int *should_flush);
 static void flush(void);

@@ -5,8 +5,8 @@
 
 /* -------- sphere -------- */
 
-#define SURAD(u)	((u) * 2.0 * M_PI)
-#define SVRAD(v)	((v) * M_PI)
+#define SURAD(u)	((u) * 2.0 * CGM_PI)
+#define SVRAD(v)	((v) * CGM_PI)
 
 static void sphvec(cgm_vec3 *v, float theta, float phi)
 {
@@ -47,19 +47,19 @@ void gen_sphere(struct cmesh *mesh, float rad, int usub, int vsub, float urange,
 
 	u = 0.0;
 	for(i=0; i<uverts; i++) {
-		theta = u * 2.0 * M_PI;
+		theta = u * 2.0 * CGM_PI;
 
 		v = 0.0;
 		for(j=0; j<vverts; j++) {
-			phi = v * M_PI;
+			phi = v * CGM_PI;
 
 			sphvec(&pos, theta, phi);
 
 			*narr++ = pos;
 			cgm_vscale(&pos, rad);
 			*varr++ = pos;
-			sphvec(&v0, theta - 0.1f, (float)M_PI / 2.0f);
-			sphvec(&v1, theta + 0.1f, (float)M_PI / 2.0f);
+			sphvec(&v0, theta - 0.1f, (float)CGM_PI / 2.0f);
+			sphvec(&v1, theta + 0.1f, (float)CGM_PI / 2.0f);
 			cgm_vsub(&v1, &v0);
 			cgm_vnormalize(&v1);
 			*tarr++ = v1;
@@ -196,14 +196,14 @@ void gen_geosphere(struct cmesh *mesh, float rad, int subdiv, int hemi)
 		theta = atan2(verts[i].z, verts[i].x);
 		phi = acos(verts[i].y);
 
-		sphvec(&v0, theta - 0.1f, (float)M_PI / 2.0f);
-		sphvec(&v1, theta + 0.1f, (float)M_PI / 2.0f);
+		sphvec(&v0, theta - 0.1f, (float)CGM_PI / 2.0f);
+		sphvec(&v1, theta + 0.1f, (float)CGM_PI / 2.0f);
 		cgm_vsub(&v1, &v0);
 		cgm_vnormalize(&v1);
 		*tarr++ = v1;
 
-		uvarr->x = 0.5 * theta / M_PI + 0.5;
-		uvarr->y = phi / M_PI;
+		uvarr->x = 0.5 * theta / CGM_PI + 0.5;
+		uvarr->y = phi / CGM_PI;
 		uvarr++;
 	}
 }
@@ -254,11 +254,11 @@ void gen_torus(struct cmesh *mesh, float mainrad, float ringrad, int usub, int v
 
 	u = 0.0;
 	for(i=0; i<uverts; i++) {
-		theta = u * 2.0 * M_PI;
+		theta = u * 2.0 * CGM_PI;
 
 		v = 0.0;
 		for(j=0; j<vverts; j++) {
-			phi = v * 2.0 * M_PI;
+			phi = v * 2.0 * CGM_PI;
 
 			torusvec(&pos, theta, phi, mainrad, ringrad);
 			torusvec(&cent, theta, phi, mainrad, 0.0);
@@ -675,11 +675,11 @@ void gen_box(struct cmesh *mesh, float xsz, float ysz, float zsz, int usub, int 
 {
 	static const float face_angles[][2] = {
 		{0, 0},
-		{M_PI / 2.0, 0},
-		{M_PI, 0},
-		{3.0 * M_PI / 2.0, 0},
-		{0, M_PI / 2.0},
-		{0, -M_PI / 2.0}
+		{CGM_PI / 2.0, 0},
+		{CGM_PI, 0},
+		{3.0 * CGM_PI / 2.0, 0},
+		{0, CGM_PI / 2.0},
+		{0, -CGM_PI / 2.0}
 	};
 	int i;
 	float xform[16], scale[16], idmat[16];
@@ -707,11 +707,11 @@ void gen_box(struct cmesh *mesh, float xsz, float ysz, float zsz, int usub, int 
 }
 
 
-static inline void rev_vert(cgm_vec3 *res, float u, float v, cgm_vec2 (*rf)(float, float, void*), void *cls)
+static CGM_INLINE void rev_vert(cgm_vec3 *res, float u, float v, cgm_vec2 (*rf)(float, float, void*), void *cls)
 {
 	cgm_vec2 pos = rf(u, v, cls);
 
-	float angle = u * 2.0 * M_PI;
+	float angle = u * 2.0 * CGM_PI;
 	res->x = pos.x * cos(angle);
 	res->y = pos.y;
 	res->z = pos.x * sin(angle);
@@ -807,7 +807,7 @@ void gen_revol(struct cmesh *mesh, int usub, int vsub, cgm_vec2 (*rfunc)(float, 
 	}
 }
 
-static inline void sweep_vert(cgm_vec3 *res, float u, float v, float height,
+static CGM_INLINE void sweep_vert(cgm_vec3 *res, float u, float v, float height,
 		cgm_vec2 (*sf)(float, float, void*), void *cls)
 {
 	cgm_vec2 pos = sf(u, v, cls);

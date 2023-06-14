@@ -2,7 +2,7 @@
 #define RTK_IMPL_H_
 
 #include <assert.h>
-#include "inttypes.h"
+#include "sizeint.h"
 #include "rtk.h"
 
 enum {

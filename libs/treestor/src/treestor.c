@@ -5,7 +5,7 @@
 #include <assert.h>
 #include "treestor.h"
 
-#ifdef WIN32
+#if defined(__WATCOMC__) || defined(_WIN32) || defined(__DJGPP__)
 #include <malloc.h>
 #else
 #include <alloca.h>

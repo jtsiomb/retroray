@@ -187,7 +187,7 @@ void gaw_rotate(float deg, float x, float y, float z)
 {
 	static float m[16];
 
-	float angle = M_PI * deg / 180.0f;
+	float angle = CGM_PI * deg / 180.0f;
 	float sina = sin(angle);
 	float cosa = cos(angle);
 	float one_minus_cosa = 1.0f - cosa;
@@ -266,7 +266,7 @@ void gaw_perspective(float vfov_deg, float aspect, float znear, float zfar)
 {
 	static float m[16];
 
-	float vfov = M_PI * vfov_deg / 180.0f;
+	float vfov = CGM_PI * vfov_deg / 180.0f;
 	float s = 1.0f / tan(vfov * 0.5f);
 	float range = znear - zfar;
 

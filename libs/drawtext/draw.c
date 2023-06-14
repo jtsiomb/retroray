@@ -18,13 +18,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-#if defined(WIN32) || defined(__WIN32__)
+#if defined(__WATCOMC__) || defined(_WIN32) || defined(__DJGPP__)
 #include <malloc.h>
 #else
 #include <alloca.h>
 #endif
 #include "drawtext.h"
-#include "drawtext_impl.h"
+#include "dtximpl.h"
 
 void dtx_position(float x, float y)
 {

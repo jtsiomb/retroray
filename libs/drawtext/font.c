@@ -34,7 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include FT_FREETYPE_H
 #endif
 #include "drawtext.h"
-#include "drawtext_impl.h"
+#include "dtximpl.h"
 
 struct io {
 	void *data;

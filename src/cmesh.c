@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <limits.h>
 #include <float.h>
 #include <assert.h>
+#include "sizeint.h"
 #include "gaw/gaw.h"
 #include "cmesh.h"
 
@@ -1118,8 +1118,9 @@ void cmesh_flip_faces(struct cmesh *cm)
 		nelem = cm->vattr[CMESH_ATTR_VERTEX].nelem;
 		for(i=0; i<vnum; i+=3) {
 			for(j=0; j<nelem; j++) {
+				float tmp;
 				vptr = verts + (i + 1) * nelem + j;
-				float tmp = vptr[nelem];
+				tmp = vptr[nelem];
 				vptr[nelem] = vptr[0];
 				vptr[0] = tmp;
 			}
