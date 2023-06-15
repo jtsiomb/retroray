@@ -237,7 +237,7 @@ static int translate_skey(int key)
 	case GLUT_KEY_PAGE_UP:
 		return KEY_PGUP;
 	case GLUT_KEY_PAGE_DOWN:
-		return KEY_PGDOWN;
+		return KEY_PGDN;
 	case GLUT_KEY_HOME:
 		return KEY_HOME;
 	case GLUT_KEY_END:

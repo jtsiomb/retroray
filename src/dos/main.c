@@ -79,6 +79,8 @@ int main(int argc, char **argv)
 	}
 	disp_pending = 1;
 
+	app_reshape(win_width, win_height);
+
 	for(;;) {
 		int key;
 		while((key = kb_getkey()) != -1) {
