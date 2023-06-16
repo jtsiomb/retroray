@@ -28,6 +28,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "options.h"
 #include "cpuid.h"
 
+static void draw_cursor(int x, int y);
+
 static uint32_t *vmem;
 static int quit, disp_pending;
 
@@ -55,7 +57,9 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	set_mouse_limits(0, 0, 639, 479);
-	set_mouse(320, 240);
+	mx = 320;
+	my = 240;
+	set_mouse(mx, my);
 
 	add_log_file("retroray.log");
 
@@ -80,16 +84,31 @@ int main(int argc, char **argv)
 	disp_pending = 1;
 
 	app_reshape(win_width, win_height);
+	read_mouse(&mx, &my);
 
 	for(;;) {
 		int key;
+
+		if(kb_isdown(KEY_ALT)) {
+			modkeys |= KEY_MOD_ALT;
+		}
+		if(kb_isdown(KEY_CTRL)) {
+			modkeys |= KEY_MOD_CTRL;
+		}
+		if(kb_isdown(KEY_SHIFT)) {
+			modkeys |= KEY_MOD_SHIFT;
+		}
+
 		while((key = kb_getkey()) != -1) {
 			app_keyboard(key, 1);
 			if(quit) goto break_evloop;
 		}
 
+		draw_cursor(mx, my);
+
 		bnstate = read_mouse(&mx, &my);
 		bndiff = bnstate ^ prev_bnstate;
+		prev_bnstate = bnstate;
 
 		if(bndiff & 1) app_mouse(0, bnstate & 1, mx, my);
 		if(bndiff & 2) app_mouse(1, bnstate & 2, mx, my);
@@ -99,6 +118,9 @@ int main(int argc, char **argv)
 			disp_pending = 0;
 			app_display();
 		}
+
+		draw_cursor(mx, my);
+		app_swap_buffers();
 	}
 
 break_evloop:
@@ -139,4 +161,18 @@ void app_fullscreen(int fs)
 
 void app_vsync(int vsync)
 {
+}
+
+static void draw_cursor(int x, int y)
+{
+	int i;
+	uint32_t *fbptr = framebuf + y * win_width + x;
+
+	for(i=0; i<3; i++) {
+		int offs = i + 1;
+		if(y > offs) fbptr[-win_width * offs] ^= 0xffffff;
+		if(y < win_height - offs - 1) fbptr[win_width * offs] ^= 0xffffff;
+		if(x > offs) fbptr[-offs] ^= 0xffffff;
+		if(x < win_width - offs - 1) fbptr[offs] ^= 0xffffff;
+	}
 }

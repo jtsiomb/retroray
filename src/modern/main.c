@@ -22,6 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "app.h"
 #include "logger.h"
 
+static void display(void);
 static void reshape(int x, int y);
 static void keydown(unsigned char key, int x, int y);
 static void keyup(unsigned char key, int x, int y);
@@ -30,6 +31,7 @@ static void skeyup(int key, int x, int y);
 static void mouse(int bn, int st, int x, int y);
 static void motion(int x, int y);
 static int translate_skey(int key);
+static void draw_cursor(int x, int y);
 
 #if defined(__unix__) || defined(unix)
 #include <GL/glx.h>
@@ -53,7 +55,7 @@ int main(int argc, char **argv)
 	glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
 	glutCreateWindow("RetroRay");
 
-	glutDisplayFunc(app_display);
+	glutDisplayFunc(display);
 	glutReshapeFunc(reshape);
 	glutKeyboardFunc(keydown);
 	glutKeyboardUpFunc(keyup);
@@ -178,6 +180,14 @@ void app_vsync(int vsync)
 #endif
 
 
+static void display(void)
+{
+	app_display();
+
+	draw_cursor(mouse_x, mouse_y);
+
+	app_swap_buffers();
+}
 
 static void reshape(int x, int y)
 {
@@ -251,4 +261,18 @@ static int translate_skey(int key)
 	}
 
 	return -1;
+}
+
+static void draw_cursor(int x, int y)
+{
+	int i;
+	uint32_t *fbptr = framebuf + y * win_width + x;
+
+	for(i=0; i<3; i++) {
+		int offs = i + 1;
+		if(y > offs) fbptr[-win_width * offs] ^= 0xffffff;
+		if(y < win_height - offs - 1) fbptr[win_width * offs] ^= 0xffffff;
+		if(x > offs) fbptr[-offs] ^= 0xffffff;
+		if(x < win_width - offs - 1) fbptr[offs] ^= 0xffffff;
+	}
 }

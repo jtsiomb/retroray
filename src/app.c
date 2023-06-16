@@ -154,8 +154,6 @@ void app_display(void)
 	time_msec = app_getmsec();
 
 	cur_scr->display();
-
-	app_swap_buffers();
 }
 
 void app_reshape(int x, int y)
