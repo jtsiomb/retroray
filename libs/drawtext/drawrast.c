@@ -119,9 +119,9 @@ static void blit_thres(unsigned char *dest, unsigned char *src, int xsz, int ysz
 		for(j=0; j<xsz; j++) {
 			int val = src[j];
 			if(val > threshold) {
-				*dest++ = col[0];
-				*dest++ = col[1];
 				*dest++ = col[2];
+				*dest++ = col[1];
+				*dest++ = col[0];
 				*dest++ = col[3];
 			} else {
 				dest += 4;

@@ -739,8 +739,6 @@ int rtk_input_mmotion(rtk_widget *w, int x, int y)
 		return res;
 	}
 
-	sethover(w);
-
 	if(w->type == RTK_WIN) {
 		c = w->win.clist;
 		while(c) {
@@ -751,5 +749,9 @@ int rtk_input_mmotion(rtk_widget *w, int x, int y)
 		}
 	}
 
-	return 1;
+	if(hover != w) {
+		sethover(w);
+		return 1;
+	}
+	return 0;
 }

@@ -31,7 +31,6 @@ static void skeyup(int key, int x, int y);
 static void mouse(int bn, int st, int x, int y);
 static void motion(int x, int y);
 static int translate_skey(int key);
-static void draw_cursor(int x, int y);
 
 #if defined(__unix__) || defined(unix)
 #include <GL/glx.h>
@@ -183,9 +182,6 @@ void app_vsync(int vsync)
 static void display(void)
 {
 	app_display();
-
-	draw_cursor(mouse_x, mouse_y);
-
 	app_swap_buffers();
 }
 
@@ -261,18 +257,4 @@ static int translate_skey(int key)
 	}
 
 	return -1;
-}
-
-static void draw_cursor(int x, int y)
-{
-	int i;
-	uint32_t *fbptr = framebuf + y * win_width + x;
-
-	for(i=0; i<3; i++) {
-		int offs = i + 1;
-		if(y > offs) fbptr[-win_width * offs] ^= 0xffffff;
-		if(y < win_height - offs - 1) fbptr[win_width * offs] ^= 0xffffff;
-		if(x > offs) fbptr[-offs] ^= 0xffffff;
-		if(x < win_width - offs - 1) fbptr[offs] ^= 0xffffff;
-	}
 }

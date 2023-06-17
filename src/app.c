@@ -82,10 +82,12 @@ int app_init(void)
 		app_fullscreen(1);
 	}
 
-	dtx_target_user(txdraw, 0);
+	/*dtx_target_user(txdraw, 0);*/
+	dtx_target_raster((unsigned char*)framebuf, win_width, win_height);
+	dtx_set(DTX_RASTER_THRESHOLD, 127);
 
 	uifont = malloc_nf(sizeof *uifont);
-	if(load_font(uifont, "data/uifont12.gmp") == -1) {
+	if(load_font(uifont, "data/uifont14.gmp") == -1) {
 		free(uifont);
 		return -1;
 	}
@@ -174,6 +176,7 @@ void app_reshape(int x, int y)
 #ifdef GFX_SW
 	gaw_sw_framebuffer(x, y, framebuf);
 #endif
+	dtx_target_raster((unsigned char*)framebuf, x, y);
 
 	win_width = x;
 	win_height = y;

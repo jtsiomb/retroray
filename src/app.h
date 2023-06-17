@@ -21,6 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "sizeint.h"
 #include "logger.h"
 #include "scene.h"
+#include "font.h"
 
 enum {
 	KEY_BACKSP = 8,

@@ -7,5 +7,6 @@ genglyphmap()
 }
 
 genglyphmap data/src/sans.ttf data/uifont12.gmp 12 32-128
+genglyphmap data/src/sans.ttf data/uifont14.gmp 14 32-128
 
 exit 0

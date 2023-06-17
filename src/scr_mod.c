@@ -192,6 +192,7 @@ static void mdl_stop(void)
 static void mdl_display(void)
 {
 	int i, num;
+	static int frameno;
 
 	gaw_clear(GAW_COLORBUF | GAW_DEPTHBUF);
 
@@ -229,6 +230,11 @@ static void mdl_display(void)
 			draw_object(scn->objects[i]);
 		}
 	}
+
+	use_font(uifont);
+	dtx_position(560, 475);
+	dtx_color(1, 1, 0, 1);
+	dtx_printf("frame: %ld", frameno++);
 
 	if(rband_valid) {
 		draw_rband();
@@ -350,7 +356,6 @@ static void mdl_mouse(int bn, int press, int x, int y)
 		vpdrag &= ~(1 << bn);
 
 		if(rband_valid) {
-			printf("rubber band: %d,%d %dx%d\n", rband.x, rband.y, rband.width, rband.height);
 			rband_valid = 0;
 
 		} else if(bn == 0 && x == rband.x && y == rband.y) {
@@ -413,8 +418,8 @@ static void mdl_motion(int x, int y)
 			default:
 				break;
 			}
+			app_redisplay();
 		}
-		app_redisplay();
 	}
 }
 
