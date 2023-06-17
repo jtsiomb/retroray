@@ -23,6 +23,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <time.h>
 #include "gaw/gaw.h"
 #include "app.h"
+#include "rend.h"
 #include "options.h"
 #include "font.h"
 #include "util.h"
@@ -36,7 +37,6 @@ static void gui_fill(rtk_rect *rect, uint32_t color);
 static void gui_blit(int x, int y, rtk_icon *icon);
 static void gui_drawtext(int x, int y, const char *str);
 static void gui_textrect(const char *str, rtk_rect *rect);
-static void txdraw(struct dtx_vertex *v, int vcount, struct dtx_pixmap *pixmap, void *cls);
 
 int mouse_x, mouse_y, mouse_state[3];
 unsigned int modkeys;
@@ -74,6 +74,7 @@ int app_init(void)
 #ifdef GFX_SW
 	gaw_sw_init();
 #endif
+	rend_init();
 
 	load_options("retroray.cfg");
 	app_resize(opt.xres, opt.yres);
@@ -325,8 +326,4 @@ static void gui_textrect(const char *str, rtk_rect *rect)
 	rect->x = rect->y = 0;
 	rect->width = 20;
 	rect->height = 10;/* TODO */
-}
-
-static void txdraw(struct dtx_vertex *v, int vcount, struct dtx_pixmap *pixmap, void *cls)
-{
 }

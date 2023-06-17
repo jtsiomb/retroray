@@ -23,13 +23,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "rt.h"
 #include "cmesh.h"
 #include "meshgen.h"
+#include "font.h"
+#include "rend.h"
 
 enum {
 	TBN_NEW, TBN_OPEN, TBN_SAVE, TBN_SEP1,
 	TBN_SEL, TBN_MOVE, TBN_ROT, TBN_SCALE, TBN_SEP2,
 	TBN_ADD, TBN_RM, TBN_SEP3,
 	TBN_UNION, TBN_ISECT, TBN_DIFF, TBN_SEP4,
-	TBN_MTL, TBN_REND, TBN_VIEWREND, TBN_SEP5, TBN_CFG,
+	TBN_MTL, TBN_REND, TBN_REND_AREA, TBN_VIEWREND, TBN_SEP5, TBN_CFG,
 
 	NUM_TOOL_BUTTONS
 };
@@ -38,21 +40,21 @@ static const char *tbn_icon_name[] = {
 	"sel", "move", "rot", "scale", 0,
 	"add", "remove", 0,
 	"union", "isect", "diff", 0,
-	"mtl", "rend", "viewrend", 0, "cfg"
+	"mtl", "rend", "rend-area", "viewrend", 0, "cfg"
 };
 static int tbn_icon_pos[][2] = {
 	{0,0}, {16,0}, {32,0}, {-1,-1},
 	{48,0}, {64,0}, {80,0}, {96,0}, {-1,-1},
 	{112,0}, {112,16}, {-1,-1},
 	{0,16}, {16,16}, {32,16}, {-1,-1},
-	{48,16}, {64,16}, {80,16}, {-1,-1}, {96,16}
+	{48,16}, {64,16}, {64, 32}, {80,16}, {-1,-1}, {96,16}
 };
 static int tbn_istool[] = {
 	0, 0, 0, 0,
 	1, 1, 1, 1, 0,
 	0, 0, 0,
 	1, 1, 1, 0,
-	0, 0, 0, 0, 0
+	0, 0, 1, 0, 0, 0
 };
 static rtk_icon *tbn_icons[NUM_TOOL_BUTTONS];
 static rtk_widget *tbn_buttons[NUM_TOOL_BUTTONS];
@@ -61,7 +63,7 @@ static rtk_widget *tbn_buttons[NUM_TOOL_BUTTONS];
 
 enum {
 	TOOL_SEL, TOOL_MOVE, TOOL_ROT, TOOL_SCALE,
-	TOOL_UNION, TOOL_ISECT, TOOL_DIFF,
+	TOOL_UNION, TOOL_ISECT, TOOL_DIFF, TOOL_REND_AREA,
 	NUM_TOOLS
 };
 static rtk_widget *tools[NUM_TOOLS];
@@ -109,11 +111,13 @@ static float view_matrix_inv[16], proj_matrix_inv[16];
 static int viewport[4];
 static cgm_ray pickray;
 
-static int cur_tool;
+static int cur_tool, prev_tool = -1;
 static int selobj = -1;
 
 static rtk_rect rband;
 static int rband_valid;
+
+static int rendering;
 
 
 static int mdl_init(void)
@@ -231,10 +235,18 @@ static void mdl_display(void)
 		}
 	}
 
+	if(rendering) {
+		if(render(framebuf)) {
+			app_redisplay();
+		} else {
+			rendering = 0;
+		}
+	}
+
 	use_font(uifont);
-	dtx_position(560, 475);
-	dtx_color(1, 1, 0, 1);
-	dtx_printf("frame: %ld", frameno++);
+	dtx_position(550, 475);
+	dtx_color(0.3, 0.3, 0.1, 1);
+	dtx_printf("update: %ld", frameno++);
 
 	if(rband_valid) {
 		draw_rband();
@@ -349,6 +361,7 @@ static void mdl_mouse(int bn, int press, int x, int y)
 	}
 
 	if(press) {
+		rband_valid = 0;
 		rband.x = x;
 		rband.y = y;
 		vpdrag |= (1 << bn);
@@ -357,6 +370,15 @@ static void mdl_mouse(int bn, int press, int x, int y)
 
 		if(rband_valid) {
 			rband_valid = 0;
+
+			if(cur_tool == TOOL_REND_AREA) {
+				if(prev_tool >= 0) {
+					act_settool(prev_tool);
+				}
+				rendering = 1;
+				rend_size(win_width, win_height);
+				rend_begin(rband.x, rband.y, rband.width, rband.height);
+			}
 
 		} else if(bn == 0 && x == rband.x && y == rband.y) {
 			primray(&pickray, x, y);
@@ -401,6 +423,7 @@ static void mdl_motion(int x, int y)
 		if(mouse_state[0]) {
 			switch(cur_tool) {
 			case TOOL_SEL:
+			case TOOL_REND_AREA:
 				if(rband.x != x || rband.y != y) {
 					rband.width = x - rband.x;
 					rband.height = y - rband.y;
@@ -436,21 +459,21 @@ static void add_sphere(void)
 static void tbn_callback(rtk_widget *w, void *cls)
 {
 	int id = (intptr_t)cls;
-	int idx;
 
 	switch(id) {
 	case TBN_SEL:
 	case TBN_MOVE:
 	case TBN_ROT:
 	case TBN_SCALE:
-		idx = id - TBN_SEL;
-		if(0) {
+		act_settool(id - TBN_SEL);
+		break;
 	case TBN_UNION:
 	case TBN_ISECT:
 	case TBN_DIFF:
-			idx = id - TBN_UNION + TOOL_UNION;
-		}
-		act_settool(idx);
+		act_settool(id - TBN_UNION + TOOL_UNION);
+		break;
+	case TBN_REND_AREA:
+		act_settool(TOOL_REND_AREA);
 		break;
 
 	case TBN_ADD:
@@ -469,6 +492,7 @@ static void tbn_callback(rtk_widget *w, void *cls)
 static void act_settool(int tidx)
 {
 	int i;
+	prev_tool = cur_tool;
 	cur_tool = tidx;
 	for(i=0; i<NUM_TOOLS; i++) {
 		if(i == cur_tool) {

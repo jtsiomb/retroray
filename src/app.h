@@ -21,7 +21,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "sizeint.h"
 #include "logger.h"
 #include "scene.h"
-#include "font.h"
 
 enum {
 	KEY_BACKSP = 8,
@@ -86,7 +85,7 @@ extern struct app_screen scr_model, scr_rend;
 struct font;
 extern struct font *uifont;
 
-extern uint32_t *framebuf;
+extern uint32_t *framebuf, *rendbuf;
 
 extern struct scene *scn;
 

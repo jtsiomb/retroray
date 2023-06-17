@@ -6,7 +6,6 @@ genglyphmap()
 	font2glyphmap -size $3 -padding 5 -range $4 -o $2 $1
 }
 
-genglyphmap data/src/sans.ttf data/uifont12.gmp 12 32-128
 genglyphmap data/src/sans.ttf data/uifont14.gmp 14 32-128
 
 exit 0
