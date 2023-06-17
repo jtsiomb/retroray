@@ -1,6 +1,6 @@
 /*
 DOS interrupt-based keyboard driver.
-Copyright (C) 2013  John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2013-2023  John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ along with the program. If not, see <http://www.gnu.org/licenses/>
 extern "C" {
 #endif
 
-int kb_init(int bufsz);	/* bufsz can be 0 for no buffered keys */
+void kb_init(void);
 void kb_shutdown(void); /* don't forget to call this at the end! */
 
 /* Boolean predicate for testing the current state of a particular key.

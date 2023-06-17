@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 	int i;
 	int vmidx;
 	int mx, my, bnstate, bndiff;
-	static int prev_mx, prev_my, prev_bnstate;
+	static int prev_mx = -1, prev_my, prev_bnstate;
 
 #ifdef __DJGPP__
 	__djgpp_nearptr_enable();
@@ -50,7 +50,7 @@ int main(int argc, char **argv)
 		print_cpuid(&cpuid);
 	}
 
-	kb_init(32);
+	kb_init();
 
 	if(!have_mouse()) {
 		fprintf(stderr, "No mouse detected. Make sure the mouse driver is installed\n");
@@ -84,11 +84,14 @@ int main(int argc, char **argv)
 	disp_pending = 1;
 
 	app_reshape(win_width, win_height);
-	read_mouse(&mx, &my);
+	mx = win_width / 2;
+	my = win_height / 2;
+	set_mouse(mx, my);
 
 	for(;;) {
 		int key;
 
+		modkeys = 0;
 		if(kb_isdown(KEY_ALT)) {
 			modkeys |= KEY_MOD_ALT;
 		}
@@ -104,15 +107,27 @@ int main(int argc, char **argv)
 			if(quit) goto break_evloop;
 		}
 
-		draw_cursor(mx, my);
-
 		bnstate = read_mouse(&mx, &my);
 		bndiff = bnstate ^ prev_bnstate;
 		prev_bnstate = bnstate;
 
+		if(bndiff) {
+			dbgmsg("bndiff: %04x\n", bndiff);
+		}
+
 		if(bndiff & 1) app_mouse(0, bnstate & 1, mx, my);
 		if(bndiff & 2) app_mouse(1, bnstate & 2, mx, my);
 		if(bndiff & 4) app_mouse(3, bnstate & 4, mx, my);
+
+		if(prev_my == -1) {
+			prev_mx = mx;
+			prev_my = my;
+		} else {
+			draw_cursor(prev_mx, prev_my);
+		}
+		if((mx ^ prev_mx) | (my ^ prev_my)) {
+			app_motion(mx, my);
+		}
 
 		if(disp_pending) {
 			disp_pending = 0;
@@ -120,6 +135,8 @@ int main(int argc, char **argv)
 		}
 
 		draw_cursor(mx, my);
+		prev_mx = mx;
+		prev_my = my;
 		app_swap_buffers();
 	}
 

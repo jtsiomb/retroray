@@ -195,6 +195,13 @@ void app_keyboard(int key, int press)
 			return;
 #endif
 
+		case 'q':
+			if(modkeys & KEY_MOD_CTRL) {
+				app_quit();
+				return;
+			}
+			break;
+
 		case '\n':
 		case '\r':
 			if(modkeys & KEY_MOD_ALT) {

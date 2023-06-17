@@ -1,6 +1,6 @@
 /*
 DOS interrupt-based keyboard driver.
-Copyright (C) 2013  John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2013-2023  John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -60,27 +60,23 @@ static _go32_dpmi_seginfo intr, prev_intr;
 
 static void INTERRUPT kbintr();
 
-static int *buffer;
-static int buffer_size, buf_ridx, buf_widx;
+#define BUFSIZE		64
+static int buffer[BUFSIZE];
+static int buf_ridx, buf_widx;
 static int last_key;
 
 static unsigned int num_pressed;
-static unsigned char keystate[256];
+static unsigned char keystate[512];
 
-#define ADVANCE(x)	((x) = ((x) + 1) % buffer_size)
+#define ADVANCE(x)	((x) = ((x) + 1) & (BUFSIZE - 1))
 
-int kb_init(int bufsz)
+void kb_init(void)
 {
 	if(DONE_INIT) {
 		fprintf(stderr, "keyboard driver already initialized!\n");
-		return 0;
+		return;
 	}
 
-	buffer_size = bufsz;
-	if(buffer_size && !(buffer = malloc(buffer_size * sizeof *buffer))) {
-		fprintf(stderr, "failed to allocate input buffer, continuing without\n");
-		buffer_size = 0;
-	}
 	buf_ridx = buf_widx = 0;
 	last_key = -1;
 
@@ -101,8 +97,6 @@ int kb_init(int bufsz)
 	_go32_dpmi_set_protected_mode_interrupt_vector(KEY_INTR, &intr);
 #endif
 	_enable();
-
-	return 0;
 }
 
 void kb_shutdown(void)
@@ -121,8 +115,6 @@ void kb_shutdown(void)
 	_go32_dpmi_free_iret_wrapper(&intr);
 #endif
 	_enable();
-
-	free(buffer);
 }
 
 int kb_isdown(int key)
@@ -136,6 +128,9 @@ int kb_isdown(int key)
 
 	case KEY_CTRL:
 		return keystate[KEY_LCTRL] + keystate[KEY_RCTRL];
+
+	case KEY_SHIFT:
+		return keystate[KEY_LSHIFT] + keystate[KEY_RSHIFT];
 	}
 
 	if(isalpha(key)) {
@@ -191,7 +186,7 @@ void kb_putback(int key)
 	if(buffer) {
 		/* go back a place */
 		if(--buf_ridx < 0) {
-			buf_ridx += buffer_size;
+			buf_ridx += BUFSIZE;
 		}
 
 		/* if the write end hasn't caught up with us, go back one place
@@ -246,15 +241,13 @@ static void INTERRUPT kbintr()
 	if(press) {
 		/* append to buffer */
 		last_key = c;
-		if(buffer_size > 0) {
-			buffer[buf_widx] = c;
-			ADVANCE(buf_widx);
-			/* if the write end overtook the read end, advance the read end
-			 * too, to discard the oldest keypress from the buffer
-			 */
-			if(buf_widx == buf_ridx) {
-				ADVANCE(buf_ridx);
-			}
+		buffer[buf_widx] = c;
+		ADVANCE(buf_widx);
+		/* if the write end overtook the read end, advance the read end
+		 * too, to discard the oldest keypress from the buffer
+		 */
+		if(buf_widx == buf_ridx) {
+			ADVANCE(buf_ridx);
 		}
 	}
 

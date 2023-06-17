@@ -81,6 +81,10 @@ static void draw_object(struct object *obj);
 static void draw_grid(void);
 static void tbn_callback(rtk_widget *w, void *cls);
 
+static void act_settool(int tidx);
+static void act_addobj(void);
+static void act_rmobj(void);
+
 static void draw_rband(void);
 static void primray(cgm_ray *ray, int x, int y);
 static void moveobj(struct object *obj, int px0, int py0, int px1, int py1);
@@ -302,6 +306,30 @@ static void mdl_keyb(int key, int press)
 		app_redisplay();
 		return;
 	}
+
+	if(press) {
+		switch(key) {
+		case 27:
+			act_settool(TOOL_SEL);
+			break;
+		case 'g':
+			act_settool(TOOL_MOVE);
+			break;
+		case 'r':
+			act_settool(TOOL_ROT);
+			break;
+		case 's':
+			act_settool(TOOL_SCALE);
+			break;
+
+		case KEY_DEL:
+			act_rmobj();
+			break;
+
+		default:
+			break;
+		}
+	}
 }
 
 static int vpdrag;
@@ -402,7 +430,7 @@ static void add_sphere(void)
 
 static void tbn_callback(rtk_widget *w, void *cls)
 {
-	int i, id = (intptr_t)cls;
+	int id = (intptr_t)cls;
 	int idx;
 
 	switch(id) {
@@ -417,30 +445,51 @@ static void tbn_callback(rtk_widget *w, void *cls)
 	case TBN_DIFF:
 			idx = id - TBN_UNION + TOOL_UNION;
 		}
-		cur_tool = idx;
-		for(i=0; i<NUM_TOOLS; i++) {
-			if(i != cur_tool) {
-				rtk_set_value(tools[i], 0);
-			}
-		}
+		act_settool(idx);
 		break;
 
 	case TBN_ADD:
-		idx = scn_num_objects(scn);
-		add_sphere();
-		selobj = idx;
+		act_addobj();
 		break;
 
 	case TBN_RM:
-		if(selobj >= 0) {
-			scn_rm_object(scn, selobj);
-			selobj = -1;
-			app_redisplay();
-		}
+		act_rmobj();
 		break;
 
 	default:
 		break;
+	}
+}
+
+static void act_settool(int tidx)
+{
+	int i;
+	cur_tool = tidx;
+	for(i=0; i<NUM_TOOLS; i++) {
+		if(i == cur_tool) {
+			rtk_set_value(tools[i], 1);
+		} else {
+			rtk_set_value(tools[i], 0);
+		}
+	}
+	app_redisplay();
+}
+
+static void act_addobj(void)
+{
+	int idx = scn_num_objects(scn);
+	add_sphere();
+	selobj = idx;
+
+	app_redisplay();
+}
+
+static void act_rmobj(void)
+{
+	if(selobj >= 0) {
+		scn_rm_object(scn, selobj);
+		selobj = -1;
+		app_redisplay();
 	}
 }
 
