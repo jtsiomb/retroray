@@ -15,7 +15,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#include "rt.h"
+#include "geom.h"
 
 int ray_object(const cgm_ray *ray, const struct object *obj, struct rayhit *hit)
 {

@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "gaw.h"
 #include "gawswtnl.h"
 #include "polyfill.h"
+#include "../util.h"
 
 static struct pimage textures[MAX_TEXTURES];
 

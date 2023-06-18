@@ -15,36 +15,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#ifndef RT_H_
-#define RT_H_
+#ifndef GFXUTIL_H_
+#define GFXUTIL_H_
 
-#include "cgmath/cgmath.h"
-#include "scene.h"
+#define PACK_RGB32(r, g, b) \
+	(0xff000000 | ((uint32_t)(r) << 16) | ((uint32_t)(g) << 8) | (uint32_t)(b))
 
-struct rayhit {
-	float t;
-	cgm_vec3 pos;
-	cgm_vec3 norm;
-	cgm_vec2 uv;
-	struct object *obj;
-};
-
-struct interval {
-	struct rayhit a, b;
-};
-
-#define MAX_INTERV	32
-struct csghit {
-	struct interval ivlist[MAX_INTERV];
-	int ivcount;
-};
-
-int ray_object(const cgm_ray *ray, const struct object *obj, struct rayhit *hit);
-int ray_object_csg(const cgm_ray *ray, const struct object *obj, struct csghit *hit);
-
-int ray_sphere(const cgm_ray *ray, const struct sphere *sph, struct csghit *hit);
-int ray_csg(const cgm_ray *ray, const struct csgnode *csg, struct csghit *hit);
-
-float ray_object_dist(const cgm_ray *ray, const struct object *obj);
-
-#endif	/* RT_H_ */
+#endif	/* GFXUTIL_H_ */

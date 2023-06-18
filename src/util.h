@@ -57,4 +57,28 @@ int match_prefix(const char *str, const char *prefix);
 void enable_fpexcept(void);
 void disable_fpexcept(void);
 
+#ifndef INLINE
+#if (__STDC_VERSION__ >= 199901) || defined(__GNUC__)
+#define INLINE inline
+#else
+#define INLINE __inline
+#endif
+#endif
+
+#if defined(__i386__) || defined(__386__) || defined(MSDOS)
+
+/* fast conversion of double -> 32bit int
+ * for details see:
+ *  - http://chrishecker.com/images/f/fb/Gdmfp.pdf
+ *  - http://stereopsis.com/FPU.html#convert
+ */
+static INLINE int32_t cround64(double val)
+{
+	val += 6755399441055744.0;
+	return *(int32_t*)&val;
+}
+#else
+#define cround64(x)	((int32_t)(x))
+#endif
+
 #endif	/* UTIL_H_ */

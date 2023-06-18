@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "app.h"
 #include "rtk.h"
 #include "scene.h"
-#include "rt.h"
+#include "geom.h"
 #include "cmesh.h"
 #include "meshgen.h"
 #include "font.h"
@@ -88,7 +88,6 @@ static void act_addobj(void);
 static void act_rmobj(void);
 
 static void draw_rband(void);
-static void primray(cgm_ray *ray, int x, int y);
 static void moveobj(struct object *obj, int px0, int py0, int px1, int py1);
 
 
@@ -558,7 +557,7 @@ static void draw_rband(void)
 	}
 }
 
-static void primray(cgm_ray *ray, int x, int y)
+void primray(cgm_ray *ray, int x, int y)
 {
 	float nx, ny;
 	cgm_vec3 npos, farpt;

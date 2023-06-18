@@ -16,10 +16,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #include "rend.h"
-#include "rt.h"
+#include "app.h"
+#include "geom.h"
+#include "util.h"
+#include "gfxutil.h"
+#include "scene.h"
 
 struct img_pixmap renderbuf;
-struct img_pixmap dbgimg;
+
+int max_ray_depth;
 
 static int rx, ry, rwidth, rheight;
 static int roffs;
@@ -29,11 +34,9 @@ int rend_init(void)
 {
 	img_init(&renderbuf);
 
-	img_init(&dbgimg);
-	img_load(&dbgimg, "data/foo.jpg");
-	img_convert(&dbgimg, IMG_FMT_RGBA32);
-
 	rx = ry = rwidth = rheight = roffs = 0;
+
+	max_ray_depth = 6;
 	return 0;
 }
 
@@ -91,20 +94,43 @@ static void fillrect(uint32_t *fb, int x, int y, int w, int h, uint32_t c)
 
 int render(uint32_t *fb)
 {
-	int i, j, offs;
-	uint32_t *src, *dest;
+	int i, j, w, h, offs, r, g, b;
+	uint32_t *dest, pcol;
+	cgm_vec3 color;
+	cgm_ray ray;
 
-	src = (uint32_t*)dbgimg.pixels + roffs;
 	dest = (uint32_t*)renderbuf.pixels + roffs;
 	if(fb) fb += roffs;
 
+	if(xstep < 1) xstep = 1;
+	if(ystep < 1) ystep = 1;
+
 	for(i=0; i<rheight; i+=ystep) {
+		h = ystep;
+		if(i + h > rheight) h = rheight - i;
+
 		for(j=0; j<rwidth; j+=xstep) {
+			primray(&ray, rx + j, ry + i);
+			ray_trace(&ray, max_ray_depth, &color);
+
+			r = cround64(color.x * 255.0f);
+			g = cround64(color.y * 255.0f);
+			b = cround64(color.z * 255.0f);
+
+			if(r > 255) r = 255;
+			if(g > 255) g = 255;
+			if(b > 255) b = 255;
+
+			pcol = PACK_RGB32(r, g, b);
+
 			offs = i * renderbuf.width + j;
-			dest[offs] = src[offs];
+			dest[offs] = pcol;
+
 			if(fb) {
-				fb[offs] = src[offs];
-				fillrect(fb, j, i, xstep, ystep, src[offs]);
+				w = xstep;
+				if(j + w > rwidth) w = rwidth - j;
+
+				fillrect(fb, j, i, w, h, pcol);
 			}
 		}
 	}
@@ -116,4 +142,27 @@ int render(uint32_t *fb)
 		return 1;
 	}
 	return 0;
+}
+
+int ray_trace(const cgm_ray *ray, int maxiter, cgm_vec3 *res)
+{
+	struct rayhit hit;
+
+	if(!scn_intersect(scn, ray, &hit)) {
+		*res = bgcolor(ray);
+		return 0;
+	}
+
+	*res = shade(ray, &hit, maxiter);
+	return 1;
+}
+
+cgm_vec3 bgcolor(const cgm_ray *ray)
+{
+	return cgm_vvec(0, 0, 0);
+}
+
+cgm_vec3 shade(const cgm_ray *ray, const struct rayhit *hit, int maxiter)
+{
+	return cgm_vvec(1, 0, 0);
 }

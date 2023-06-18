@@ -113,4 +113,7 @@ void app_resize(int x, int y);
 void app_fullscreen(int fs);
 void app_vsync(int vsync);
 
+/* defined in scr_mod.c for convenience */
+void primray(cgm_ray *ray, int x, int y);
+
 #endif	/* APP_H_ */

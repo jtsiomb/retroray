@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <stdlib.h>
 #include <float.h>
 #include "scene.h"
-#include "rt.h"
+#include "geom.h"
 #include "darray.h"
 #include "logger.h"
 

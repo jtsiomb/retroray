@@ -15,28 +15,36 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#ifndef REND_H_
-#define REND_H_
+#ifndef GEOM_H_
+#define GEOM_H_
 
 #include "cgmath/cgmath.h"
-#include "geom.h"
-#include "sizeint.h"
-#include "imago2.h"
+#include "scene.h"
 
-extern struct img_pixmap renderbuf;
-extern int max_ray_depth;
+struct rayhit {
+	float t;
+	cgm_vec3 pos;
+	cgm_vec3 norm;
+	cgm_vec2 uv;
+	struct object *obj;
+};
 
-struct scene;
+struct interval {
+	struct rayhit a, b;
+};
 
-int rend_init(void);
-void rend_size(int xsz, int ysz);
-void rend_begin(int x, int y, int w, int h);
-int render(uint32_t *fb);
+#define MAX_INTERV	32
+struct csghit {
+	struct interval ivlist[MAX_INTERV];
+	int ivcount;
+};
 
-int ray_trace(const cgm_ray *ray, int maxiter, cgm_vec3 *res);
+int ray_object(const cgm_ray *ray, const struct object *obj, struct rayhit *hit);
+int ray_object_csg(const cgm_ray *ray, const struct object *obj, struct csghit *hit);
 
-cgm_vec3 bgcolor(const cgm_ray *ray);
-cgm_vec3 shade(const cgm_ray *ray, const struct rayhit *hit, int maxiter);
+int ray_sphere(const cgm_ray *ray, const struct sphere *sph, struct csghit *hit);
+int ray_csg(const cgm_ray *ray, const struct csgnode *csg, struct csghit *hit);
 
+float ray_object_dist(const cgm_ray *ray, const struct object *obj);
 
-#endif	/* REND_H_ */
+#endif	/* GEOM_H_ */
