@@ -80,6 +80,7 @@ static void mdl_mouse(int bn, int press, int x, int y);
 static void mdl_motion(int x, int y);
 
 static void draw_object(struct object *obj);
+static void setup_material(struct material *mtl);
 static void draw_grid(void);
 static void tbn_callback(rtk_widget *w, void *cls);
 
@@ -87,6 +88,7 @@ static void act_settool(int tidx);
 static void act_addobj(void);
 static void act_rmobj(void);
 
+static void fix_rect(rtk_rect *rect);
 static void draw_rband(void);
 static void moveobj(struct object *obj, int px0, int py0, int px1, int py1);
 
@@ -185,6 +187,8 @@ static int mdl_start(void)
 	gaw_enable(GAW_CULL_FACE);
 	gaw_enable(GAW_LIGHTING);
 	gaw_enable(GAW_LIGHT0);
+
+	rend_pan(0, -TOOLBAR_HEIGHT);
 	return 0;
 }
 
@@ -212,10 +216,10 @@ static void mdl_display(void)
 
 	draw_grid();
 
-	gaw_mtl_diffuse(0.5, 0.5, 0.5, 1);
-
 	num = scn_num_objects(scn);
 	for(i=0; i<num; i++) {
+		setup_material(scn->objects[i]->mtl);
+
 		if(i == selobj) {
 			gaw_zoffset(1);
 			gaw_enable(GAW_POLYGON_OFFSET);
@@ -274,6 +278,13 @@ static void draw_object(struct object *obj)
 	}
 
 	gaw_pop_matrix();
+}
+
+static void setup_material(struct material *mtl)
+{
+	gaw_mtl_diffuse(mtl->kd.x, mtl->kd.y, mtl->kd.z, 1.0f);
+	gaw_mtl_specular(mtl->ks.x, mtl->ks.y, mtl->ks.z, mtl->shin);
+	gaw_mtl_emission(mtl->ke.x, mtl->ke.y, mtl->ke.z);
 }
 
 static void draw_grid(void)
@@ -376,6 +387,7 @@ static void mdl_mouse(int bn, int press, int x, int y)
 				}
 				rendering = 1;
 				rend_size(win_width, win_height);
+				fix_rect(&rband);
 				rend_begin(rband.x, rband.y, rband.width, rband.height);
 			}
 
@@ -521,10 +533,9 @@ static void act_rmobj(void)
 	}
 }
 
-static void draw_rband(void)
+static void fix_rect(rtk_rect *rect)
 {
-	int i, x, y, w, h;
-	uint32_t *fbptr, *bptr;
+	int x, y, w, h;
 
 	x = rband.x;
 	y = rband.y;
@@ -542,17 +553,32 @@ static void draw_rband(void)
 		h = rband.height;
 	}
 
-	fbptr = framebuf + y * win_width + x;
-	bptr = fbptr + win_width * (h - 1);
+	rect->x = x;
+	rect->y = y;
+	rect->width = w;
+	rect->height = h;
+}
 
-	for(i=0; i<w; i++) {
+static void draw_rband(void)
+{
+	int i;
+	rtk_rect rect;
+	uint32_t *fbptr, *bptr;
+
+	rect = rband;
+	fix_rect(&rect);
+
+	fbptr = framebuf + rect.y * win_width + rect.x;
+	bptr = fbptr + win_width * (rect.height - 1);
+
+	for(i=0; i<rect.width; i++) {
 		fbptr[i] ^= 0xffffff;
 		bptr[i] ^= 0xffffff;
 	}
 	fbptr += win_width;
-	for(i=0; i<h-2; i++) {
+	for(i=0; i<rect.height-2; i++) {
 		fbptr[0] ^= 0xffffff;
-		fbptr[w - 1] ^= 0xffffff;
+		fbptr[rect.width - 1] ^= 0xffffff;
 		fbptr += win_width;
 	}
 }

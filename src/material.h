@@ -15,30 +15,24 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#ifndef REND_H_
-#define REND_H_
+#ifndef MATERIAL_H_
+#define MATERIAL_H_
 
 #include "cgmath/cgmath.h"
-#include "geom.h"
-#include "sizeint.h"
-#include "imago2.h"
+#include "texture.h"
 
-extern struct img_pixmap renderbuf;
-extern int max_ray_depth;
-extern cgm_vec3 ambient;
+struct material {
+	char *name;
+	cgm_vec3 kd, ks, ke;
+	float shin;
+	float refl, trans, ior;
 
-struct scene;
+	struct texture *texmap;
+};
 
-int rend_init(void);
-void rend_size(int xsz, int ysz);
-void rend_pan(int xoffs, int yoffs);
-void rend_begin(int x, int y, int w, int h);
-int render(uint32_t *fb);
+void mtl_init(struct material *mtl);
+void mtl_destroy(struct material *mtl);
 
-int ray_trace(const cgm_ray *ray, int maxiter, cgm_vec3 *res);
+void mtl_set_name(struct material *mtl, const char *name);
 
-cgm_vec3 bgcolor(const cgm_ray *ray);
-cgm_vec3 shade(const cgm_ray *ray, const struct rayhit *hit, int maxiter);
-
-
-#endif	/* REND_H_ */
+#endif	/* MATERIAL_H_ */

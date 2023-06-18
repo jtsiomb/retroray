@@ -22,19 +22,30 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "gfxutil.h"
 #include "scene.h"
 
+static int calc_light(const struct rayhit *hit, const struct light *lt,
+		const cgm_vec3 *vdir, cgm_vec3 *dcol, cgm_vec3 *scol);
+
 struct img_pixmap renderbuf;
 
 int max_ray_depth;
+cgm_vec3 ambient;
 
 static int rx, ry, rwidth, rheight;
 static int roffs;
 static int xstep, ystep;
+static int pan_x, pan_y;
+
+static struct light def_light = {0, {0, 0, 0}, {1, 1, 1}};
+
 
 int rend_init(void)
 {
 	img_init(&renderbuf);
 
+	cgm_vcons(&ambient, 0.05, 0.05, 0.05);
+
 	rx = ry = rwidth = rheight = roffs = 0;
+	pan_x = pan_y = 0;
 
 	max_ray_depth = 6;
 	return 0;
@@ -50,6 +61,12 @@ void rend_size(int xsz, int ysz)
 	if(xsz != renderbuf.width || ysz != renderbuf.height) {
 		img_set_pixels(&renderbuf, xsz, ysz, IMG_FMT_RGBA32, 0);
 	}
+}
+
+void rend_pan(int xoffs, int yoffs)
+{
+	pan_x = xoffs;
+	pan_y = yoffs;
 }
 
 void rend_begin(int x, int y, int w, int h)
@@ -100,27 +117,32 @@ int render(uint32_t *fb)
 	cgm_ray ray;
 
 	dest = (uint32_t*)renderbuf.pixels + roffs;
-	if(fb) fb += roffs;
+	if(fb) {
+		fb += roffs;
+	}
 
 	if(xstep < 1) xstep = 1;
 	if(ystep < 1) ystep = 1;
+
+	if(scn_num_lights(scn) == 0) {
+		primray(&ray, renderbuf.width / 2, renderbuf.height / 2);
+		def_light.pos = ray.origin;
+	}
 
 	for(i=0; i<rheight; i+=ystep) {
 		h = ystep;
 		if(i + h > rheight) h = rheight - i;
 
 		for(j=0; j<rwidth; j+=xstep) {
-			primray(&ray, rx + j, ry + i);
+			primray(&ray, rx + j + pan_x, ry + i + pan_y);
 			ray_trace(&ray, max_ray_depth, &color);
 
+			if(color.x > 1.0f) color.x = 1.0f;
+			if(color.y > 1.0f) color.y = 1.0f;
+			if(color.z > 1.0f) color.z = 1.0f;
 			r = cround64(color.x * 255.0f);
 			g = cround64(color.y * 255.0f);
 			b = cround64(color.z * 255.0f);
-
-			if(r > 255) r = 255;
-			if(g > 255) g = 255;
-			if(b > 255) b = 255;
-
 			pcol = PACK_RGB32(r, g, b);
 
 			offs = i * renderbuf.width + j;
@@ -164,5 +186,76 @@ cgm_vec3 bgcolor(const cgm_ray *ray)
 
 cgm_vec3 shade(const cgm_ray *ray, const struct rayhit *hit, int maxiter)
 {
-	return cgm_vvec(1, 0, 0);
+	int i, num_lights;
+	cgm_vec3 color, dcol, scol, texel, vdir;
+	struct material *mtl;
+	struct light *lt;
+
+	dcol = ambient;
+	cgm_vcons(&scol, 0, 0, 0);
+
+	mtl = hit->obj->mtl;
+
+	vdir = ray->dir;
+	cgm_vneg(&vdir);
+	cgm_vnormalize(&vdir);
+
+	if(!(num_lights = scn_num_lights(scn))) {
+		calc_light(hit, &def_light, &vdir, &dcol, &scol);
+	}
+	for(i=0; i<num_lights; i++) {
+		lt = scn->lights[i];
+		calc_light(hit, lt, &vdir, &dcol, &scol);
+	}
+
+	if(mtl->texmap) {
+		texel = mtl->texmap->lookup(mtl->texmap, hit);
+		cgm_vmul(&dcol, &texel);
+	}
+
+	color = dcol;
+	cgm_vadd(&color, &scol);
+	return color;
+}
+
+static int calc_light(const struct rayhit *hit, const struct light *lt,
+		const cgm_vec3 *vdir, cgm_vec3 *dcol, cgm_vec3 *scol)
+{
+	float ndotl, ndoth, spec;
+	cgm_vec3 ldir, hdir;
+	cgm_ray ray;
+	struct material *mtl = hit->obj->mtl;
+
+	ldir = lt->pos;
+	cgm_vsub(&ldir, &hit->pos);
+
+	ray.origin = hit->pos;
+	ray.dir = ldir;
+
+	if(scn_intersect(scn, &ray, 0)) {
+		return 0;	/* in shadow */
+	}
+
+	cgm_vnormalize(&ldir);
+
+	hdir = *vdir;
+	cgm_vadd(&hdir, &ldir);
+	cgm_vnormalize(&hdir);
+
+	ndotl = cgm_vdot(&hit->norm, &ldir);
+	if(ndotl < 0.0f) ndotl = 0.0f;
+	ndoth = cgm_vdot(&hit->norm, &hdir);
+	if(ndoth < 0.0f) ndoth = 0.0f;
+
+	spec = pow(ndoth, mtl->shin);
+
+	dcol->x += mtl->kd.x * ndotl * lt->color.x;
+	dcol->y += mtl->kd.y * ndotl * lt->color.y;
+	dcol->z += mtl->kd.z * ndotl * lt->color.z;
+
+	scol->x += mtl->ks.x * spec * lt->color.x;
+	scol->y += mtl->ks.y * spec * lt->color.y;
+	scol->z += mtl->ks.z * spec * lt->color.z;
+
+	return 1;
 }

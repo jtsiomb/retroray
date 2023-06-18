@@ -77,6 +77,7 @@ extern "C" {
 static CGM_INLINE void cgm_vcons(cgm_vec3 *v, float x, float y, float z);
 static CGM_INLINE cgm_vec3 cgm_vvec(float x, float y, float z);
 
+static CGM_INLINE void cgm_vneg(cgm_vec3 *v);
 static CGM_INLINE void cgm_vadd(cgm_vec3 *a, const cgm_vec3 *b);
 static CGM_INLINE void cgm_vadd_scaled(cgm_vec3 *a, const cgm_vec3 *b, float s); /* a+b*s */
 static CGM_INLINE void cgm_vsub(cgm_vec3 *a, const cgm_vec3 *b);

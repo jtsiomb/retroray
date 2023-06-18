@@ -15,30 +15,36 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#ifndef REND_H_
-#define REND_H_
+#include <string.h>
+#include "material.h"
 
-#include "cgmath/cgmath.h"
-#include "geom.h"
-#include "sizeint.h"
-#include "imago2.h"
+void mtl_init(struct material *mtl)
+{
+	static int mtlidx;
+	char namebuf[64];
 
-extern struct img_pixmap renderbuf;
-extern int max_ray_depth;
-extern cgm_vec3 ambient;
+	cgm_vcons(&mtl->kd, 0.7, 0.7, 0.7);
+	cgm_vcons(&mtl->ks, 0.5, 0.5, 0.5);
+	cgm_vcons(&mtl->ke, 0, 0, 0);
+	mtl->shin = 50.0f;
+	mtl->refl = mtl->trans = 0.0f;
+	mtl->ior = 1.3333333;
+	mtl->texmap = 0;
 
-struct scene;
+	sprintf(namebuf, "material%03d", mtlidx++);
+	mtl_set_name(mtl, namebuf);
+}
 
-int rend_init(void);
-void rend_size(int xsz, int ysz);
-void rend_pan(int xoffs, int yoffs);
-void rend_begin(int x, int y, int w, int h);
-int render(uint32_t *fb);
+void mtl_destroy(struct material *mtl)
+{
+	if(!mtl) return;
+	free(mtl->name);
+}
 
-int ray_trace(const cgm_ray *ray, int maxiter, cgm_vec3 *res);
-
-cgm_vec3 bgcolor(const cgm_ray *ray);
-cgm_vec3 shade(const cgm_ray *ray, const struct rayhit *hit, int maxiter);
-
-
-#endif	/* REND_H_ */
+void mtl_set_name(struct material *mtl, const char *name)
+{
+	char *tmp = strdup(name);
+	if(!tmp) return;
+	free(mtl->name);
+	mtl->name = tmp;
+}

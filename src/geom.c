@@ -39,7 +39,7 @@ int ray_object_csg(const cgm_ray *ray, const struct object *obj, struct csghit *
 
 	switch(obj->type) {
 	case OBJ_SPHERE:
-		res = ray_sphere(ray, (const struct sphere*)obj, hit);
+		res = ray_sphere(&localray, (const struct sphere*)obj, hit);
 		break;
 
 	default:
@@ -57,6 +57,8 @@ int ray_object_csg(const cgm_ray *ray, const struct object *obj, struct csghit *
 	return res;
 }
 
+#define EPSILON	1e-5
+
 int ray_sphere(const cgm_ray *ray, const struct sphere *sph, struct csghit *hit)
 {
 	int i;
@@ -64,11 +66,10 @@ int ray_sphere(const cgm_ray *ray, const struct sphere *sph, struct csghit *hit)
 	struct rayhit *rhptr;
 
 	a = cgm_vdot(&ray->dir, &ray->dir);
-	b = 2.0f * ray->dir.x * (ray->origin.x - sph->pos.x) +
-		2.0f * ray->dir.y * (ray->origin.y - sph->pos.y) +
-		2.0f * ray->dir.z * (ray->origin.z - sph->pos.z);
-	c = cgm_vdot(&sph->pos, &sph->pos) + cgm_vdot(&ray->origin, &ray->origin) +
-		cgm_vdot(&sph->pos, &ray->origin) * -2.0f - sph->rad * sph->rad;
+	b = 2.0f * ray->dir.x * ray->origin.x +
+		2.0f * ray->dir.y * ray->origin.y +
+		2.0f * ray->dir.z * ray->origin.z;
+	c = cgm_vdot(&ray->origin, &ray->origin) - sph->rad * sph->rad;
 
 	if((d = b * b - 4.0 * a * c) < 0.0) return 0;
 
@@ -76,14 +77,14 @@ int ray_sphere(const cgm_ray *ray, const struct sphere *sph, struct csghit *hit)
 	t1 = (-b + sqrt_d) / (2.0 * a);
 	t2 = (-b - sqrt_d) / (2.0 * a);
 
-	if((t1 < 1e-6f && t2 < 1e-6f) || (t1 > 1.0f && t2 > 1.0f)) {
+	if((t1 < EPSILON && t2 < EPSILON) || (t1 > 1.0f && t2 > 1.0f)) {
 		return 0;
 	}
 
 	if(hit) {
-		if(t1 < 1e-6f || t1 > 1.0f) {
+		if(t1 < EPSILON || t1 > 1.0f) {
 			t1 = t2;
-		} else if(t2 < 1e-6f || t2 > 1.0f) {
+		} else if(t2 < EPSILON || t2 > 1.0f) {
 			t2 = t1;
 		}
 		if(t2 < t1) {

@@ -15,30 +15,52 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#ifndef REND_H_
-#define REND_H_
+#ifndef TEXTURE_H_
+#define TEXTURE_H_
 
 #include "cgmath/cgmath.h"
-#include "geom.h"
-#include "sizeint.h"
 #include "imago2.h"
 
-extern struct img_pixmap renderbuf;
-extern int max_ray_depth;
-extern cgm_vec3 ambient;
+struct rayhit;
 
-struct scene;
+enum {
+	TEX_PIXMAP,
+	TEX_CHESS,
+	TEX_FBM2D,
+	TEX_FBM3D,
+	TEX_MARBLE2D,
+	TEX_MARBLE3D
+};
 
-int rend_init(void);
-void rend_size(int xsz, int ysz);
-void rend_pan(int xoffs, int yoffs);
-void rend_begin(int x, int y, int w, int h);
-int render(uint32_t *fb);
+#define TEX_COMMON_ATTR	\
+	int type; \
+	char *name; \
+	cgm_vec3 offs, scale; \
+	cgm_vec3 (*lookup)(const struct texture*, const struct rayhit*)
 
-int ray_trace(const cgm_ray *ray, int maxiter, cgm_vec3 *res);
+struct texture {
+	TEX_COMMON_ATTR;
+};
 
-cgm_vec3 bgcolor(const cgm_ray *ray);
-cgm_vec3 shade(const cgm_ray *ray, const struct rayhit *hit, int maxiter);
+struct tex_pixmap {
+	TEX_COMMON_ATTR;
+	struct img_pixmap *img;
+};
 
+struct tex_chess {
+	TEX_COMMON_ATTR;
+	cgm_vec3 color[2];
+};
 
-#endif	/* REND_H_ */
+struct tex_fbm {
+	TEX_COMMON_ATTR;
+	int octaves;
+	cgm_vec3 color[2];
+};
+
+struct texture *create_texture(int type);
+void free_texture(struct texture *tex);
+
+void tex_set_name(struct texture *tex, const char *name);
+
+#endif	/* TEXTURE_H_ */

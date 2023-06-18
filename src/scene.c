@@ -22,6 +22,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "darray.h"
 #include "logger.h"
 
+static struct material *default_material(void);
+
 struct scene *create_scene(void)
 {
 	struct scene *scn;
@@ -31,7 +33,8 @@ struct scene *create_scene(void)
 		return 0;
 	}
 	scn->objects = darr_alloc(0, sizeof *scn->objects);
-
+	scn->lights = darr_alloc(0, sizeof *scn->lights);
+	scn->mtl = darr_alloc(0, sizeof *scn->mtl);
 	return scn;
 }
 
@@ -45,6 +48,18 @@ void free_scene(struct scene *scn)
 		free_object(scn->objects[i]);
 	}
 	darr_free(scn->objects);
+
+	for(i=0; i<darr_size(scn->lights); i++) {
+		free_light(scn->lights[i]);
+	}
+	darr_free(scn->lights);
+
+	for(i=0; i<darr_size(scn->mtl); i++) {
+		mtl_destroy(scn->mtl[i]);
+		free(scn->mtl[i]);
+	}
+	darr_free(scn->mtl);
+
 	free(scn);
 }
 
@@ -87,6 +102,119 @@ int scn_object_index(const struct scene *scn, const struct object *obj)
 	return -1;
 }
 
+
+
+int scn_add_material(struct scene *scn, struct material *mtl)
+{
+	darr_push(scn->mtl, &mtl);
+	return 0;
+}
+
+int scn_rm_material(struct scene *scn, struct material *mtl)
+{
+	int idx, num_mtl;
+
+	if((idx = scn_material_index(scn, mtl)) == -1) {
+		return -1;
+	}
+
+	num_mtl = darr_size(scn->mtl);
+
+	if(idx < num_mtl - 1) {
+		scn->mtl[idx] = scn->mtl[num_mtl - 1];
+	}
+	darr_pop(scn->mtl);
+	return 0;
+}
+
+int scn_num_materials(const struct scene *scn)
+{
+	return darr_size(scn->mtl);
+}
+
+int scn_material_index(const struct scene *scn, const struct material *mtl)
+{
+	int i, num_mtl;
+
+	num_mtl = darr_size(scn->mtl);
+	for(i=0; i<num_mtl; i++) {
+		if(scn->mtl[i] == mtl) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+struct material *scn_find_material(const struct scene *scn, const char *mname)
+{
+	int i, num_mtl;
+
+	num_mtl = darr_size(scn->mtl);
+	for(i=0; i<num_mtl; i++) {
+		if(strcmp(scn->mtl[i]->name, mname) == 0) {
+			return scn->mtl[i];
+		}
+	}
+	return 0;
+}
+
+/* manage lights */
+
+int scn_add_light(struct scene *scn, struct light *light)
+{
+	darr_push(scn->lights, &light);
+	return 0;
+}
+
+int scn_rm_light(struct scene *scn, struct light *light)
+{
+	int idx, num_lights;
+
+	if((idx = scn_light_index(scn, light)) == -1) {
+		return -1;
+	}
+
+	num_lights = darr_size(scn->lights);
+
+	if(idx < num_lights - 1) {
+		scn->lights[idx] = scn->lights[num_lights - 1];
+	}
+	darr_pop(scn->lights);
+	return 0;
+}
+
+int scn_num_lights(const struct scene *scn)
+{
+	return darr_size(scn->lights);
+}
+
+int scn_light_index(const struct scene *scn, const struct light *light)
+{
+	int i, num_lights;
+
+	num_lights = darr_size(scn->lights);
+	for(i=0; i<num_lights; i++) {
+		if(scn->lights[i] == light) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+struct light *scn_find_light(const struct scene *scn, const char *mname)
+{
+	int i, num_lights;
+
+	num_lights = darr_size(scn->lights);
+	for(i=0; i<num_lights; i++) {
+		if(strcmp(scn->lights[i]->name, mname) == 0) {
+			return scn->lights[i];
+		}
+	}
+	return 0;
+}
+
+
 int scn_intersect(const struct scene *scn, const cgm_ray *ray, struct rayhit *hit)
 {
 	int i, numobj;
@@ -108,6 +236,9 @@ int scn_intersect(const struct scene *scn, const cgm_ray *ray, struct rayhit *hi
 	}
 	return 0;
 }
+
+
+/* --- object functions --- */
 
 struct object *create_object(int type)
 {
@@ -143,6 +274,7 @@ struct object *create_object(int type)
 	cgm_midentity(obj->xform);
 	cgm_midentity(obj->inv_xform);
 	obj->xform_valid = 1;
+	obj->mtl = default_material();
 
 	set_object_name(obj, buf);
 	objid++;
@@ -197,4 +329,66 @@ void calc_object_matrix(struct object *obj)
 	cgm_minverse(obj->inv_xform);
 
 	obj->xform_valid = 1;
+}
+
+/* --- lights --- */
+struct light *create_light(void)
+{
+	struct light *lt;
+	static int ltidx;
+	char buf[64];
+
+	if(!(lt = malloc(sizeof *lt))) {
+		return 0;
+	}
+	cgm_vcons(&lt->pos, 0, 0, 0);
+
+	set_light_color(lt, 1, 1, 1);
+	set_light_energy(lt, 1);
+
+	sprintf(buf, "light%03d", ltidx++);
+	set_light_name(lt, buf);
+
+	return lt;
+}
+
+void free_light(struct light *lt)
+{
+	if(!lt) return;
+	free(lt->name);
+	free(lt);
+}
+
+int set_light_name(struct light *lt, const char *name)
+{
+	char *tmp = strdup(name);
+	if(!tmp) return -1;
+	free(lt->name);
+	lt->name = tmp;
+	return 0;
+}
+
+void set_light_color(struct light *lt, float r, float g, float b)
+{
+	cgm_vcons(&lt->orig_color, r, g, b);
+	lt->color = lt->orig_color;
+	cgm_vscale(&lt->color, lt->energy);
+}
+
+void set_light_energy(struct light *lt, float e)
+{
+	lt->energy = e;
+	lt->color = lt->orig_color;
+	cgm_vscale(&lt->color, e);
+}
+
+static struct material *default_material(void)
+{
+	static struct material defmtl;
+
+	if(!defmtl.name) {
+		mtl_init(&defmtl);
+		mtl_set_name(&defmtl, "default_mtl");
+	}
+	return &defmtl;
 }
