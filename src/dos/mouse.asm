@@ -11,8 +11,8 @@ XLIM equ 7
 YLIM equ 8
 
 PUSHA_EAX_OFFS equ 28
-PUSHA_ECX_OFFS equ 20
-PUSHA_EDX_OFFS equ 16
+PUSHA_ECX_OFFS equ 24
+PUSHA_EDX_OFFS equ 20
 
 	section .text
 	bits 32
@@ -129,7 +129,7 @@ _set_mouse:
 	pop ebp
 	ret
 
-; void set_mouse_limits(int xmin, int ymin, int xmax, int ymax)
+; void set_mouse_limits(int xmin[eax], int ymin[edx], int xmax[ebx], int ymax[ecx])
 	global set_mouse_limits_
 set_mouse_limits_:
 	pusha
