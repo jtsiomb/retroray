@@ -72,6 +72,7 @@ _read_mouse_bn:
 	int 0x33
 	xor eax, eax
 	mov ax, bx
+	mov [esp + PUSHA_EAX_OFFS], eax
 	popa
 	ret
 

@@ -28,6 +28,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "options.h"
 #include "cpuid.h"
 
+static INLINE int clamp(int x, int a, int b)
+{
+	if(x < a) return a;
+	if(x > b) return b;
+	return x;
+}
+
 static void draw_cursor(int x, int y);
 
 static uint32_t *vmem;
@@ -37,8 +44,8 @@ int main(int argc, char **argv)
 {
 	int i;
 	int vmidx;
-	int mx, my, bnstate, bndiff;
-	static int prev_mx = -1, prev_my, prev_bnstate;
+	int mx, my, mdx, mdy, prev_mx, prev_my, bnstate, bndiff;
+	static int prev_bnstate;
 
 #ifdef __DJGPP__
 	__djgpp_nearptr_enable();
@@ -56,10 +63,6 @@ int main(int argc, char **argv)
 		fprintf(stderr, "No mouse detected. Make sure the mouse driver is installed\n");
 		return 1;
 	}
-	set_mouse_limits(0, 0, 639, 479);
-	mx = 320;
-	my = 240;
-	set_mouse(mx, my);
 
 	add_log_file("retroray.log");
 
@@ -86,7 +89,6 @@ int main(int argc, char **argv)
 	app_reshape(win_width, win_height);
 	mx = win_width / 2;
 	my = win_height / 2;
-	set_mouse(mx, my);
 
 	for(;;) {
 		int key;
@@ -107,25 +109,23 @@ int main(int argc, char **argv)
 			if(quit) goto break_evloop;
 		}
 
-		bnstate = read_mouse(&mx, &my);
+		bnstate = read_mouse_bn();
 		bndiff = bnstate ^ prev_bnstate;
 		prev_bnstate = bnstate;
 
-		if(bndiff) {
-			dbgmsg("bndiff: %04x\n", bndiff);
-		}
+		read_mouse_rel(&mdx, &mdy);
+		prev_mx = mx;
+		prev_my = my;
+		mx = clamp(mx + mdx, 0, win_width - 1);
+		my = clamp(my + mdy, 0, win_height - 1);
+		mdx = mx - prev_mx;
+		mdy = my - prev_my;
 
 		if(bndiff & 1) app_mouse(0, bnstate & 1, mx, my);
 		if(bndiff & 2) app_mouse(1, bnstate & 2, mx, my);
 		if(bndiff & 4) app_mouse(3, bnstate & 4, mx, my);
 
-		if(prev_my == -1) {
-			prev_mx = mx;
-			prev_my = my;
-		} else {
-			draw_cursor(prev_mx, prev_my);
-		}
-		if((mx ^ prev_mx) | (my ^ prev_my)) {
+		if((mdx | mdy) != 0) {
 			app_motion(mx, my);
 		}
 
@@ -134,9 +134,9 @@ int main(int argc, char **argv)
 			app_display();
 		}
 
+		draw_cursor(prev_mx, prev_my);
 		draw_cursor(mx, my);
-		prev_mx = mx;
-		prev_my = my;
+
 		app_swap_buffers();
 	}
 
