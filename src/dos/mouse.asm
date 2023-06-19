@@ -9,6 +9,7 @@ WRITE equ 4
 PIXRATE equ 15
 XLIM equ 7
 YLIM equ 8
+READREL equ 0xb
 
 PUSHA_EAX_OFFS equ 28
 PUSHA_ECX_OFFS equ 24
@@ -61,6 +62,19 @@ _show_mouse:
 	pop ebp
 	ret
 
+; int read_mouse_bn(void)
+	global read_mouse_bn_
+	global _read_mouse_bn
+read_mouse_bn_:
+_read_mouse_bn:
+	pusha
+	mov ax, READ
+	int 0x33
+	xor eax, eax
+	mov ax, bx
+	popa
+	ret
+
 ; int read_mouse(int *xp, int *yp)
 	global read_mouse_
 read_mouse_:
@@ -96,6 +110,42 @@ _read_mouse:
 	and edx, 0xffff
 	mov ebx, [ebp + 12]
 	mov [ebx], edx
+	pop edi
+	pop esi
+	pop ebx
+	pop ebp
+	ret
+
+; void read_mouse_rel(int *xp, int *yp)
+	global read_mouse_rel_
+read_mouse_rel_:
+	pusha
+	mov esi, eax	; xp
+	mov edi, edx	; yp
+	mov ax, READREL
+	int 0x33
+	movsx eax, cx
+	mov [esi], eax
+	movsx eax, dx
+	mov [edi], eax
+	popa
+	ret
+
+	global _read_mouse_rel
+_read_mouse_rel:
+	push ebp
+	mov ebp, esp
+	push ebx
+	push esi
+	push edi
+	mov ax, READREL
+	int 0x33
+	mov ebx, [ebp + 8]
+	movsx eax, cx
+	mov [ebx], eax
+	mov ebx, [ebp + 12]
+	movsx eax, dx
+	mov [ebx], eax
 	pop edi
 	pop esi
 	pop ebx

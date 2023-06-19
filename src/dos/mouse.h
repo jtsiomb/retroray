@@ -13,7 +13,9 @@ extern "C" {
 
 int have_mouse(void);
 void show_mouse(int show);
+int read_mouse_bn(void);
 int read_mouse(int *xp, int *yp);
+void read_mouse_rel(int *xp, int *yp);
 void set_mouse(int x, int y);
 void set_mouse_limits(int xmin, int ymin, int xmax, int ymax);
 void set_mouse_rate(int xrate, int yrate);
