@@ -29,7 +29,7 @@ static cgm_vec3 lookup_fbm3d(const struct texture *btex, const struct rayhit *hi
 static cgm_vec3 lookup_marble2d(const struct texture *btex, const struct rayhit *hit);
 static cgm_vec3 lookup_marble3d(const struct texture *btex, const struct rayhit *hit);
 
-static const cgm_vec3 (*lookup[])(const struct texture*, const struct rayhit*) = {
+static cgm_vec3 (*lookup[])(const struct texture*, const struct rayhit*) = {
 	lookup_pixmap,
 	lookup_chess,
 	lookup_fbm2d,

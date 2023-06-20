@@ -6,6 +6,7 @@
 *.LIB
 retroray
 *.cfg
+*.conf
 data/
 *.exe
 config.mk
@@ -21,3 +22,6 @@ config.mk
 *.LNK
 *.map
 *.MAP
+*.LOG
+*.zip
+core

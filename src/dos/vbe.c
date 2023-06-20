@@ -4,6 +4,7 @@
 #include <assert.h>
 #include "vbe.h"
 #include "cdpmi.h"
+#include "logger.h"
 
 
 #define FIXPTR(ptr) \
@@ -25,7 +26,6 @@
 
 static int cur_pitch;
 /* TODO update cur_pitch on mode-change and on setscanlen */
-
 
 int vbe_info(struct vbe_info *info)
 {
@@ -50,7 +50,7 @@ int vbe_info(struct vbe_info *info)
 	dpmi_int(0x10, &regs);
 
 	if((regs.eax & 0xffff) != 0x4f) {
-		fprintf(stderr, "vbe_get_info (4f00) failed\n");
+		errormsg("vbe_get_info (4f00) failed\n");
 		dpmi_free(sel);
 		return -1;
 	}
@@ -130,7 +130,7 @@ int vbe_mode_info(int mode, struct vbe_mode_info *minf)
 	dpmi_int(0x10, &regs);
 
 	if((regs.eax & 0xffff) != 0x4f) {
-		fprintf(stderr, "vbe_mode_info (4f01) failed\n");
+		errormsg("vbe_mode_info (4f01) failed\n");
 		dpmi_free(sel);
 		return -1;
 	}
@@ -142,90 +142,90 @@ int vbe_mode_info(int mode, struct vbe_mode_info *minf)
 
 void vbe_print_info(FILE *fp, struct vbe_info *vinf)
 {
-	fprintf(fp, "vbe version: %u.%u\n", VBE_VER_MAJOR(vinf->ver), VBE_VER_MINOR(vinf->ver));
+	infomsg("vbe version: %u.%u\n", VBE_VER_MAJOR(vinf->ver), VBE_VER_MINOR(vinf->ver));
 	if(VBE_VER_MAJOR(vinf->ver) >= 2) {
-		fprintf(fp, "%s - %s (%s)\n", vinf->vendor, vinf->product, vinf->revstr);
+		infomsg("%s - %s (%s)\n", vinf->vendor, vinf->product, vinf->revstr);
 		if(vinf->caps & VBE_ACCEL) {
-			fprintf(fp, "vbe/af %d.%d\n", VBE_VER_MAJOR(vinf->accel_ver), VBE_VER_MINOR(vinf->accel_ver));
+			infomsg("vbe/af %d.%d\n", VBE_VER_MAJOR(vinf->accel_ver), VBE_VER_MINOR(vinf->accel_ver));
 		}
 	} else {
-		fprintf(fp, "oem: %s\n", vinf->oem_name);
+		infomsg("oem: %s\n", vinf->oem_name);
 	}
-	fprintf(fp, "video memory: %dkb\n", vinf->vmem_blk * 64);
+	infomsg("video memory: %dkb\n", vinf->vmem_blk * 64);
 
 	if(vinf->caps) {
-		fprintf(fp, "caps:");
-		if(vinf->caps & VBE_8BIT_DAC) fprintf(fp, " dac8");
-		if(vinf->caps & VBE_NON_VGA) fprintf(fp, " non-vga");
-		if(vinf->caps & VBE_DAC_BLANK) fprintf(fp, " dac-blank");
-		if(vinf->caps & VBE_ACCEL) fprintf(fp, " af");
-		if(vinf->caps & VBE_MUSTLOCK) fprintf(fp, " af-lock");
-		if(vinf->caps & VBE_HWCURSOR) fprintf(fp, " af-curs");
-		if(vinf->caps & VBE_HWCLIP) fprintf(fp, " af-clip");
-		if(vinf->caps & VBE_TRANSP_BLT) fprintf(fp, " af-tblt");
-		fprintf(fp, "\n");
+		infomsg("caps:");
+		if(vinf->caps & VBE_8BIT_DAC) infomsg(" dac8");
+		if(vinf->caps & VBE_NON_VGA) infomsg(" non-vga");
+		if(vinf->caps & VBE_DAC_BLANK) infomsg(" dac-blank");
+		if(vinf->caps & VBE_ACCEL) infomsg(" af");
+		if(vinf->caps & VBE_MUSTLOCK) infomsg(" af-lock");
+		if(vinf->caps & VBE_HWCURSOR) infomsg(" af-curs");
+		if(vinf->caps & VBE_HWCLIP) infomsg(" af-clip");
+		if(vinf->caps & VBE_TRANSP_BLT) infomsg(" af-tblt");
+		infomsg("\n");
 	}
 
-	fprintf(fp, "%d video modes available\n", NMODES(vinf));
+	infomsg("%d video modes available\n", NMODES(vinf));
 	if(vinf->caps & VBE_ACCEL) {
-		fprintf(fp, "%d accelerated (VBE/AF) modes available\n", NACCMODES(vinf));
+		infomsg("%d accelerated (VBE/AF) modes available\n", NACCMODES(vinf));
 	}
-	fflush(fp);
+	/*fflush(fp);*/
 }
 
 void vbe_print_mode_info(FILE *fp, struct vbe_mode_info *minf)
 {
-	fprintf(fp, "%dx%d %dbpp", minf->xres, minf->yres, minf->bpp);
+	infomsg("%dx%d %dbpp", minf->xres, minf->yres, minf->bpp);
 
 	switch(minf->mem_model) {
 	case VBE_TYPE_DIRECT:
-		fprintf(fp, " (rgb");
+		infomsg(" (rgb");
 		if(0) {
 	case VBE_TYPE_YUV:
-			fprintf(fp, " (yuv");
+			infomsg(" (yuv");
 		}
-		fprintf(fp, " %d%d%d)", minf->rsize, minf->gsize, minf->bsize);
+		infomsg(" %d%d%d)", minf->rsize, minf->gsize, minf->bsize);
 		break;
 	case VBE_TYPE_PLANAR:
-		fprintf(fp, " (%d planes)", minf->num_planes);
+		infomsg(" (%d planes)", minf->num_planes);
 		break;
 	case VBE_TYPE_PACKED:
-		fprintf(fp, " (packed)");
+		infomsg(" (packed)");
 		break;
 	case VBE_TYPE_TEXT:
-		fprintf(fp, " (%dx%d cells)", minf->xcharsz, minf->ycharsz);
+		infomsg(" (%dx%d cells)", minf->xcharsz, minf->ycharsz);
 		break;
 	case VBE_TYPE_CGA:
-		fprintf(fp, " (CGA)");
+		infomsg(" (CGA)");
 		break;
 	case VBE_TYPE_UNCHAIN:
-		fprintf(fp, " (unchained-%d)", minf->num_planes);
+		infomsg(" (unchained-%d)", minf->num_planes);
 		break;
 	}
-	fprintf(fp, " %dpg", minf->num_img_pages);
+	infomsg(" %dpg", minf->num_img_pages);
 
 	if(minf->attr & VBE_ATTR_LFB) {
-		fprintf(fp, " lfb@%lx", (unsigned long)minf->fb_addr);
+		infomsg(" lfb@%lx", (unsigned long)minf->fb_addr);
 	} else {
-		fprintf(fp, " (%dk gran)", (int)minf->win_gran);
+		infomsg(" (%dk gran)", (int)minf->win_gran);
 	}
 
-	fprintf(fp, " [");
-	if(minf->attr & VBE_ATTR_AVAIL) fprintf(fp, " avail");
-	if(minf->attr & VBE_ATTR_OPTINFO) fprintf(fp, " opt");
-	if(minf->attr & VBE_ATTR_TTY) fprintf(fp, " tty");
-	if(minf->attr & VBE_ATTR_COLOR) fprintf(fp, " color");
-	if(minf->attr & VBE_ATTR_GFX) fprintf(fp, " gfx");
-	if(minf->attr & VBE_ATTR_NOTVGA) fprintf(fp, " non-vga");
-	if(minf->attr & VBE_ATTR_BANKED) fprintf(fp, " banked");
-	if(minf->attr & VBE_ATTR_LFB) fprintf(fp, " lfb");
-	if(minf->attr & VBE_ATTR_DBLSCAN) fprintf(fp, " dblscan");
-	if(minf->attr & VBE_ATTR_ILACE) fprintf(fp, " ilace");
-	if(minf->attr & VBE_ATTR_TRIPLEBUF) fprintf(fp, " trplbuf");
-	if(minf->attr & VBE_ATTR_STEREO) fprintf(fp, " stereo");
-	if(minf->attr & VBE_ATTR_STEREO_2FB) fprintf(fp, " stdual");
-	fprintf(fp, " ]\n");
-	fflush(fp);
+	infomsg(" [");
+	if(minf->attr & VBE_ATTR_AVAIL) infomsg(" avail");
+	if(minf->attr & VBE_ATTR_OPTINFO) infomsg(" opt");
+	if(minf->attr & VBE_ATTR_TTY) infomsg(" tty");
+	if(minf->attr & VBE_ATTR_COLOR) infomsg(" color");
+	if(minf->attr & VBE_ATTR_GFX) infomsg(" gfx");
+	if(minf->attr & VBE_ATTR_NOTVGA) infomsg(" non-vga");
+	if(minf->attr & VBE_ATTR_BANKED) infomsg(" banked");
+	if(minf->attr & VBE_ATTR_LFB) infomsg(" lfb");
+	if(minf->attr & VBE_ATTR_DBLSCAN) infomsg(" dblscan");
+	if(minf->attr & VBE_ATTR_ILACE) infomsg(" ilace");
+	if(minf->attr & VBE_ATTR_TRIPLEBUF) infomsg(" trplbuf");
+	if(minf->attr & VBE_ATTR_STEREO) infomsg(" stereo");
+	if(minf->attr & VBE_ATTR_STEREO_2FB) infomsg(" stdual");
+	infomsg(" ]\n");
+	/*fflush(fp);*/
 }
 
 int vbe_setmode(uint16_t mode)

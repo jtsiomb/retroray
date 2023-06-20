@@ -67,7 +67,7 @@ int app_init(void)
 	static rtk_draw_ops guigfx = {gui_fill, gui_blit, gui_drawtext, gui_textrect};
 
 #if !defined(NDEBUG) && defined(DBG_FPEXCEPT)
-	printf("floating point exceptions enabled\n");
+	infomsg("floating point exceptions enabled\n");
 	enable_fpexcept();
 #endif
 
@@ -164,7 +164,7 @@ void app_reshape(int x, int y)
 	int numpix = x * y;
 	int prev_numpix = win_width * win_height;
 
-	printf("reshape(%d, %d)\n", x, y);
+	dbgmsg("reshape(%d, %d)\n", x, y);
 
 	if(!framebuf || numpix > prev_numpix) {
 		void *tmp;

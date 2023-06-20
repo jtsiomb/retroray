@@ -350,6 +350,10 @@ static void mdl_keyb(int key, int press)
 			act_settool(TOOL_SCALE);
 			break;
 
+		case KEY_F6:
+			act_settool(TOOL_REND_AREA);
+			break;
+
 		case KEY_DEL:
 			act_rmobj();
 			break;

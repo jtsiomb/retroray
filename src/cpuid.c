@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "cpuid.h"
+#include "logger.h"
 
 static const char *cpuname(struct cpuid_info *cpu);
 static const char *cpuvendor(struct cpuid_info *cpu);
@@ -21,30 +22,32 @@ void print_cpuid(struct cpuid_info *cpu)
 		"?", "pcid", "dca", "sse41", "sse42", "x2apic", "movbe", "popcnt",
 		"?", "aes", "xsave", "osxsave", "avx", "f16c", "rdrand", "?"};
 
-	printf("CPU: %s - %s\n", cpuvendor(cpu), cpuname(cpu));
-	printf("features:\n   ");
+	infomsg("CPU: %s - %s\n", cpuvendor(cpu), cpuname(cpu));
+	infomsg("features:\n   ");
 	col = 3;
 	for(i=0; i<32; i++) {
 		if(cpu->feat & (1 << i)) {
 			len = strlen(featstr[i]) + 1;
 			if(col + len >= 80) {
-				fputs("\n   ", stdout);
+				infomsg("\n   ");
 				col = 3;
 			}
-			col += printf(" %s", featstr[i]);
+			infomsg(" %s", featstr[i]);
+			col += strlen(featstr[i]) + 1;
 		}
 	}
 	for(i=0; i<32; i++) {
 		if(cpu->feat2 & (1 << i)) {
 			len = strlen(feat2str[i]) + 1;
 			if(col + len >= 80) {
-				fputs("\n   ", stdout);
+				infomsg("\n   ");
 				col = 3;
 			}
-			col += printf(" %s", feat2str[i]);
+			infomsg(" %s", feat2str[i]);
+			col += strlen(feat2str[i]) + 1;
 		}
 	}
-	putchar('\n');
+	infomsg("\n");
 }
 
 static const char *fam4_models[16] = {

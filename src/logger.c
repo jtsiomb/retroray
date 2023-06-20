@@ -155,28 +155,10 @@ int add_log_callback(void (*cbfunc)(const char*, void*), void *cls)
 
 static void logmsg(int type, const char *fmt, va_list ap)
 {
-	static char *buf;
-	static int bufsz;
-	int i, ret, newsz;
-	char *tmp;
+	static char buf[2048];
+	int i;
 
-	while((ret = vsnprintf(buf, bufsz, fmt, ap)) > bufsz || ret < 0) {
-		if(ret > bufsz) {
-			newsz = ret + 1;
-		} else {
-			newsz = bufsz ? bufsz * 2 : 256;
-		}
-		if(!(tmp = realloc(buf, newsz))) {
-			if(buf) {
-				buf[bufsz - 1] = 0;
-			}
-			break;
-		}
-		buf = tmp;
-		bufsz = newsz;
-	}
-
-	if(!buf) return;
+	vsnprintf(buf, sizeof buf, fmt, ap);
 
 	for(i=0; i<num_outputs; i++) {
 		switch(outputs[i].type) {

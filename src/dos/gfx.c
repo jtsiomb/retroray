@@ -9,6 +9,7 @@
 #include "vga.h"
 #include "util.h"
 #include "cpuid.h"
+#include "logger.h"
 
 #ifdef __DJGPP__
 #define VMEM_PTR	((void*)(0xa0000 + __djgpp_conventional_base))
@@ -49,7 +50,7 @@ int init_video(void)
 	struct video_mode *vmptr;
 
 	if(vbe_info(&vbe) == -1) {
-		fprintf(stderr, "failed to retrieve VBE information\n");
+		errormsg("failed to retrieve VBE information\n");
 		return -1;
 	}
 	vbe_print_info(stdout, &vbe);
@@ -57,7 +58,7 @@ int init_video(void)
 	num_vmodes = 0;
 	max_modes = 64;
 	if(!(vmodes = malloc(max_modes * sizeof *vmodes))) {
-		fprintf(stderr, "failed to allocate video modes list\n");
+		errormsg("failed to allocate video modes list\n");
 		return -1;
 	}
 
@@ -72,7 +73,7 @@ int init_video(void)
 		if(num_vmodes >= max_modes) {
 			int newmax = max_modes ? (max_modes << 1) : 16;
 			if(!(vmptr = realloc(vmodes, newmax * sizeof *vmodes))) {
-				fprintf(stderr, "failed to grow video mode list (%d)\n", newmax);
+				errormsg("failed to grow video mode list (%d)\n", newmax);
 				free(vmodes);
 				return -1;
 			}
@@ -105,10 +106,10 @@ int init_video(void)
 		vmptr->max_pages = minf.num_img_pages;
 		vmptr->win_gran = minf.win_gran;
 
-		printf("%04x: ", vbe.modes[i]);
+		infomsg("%04x: ", vbe.modes[i]);
 		vbe_print_mode_info(stdout, &minf);
 	}
-	fflush(stdout);
+	/*fflush(stdout);*/
 
 	vbe_init_ver = VBE_VER_MAJOR(vbe.ver);
 	return 0;
@@ -152,7 +153,7 @@ int match_video_mode(int xsz, int ysz, int bpp)
 	}
 
 	if(best == -1) {
-		fprintf(stderr, "failed to find video mode %dx%d %d bpp)\n", xsz, ysz, bpp);
+		errormsg("failed to find video mode %dx%d %d bpp)\n", xsz, ysz, bpp);
 		return -1;
 	}
 	return best;
@@ -177,18 +178,18 @@ void *set_video_mode(int idx, int nbuf)
 
 	if(curmode == vm) return vpgaddr[0];
 
-	printf("setting video mode %x (%dx%d %d bpp)\n", (unsigned int)vm->mode,
+	infomsg("setting video mode %x (%dx%d %d bpp)\n", (unsigned int)vm->mode,
 			vm->xsz, vm->ysz, vm->bpp);
-	fflush(stdout);
+	/*fflush(stdout);*/
 
 	mode = vm->mode | VBE_MODE_LFB;
 	if(vbe_setmode(mode) == -1) {
+		infomsg("Warning: failed to get a linear framebuffer. falling back to banked mode\n");
 		mode = vm->mode;
 		if(vbe_setmode(mode) == -1) {
-			fprintf(stderr, "failed to set video mode %x\n", (unsigned int)vm->mode);
+			errormsg("failed to set video mode %x\n", (unsigned int)vm->mode);
 			return 0;
 		}
-		printf("Warning: failed to get a linear framebuffer. falling back to banked mode\n");
 	}
 
 	/* unmap previous video memory mapping, if there was one (switching modes) */
@@ -205,20 +206,20 @@ void *set_video_mode(int idx, int nbuf)
 	fbsize = pgcount * pgsize;
 
 	if(vm->bpp > 8) {
-		printf("rgb mask: %x %x %x\n", (unsigned int)vm->rmask,
+		infomsg("rgb mask: %x %x %x\n", (unsigned int)vm->rmask,
 				(unsigned int)vm->gmask, (unsigned int)vm->bmask);
-		printf("rgb shift: %d %d %d\n", vm->rshift, vm->gshift, vm->bshift);
+		infomsg("rgb shift: %d %d %d\n", vm->rshift, vm->gshift, vm->bshift);
 	}
-	printf("pgcount: %d, pgsize: %d, fbsize: %d\n", pgcount, pgsize, fbsize);
+	infomsg("pgcount: %d, pgsize: %d, fbsize: %d\n", pgcount, pgsize, fbsize);
 	if(vm->fb_addr) {
-		printf("phys addr: %p\n", (void*)vm->fb_addr);
+		infomsg("phys addr: %p\n", (void*)vm->fb_addr);
 	}
-	fflush(stdout);
+	/*fflush(stdout);*/
 
 	if(vm->fb_addr) {
 		vpgaddr[0] = (void*)dpmi_mmap(vm->fb_addr, fbsize);
 		if(!vpgaddr[0]) {
-			fprintf(stderr, "failed to map framebuffer (phys: %lx, size: %d)\n",
+			errormsg("failed to map framebuffer (phys: %lx, size: %d)\n",
 					(unsigned long)vm->fb_addr, fbsize);
 			set_text_mode();
 			return 0;
@@ -242,7 +243,7 @@ void *set_video_mode(int idx, int nbuf)
 		if(CPU_HAVE_MTRR) {
 			int cpl = get_cpl();
 			if(cpl > 0) {
-				fprintf(stderr, "Can't set framebuffer range to write-combining, running in ring %d\n", cpl);
+				errormsg("Can't set framebuffer range to write-combining, running in ring %d\n", cpl);
 			} else {
 				uint32_t len = (uint32_t)vbe.vmem_blk << 16;
 
@@ -251,7 +252,7 @@ void *set_video_mode(int idx, int nbuf)
 				 * mtrr
 				 */
 				if(!len || len > 0x10000000) {
-					printf("reported vmem too large or overflowed, using fbsize for wrcomb setup\n");
+					infomsg("reported vmem too large or overflowed, using fbsize for wrcomb setup\n");
 					len = fbsize;
 				}
 				print_mtrr();
@@ -277,20 +278,10 @@ void *set_video_mode(int idx, int nbuf)
 			vm->win_64k_step = 1 << vm->win_gran_shift;
 		}
 
-		printf("granularity: %dk (step: %d)\n", vm->win_gran, vm->win_64k_step);
+		infomsg("granularity: %dk (step: %d)\n", vm->win_gran, vm->win_64k_step);
 	}
 
-	/* allocate main memory framebuffer */
-	/*
-	if(demo_resizefb(vm->xsz, vm->ysz, vm->bpp) == -1) {
-		fprintf(stderr, "failed to allocate %dx%d (%d bpp) framebuffer\n", vm->xsz,
-				vm->ysz, vm->bpp);
-		set_text_mode();
-		return 0;
-	}
-	*/
-
-	fflush(stdout);
+	/*fflush(stdout);*/
 	return vpgaddr[0];
 }
 
@@ -426,7 +417,7 @@ static void enable_wrcomb(uint32_t addr, int len)
 	uint32_t def, mask;
 
 	if(len <= 0 || (addr | (uint32_t)len) & 0xfff) {
-		fprintf(stderr, "failed to enable write combining, unaligned range: %p/%x\n",
+		errormsg("failed to enable write combining, unaligned range: %p/%x\n",
 				(void*)addr, (unsigned int)len);
 		return;
 	}
@@ -434,10 +425,10 @@ static void enable_wrcomb(uint32_t addr, int len)
 	get_msr(MSR_MTRRCAP, &rlow, &rhigh);
 	num_ranges = rlow & 0xff;
 
-	printf("enable_wrcomb: addr=%p len=%x\n", (void*)addr, (unsigned int)len);
+	infomsg("enable_wrcomb: addr=%p len=%x\n", (void*)addr, (unsigned int)len);
 
 	if(!(rlow & MTRRCAP_HAVE_WC)) {
-		fprintf(stderr, "failed to enable write combining, processor doesn't support it\n");
+		errormsg("failed to enable write combining, processor doesn't support it\n");
 		return;
 	}
 
@@ -446,7 +437,7 @@ static void enable_wrcomb(uint32_t addr, int len)
 	}
 
 	if((mtrr = alloc_mtrr(num_ranges)) == -1) {
-		fprintf(stderr, "failed to enable write combining, no free MTRRs\n");
+		errormsg("failed to enable write combining, no free MTRRs\n");
 		return;
 	}
 
@@ -458,7 +449,7 @@ static void enable_wrcomb(uint32_t addr, int len)
 	mask |= mask >> 16;
 	mask = ~mask & 0xfffff000;
 
-	printf("  ... mask: %08x\n", (unsigned int)mask);
+	infomsg("  ... mask: %08x\n", (unsigned int)mask);
 
 	_disable();
 	get_msr(MSR_MTRRDEFTYPE, &def, &rhigh);
@@ -494,12 +485,12 @@ static void print_mtrr(void)
 		get_msr(MSR_MTRRMASK(i), &mask, &rhigh);
 
 		if(mask & MTRRMASK_VALID) {
-			printf("mtrr%d: base %p, mask %08x type %s\n", i, (void*)(base & 0xfffff000),
+			infomsg("mtrr%d: base %p, mask %08x type %s\n", i, (void*)(base & 0xfffff000),
 					(unsigned int)(mask & 0xfffff000), mtrr_type_name(base & 0xff));
 		} else {
-			printf("mtrr%d unused (%08x/%08x)\n", i, (unsigned int)base,
+			infomsg("mtrr%d unused (%08x/%08x)\n", i, (unsigned int)base,
 					(unsigned int)mask);
 		}
 	}
-	fflush(stdout);
+	/*fflush(stdout);*/
 }

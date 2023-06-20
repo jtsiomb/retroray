@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <errno.h>
 #include "options.h"
 #include "treestor.h"
+#include "logger.h"
 
 #define DEF_XRES		640
 #define DEF_YRES		480
@@ -43,7 +44,7 @@ int load_options(const char *fname)
 	if(!(cfg = ts_load(fname))) {
 		return -1;
 	}
-	printf("loaded config: %s\n", fname);
+	infomsg("loaded config: %s\n", fname);
 
 	opt.xres = ts_lookup_int(cfg, "options.video.xres", DEF_XRES);
 	opt.yres = ts_lookup_int(cfg, "options.video.yres", DEF_YRES);
