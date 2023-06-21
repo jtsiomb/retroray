@@ -7,7 +7,7 @@ alib = ..\..\treestor.lib
 !endif
 
 CC = wcc386
-CFLAGS = -d1 -5 -fp5 -otexan -zq -Iinclude
+CFLAGS = -d1 -4 -otexan -zq -Iinclude
 
 $(alib): $(obj)
 	%write objects.lbc $(obj)

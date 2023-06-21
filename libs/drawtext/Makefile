@@ -7,7 +7,7 @@ alib = ..\..\drawtext.lib
 !endif
 
 CC = wcc386
-CFLAGS = -d1 -5 -fp5 -otexan -zq -DNO_FREETYPE -DNO_OPENGL
+CFLAGS = -d1 -4 -otexan -zq -DNO_FREETYPE -DNO_OPENGL
 
 $(alib): $(obj)
 	%write objects.lbc $(obj)

@@ -51,7 +51,7 @@ alib = ..\..\imago.lib
 !endif
 
 #opt = -5 -fp5 -od
-opt = -5 -fp5 -otexan
+opt = -4 -otexan
 dbg = -d1
 def = -DPNG_NO_SNPRINTF
 

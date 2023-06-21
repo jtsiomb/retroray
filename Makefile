@@ -35,7 +35,7 @@ AS = nasm
 CC = wcc386
 LD = wlink
 ASFLAGS = -fobj
-CFLAGS = -d3 -5 -fp5 $(opt) $(def) -s -zq -bt=dos $(incpath)
+CFLAGS = -d3 -4 $(opt) $(def) -s -zq -bt=dos $(incpath)
 LDFLAGS = option map $(libpath) library { $(libs) }
 
 $(bin): cflags.occ $(obj) $(libs)
