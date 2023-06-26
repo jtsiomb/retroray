@@ -21,12 +21,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <time.h>
 #include "app.h"
 #include "keyb.h"
-#include "gfx.h"
+#include "vidsys.h"
 #include "cdpmi.h"
 #include "mouse.h"
 #include "logger.h"
 #include "options.h"
 #include "cpuid.h"
+#include "util.h"
 
 static INLINE int clamp(int x, int a, int b)
 {
@@ -66,14 +67,14 @@ int main(int argc, char **argv)
 
 	add_log_file("retroray.log");
 
-	if(init_video() == -1) {
+	if(vid_init() == -1) {
 		return 1;
 	}
 
-	if((vmidx = match_video_mode(640, 480, 32)) == -1) {
+	if((vmidx = vid_findmode(640, 480, 32)) == -1) {
 		return 1;
 	}
-	if(!(vmem = set_video_mode(vmidx, 1))) {
+	if(!(vmem = vid_setmode(vmidx))) {
 		return 1;
 	}
 
@@ -142,8 +143,7 @@ int main(int argc, char **argv)
 
 break_evloop:
 	app_shutdown();
-	set_text_mode();
-	cleanup_video();
+	vid_cleanup();
 	kb_shutdown();
 	return 0;
 }
@@ -160,7 +160,7 @@ void app_redisplay(void)
 
 void app_swap_buffers(void)
 {
-	blit_frame(framebuf, opt.vsync);
+	vid_blitfb(framebuf, opt.vsync);
 }
 
 void app_quit(void)
