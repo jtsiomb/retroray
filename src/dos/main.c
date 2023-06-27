@@ -18,6 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <time.h>
 #include "app.h"
 #include "keyb.h"
@@ -47,6 +48,7 @@ int main(int argc, char **argv)
 	int vmidx;
 	int mx, my, mdx, mdy, prev_mx, prev_my, bnstate, bndiff;
 	static int prev_bnstate;
+	char *env;
 
 #ifdef __DJGPP__
 	__djgpp_nearptr_enable();
@@ -65,7 +67,14 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	/*add_log_file("retroray.log");*/
+	if((env = getenv("RRLOG"))) {
+		if(tolower(env[0]) == 'c' && tolower(env[1]) == 'o' && tolower(env[2]) == 'm'
+				&& isdigit(env[3])) {
+			add_log_console(env);
+		} else {
+			add_log_file(env);
+		}
+	}
 
 	if(vid_init() == -1) {
 		return 1;
