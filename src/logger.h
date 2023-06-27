@@ -29,14 +29,14 @@ int add_log_stream(FILE *fp);
 int add_log_console(const char *devname);
 int add_log_callback(void (*cbfunc)(const char*, void*), void *cls);
 
-void errormsg(const char *fmt, ...);
-void warnmsg(const char *fmt, ...);
-void infomsg(const char *fmt, ...);
-void dbgmsg(const char *fmt, ...);
+int errormsg(const char *fmt, ...);
+int warnmsg(const char *fmt, ...);
+int infomsg(const char *fmt, ...);
+int dbgmsg(const char *fmt, ...);
 
-void verrormsg(const char *fmt, va_list ap);
-void vwarnmsg(const char *fmt, va_list ap);
-void vinfomsg(const char *fmt, va_list ap);
-void vdbgmsg(const char *fmt, va_list ap);
+int verrormsg(const char *fmt, va_list ap);
+int vwarnmsg(const char *fmt, va_list ap);
+int vinfomsg(const char *fmt, va_list ap);
+int vdbgmsg(const char *fmt, va_list ap);
 
 #endif	/* LOGGER_H_ */

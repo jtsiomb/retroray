@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <assert.h>
 #include "vidsys.h"
 #include "vga.h"
 #include "drv.h"
 #include "cdpmi.h"
+#include "logger.h"
 
 struct vid_driver *vid_drvlist[MAX_DRV];
 int vid_numdrv;
@@ -48,7 +50,7 @@ int vid_init(void)
 				int newsz = max_modes ? max_modes * 2 : 128;
 				void *tmp = realloc(modes, newsz * sizeof *modes);
 				if(!tmp) {
-					fprintf(stderr, "failed to allocate modes list\n");
+					errormsg("failed to allocate modes list\n");
 					return -1;
 				}
 				modes = tmp;
@@ -59,18 +61,18 @@ int vid_init(void)
 		}
 	}
 
-	printf("found %d modes:\n", num_modes);
+	infomsg("found %d modes:\n", num_modes);
 	for(i=0; i<num_modes; i+=2) {
 		vm = modes[i];
-		len = printf("[%4s] %04x: %dx%d %dbpp", vm->drv->name, vm->modeno,
+		len = infomsg("[%4s] %04x: %dx%d %dbpp", vm->drv->name, vm->modeno,
 				vm->width, vm->height, vm->bpp);
 		if(i + 1 >= num_modes) {
-			putchar('\n');
+			infomsg("\n");
 			break;
 		}
-		for(j=len; j<40; j++) putchar(' ');
+		for(j=len; j<40; j++) infomsg(" ");
 		vm = modes[i + 1];
-		printf("[%4s] %04x: %dx%d %dbpp\n", vm->drv->name, vm->modeno,
+		infomsg("[%4s] %04x: %dx%d %dbpp\n", vm->drv->name, vm->modeno,
 				vm->width, vm->height, vm->bpp);
 	}
 
@@ -195,7 +197,71 @@ void vid_getpal(int idx, int count, struct vid_color *col)
 	cur_mode->ops.getpal(idx, count, col);
 }
 
-void vid_blitfb(void *fb, int vsync)
+void vid_blitfb(void *fb, int pitch)
 {
-	cur_mode->ops.blitfb(fb, vsync);
+	if(pitch <= 0) {
+		pitch = cur_mode->pitch;
+	}
+	cur_mode->ops.blitfb(fb, pitch);
+}
+
+void vid_blitfb32(uint32_t *src, int pitch)
+{
+	int i, j, winpos, winleft;
+	unsigned char *dest;
+	uint16_t *dest16;
+
+	if(cur_mode->bpp == 32) {
+		vid_blitfb(src, pitch);
+		return;
+	}
+
+	if(pitch <= 0) {
+		pitch = cur_mode->width << 2;
+	}
+
+	if(vid_islinear()) {
+		winleft = INT_MAX;
+	} else {
+		winleft = 65536;/*cur_mode->win_size << 10;*/
+		winpos = 0;
+		vid_setwin(0, 0);
+	}
+
+	switch(cur_mode->bpp) {
+	case 8:
+		/* TODO */
+		break;
+
+	case 15:
+		/* TODO */
+		break;
+	case 16:
+		/* TODO */
+		break;
+
+	case 24:
+		dest = vid_vmem;
+		for(i=0; i<cur_mode->height; i++) {
+			for(j=0; j<cur_mode->width; j++) {
+				uint32_t pixel = src[j];
+				if(winleft <= 0) {
+					winpos += cur_mode->win_step;
+					vid_setwin(0, winpos);
+					winleft = 65536;/*cur_mode->win_size << 10;*/
+					dest = vid_vmem;
+				}
+				dest[0] = (pixel >> 16) & 0xff;
+				dest[1] = (pixel >> 8) & 0xff;
+				dest[2] = pixel & 0xff;
+				dest += 3;
+				winleft -= 3;
+			}
+			src = (uint32_t*)((char*)src + pitch);
+		}
+		break;
+
+	default:
+		break;
+	}
 }

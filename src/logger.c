@@ -153,12 +153,12 @@ int add_log_callback(void (*cbfunc)(const char*, void*), void *cls)
 #endif
 #endif
 
-static void logmsg(int type, const char *fmt, va_list ap)
+static int logmsg(int type, const char *fmt, va_list ap)
 {
 	static char buf[2048];
-	int i;
+	int i, len;
 
-	vsnprintf(buf, sizeof buf, fmt, ap);
+	len = vsnprintf(buf, sizeof buf, fmt, ap);
 
 	for(i=0; i<num_outputs; i++) {
 		switch(outputs[i].type) {
@@ -181,58 +181,68 @@ static void logmsg(int type, const char *fmt, va_list ap)
 			break;
 		}
 	}
+
+	return len;
 }
 
-void errormsg(const char *fmt, ...)
+int errormsg(const char *fmt, ...)
 {
+	int len;
 	va_list ap;
 	va_start(ap, fmt);
-	logmsg(LOG_ERR, fmt, ap);
+	len = logmsg(LOG_ERR, fmt, ap);
 	va_end(ap);
+	return len;
 }
 
-void warnmsg(const char *fmt, ...)
+int warnmsg(const char *fmt, ...)
 {
+	int len;
 	va_list ap;
 	va_start(ap, fmt);
-	logmsg(LOG_WARN, fmt, ap);
+	len = logmsg(LOG_WARN, fmt, ap);
 	va_end(ap);
+	return len;
 }
 
-void infomsg(const char *fmt, ...)
+int infomsg(const char *fmt, ...)
 {
+	int len;
 	va_list ap;
 	va_start(ap, fmt);
-	logmsg(LOG_INFO, fmt, ap);
+	len = logmsg(LOG_INFO, fmt, ap);
 	va_end(ap);
+	return len;
 }
 
-void dbgmsg(const char *fmt, ...)
+int dbgmsg(const char *fmt, ...)
 {
+	int len;
 	va_list ap;
 	va_start(ap, fmt);
-	logmsg(LOG_DBG, fmt, ap);
+	len = logmsg(LOG_DBG, fmt, ap);
 	va_end(ap);
+	return len;
 }
 
-void verrormsg(const char *fmt, va_list ap)
+int verrormsg(const char *fmt, va_list ap)
 {
-	logmsg(LOG_ERR, fmt, ap);
+	return logmsg(LOG_ERR, fmt, ap);
 }
 
-void vwarnmsg(const char *fmt, va_list ap)
+int vwarnmsg(const char *fmt, va_list ap)
 {
-	logmsg(LOG_ERR, fmt, ap);
+	return logmsg(LOG_ERR, fmt, ap);
 }
 
-void vinfomsg(const char *fmt, va_list ap)
+int vinfomsg(const char *fmt, va_list ap)
 {
-	logmsg(LOG_ERR, fmt, ap);
+	return logmsg(LOG_ERR, fmt, ap);
 }
 
-void vdbgmsg(const char *fmt, va_list ap)
+int vdbgmsg(const char *fmt, va_list ap)
 {
-	logmsg(LOG_ERR, fmt, ap);
+	return logmsg(LOG_ERR, fmt, ap);
 }
 
 

@@ -4,6 +4,7 @@
 #include "vidsys.h"
 #include "drv.h"
 #include "vga.h"
+#include "logger.h"
 
 static int init(void);
 static void cleanup(void);

@@ -73,7 +73,7 @@ static unsigned char keystate[512];
 void kb_init(void)
 {
 	if(DONE_INIT) {
-		fprintf(stderr, "keyboard driver already initialized!\n");
+		errormsg("keyboard driver already initialized!\n");
 		return;
 	}
 

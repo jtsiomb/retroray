@@ -72,6 +72,7 @@ int vid_isbanked(void);
 void vid_setpal(int idx, int count, const struct vid_color *col);
 void vid_getpal(int idx, int count, struct vid_color *col);
 
-void vid_blitfb(void *fb, int vsync);
+void vid_blitfb(void *fb, int pitch);
+void vid_blitfb32(uint32_t *fb, int pitch);
 
 #endif	/* VIDSYS_VIDEO_H_ */

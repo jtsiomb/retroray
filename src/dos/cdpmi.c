@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <i86.h>
 #include "cdpmi.h"
+#include "logger.h"
 
 #define LOWBUF_SIZE		8192
 #define RMSTACK_SIZE	4096
@@ -11,7 +12,7 @@ static uint16_t lowbuf_sel, lowbuf_seg;
 int dpmi_init(void)
 {
 	if(!(lowbuf_seg = dpmi_alloc(LOWBUF_SIZE >> 4, &lowbuf_sel))) {
-		fprintf(stderr, "DPMI init failed to allocate low memory buffer\n");
+		errormsg("DPMI init failed to allocate low memory buffer\n");
 		return -1;
 	}
 	lowbuf = (char*)((intptr_t)lowbuf_seg << 4);

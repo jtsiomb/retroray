@@ -6,6 +6,7 @@
 #include "vbe.h"
 #include "vga.h"
 #include "cdpmi.h"
+#include "logger.h"
 
 #define farptr_to_linear(rmaddr) \
 	((((intptr_t)(rmaddr) >> 12) & 0xffff0) + ((intptr_t)(rmaddr) & 0xffff))
@@ -68,20 +69,20 @@ static int init(void)
 	regs.es = bufseg;
 	dpmi_rmint(0x10, &regs);
 	if((regs.eax & 0xffff) != 0x4f || memcmp(vbe->sig, "VESA", 4) != 0) {
-		fprintf(stderr, "failed to get VBE controller information\n");
+		errormsg("failed to get VBE controller information\n");
 		return -1;
 	}
 
 	vbe_ver = vbe->ver;
 
-	printf("Found VBE %d.%d\n", VBE_VER_MAJOR(vbe_ver), VBE_VER_MINOR(vbe_ver));
-	printf("OEM: %s\n", (char*)farptr_to_linear(vbe->oem_name));
+	infomsg("Found VBE %d.%d\n", VBE_VER_MAJOR(vbe_ver), VBE_VER_MINOR(vbe_ver));
+	infomsg("OEM: %s\n", (char*)farptr_to_linear(vbe->oem_name));
 	if(vbe_ver >= 0x0200) {
-		printf("%s - %s (%s)\n", (char*)farptr_to_linear(vbe->vendor),
+		infomsg("%s - %s (%s)\n", (char*)farptr_to_linear(vbe->vendor),
 				(char*)farptr_to_linear(vbe->product),
 				(char*)farptr_to_linear(vbe->revstr));
 	}
-	printf("Video RAM: %s\n", memsize_str((long)vbe->vmem_blk * 65536));
+	infomsg("Video RAM: %s\n", memsize_str((long)vbe->vmem_blk * 65536));
 
 	vbe_modelist = (uint16_t*)farptr_to_linear(vbe->modelist_addr);
 	count = 0;
@@ -91,7 +92,7 @@ static int init(void)
 	}
 
 	if(!(modelist = malloc(count * sizeof *modelist))) {
-		fprintf(stderr, "failed to allocate mode list\n");
+		errormsg("failed to allocate mode list\n");
 		return -1;
 	}
 	for(i=0; i<count; i++) {
@@ -99,7 +100,7 @@ static int init(void)
 	}
 
 	if(!(drv.modes = malloc(count * sizeof *drv.modes))) {
-		fprintf(stderr, "failed to allocate mode list\n");
+		errormsg("failed to allocate mode list\n");
 		free(modelist);
 		return -1;
 	}
@@ -356,14 +357,16 @@ static void blitfb_lfb(void *fb, int pitch)
 
 static void blitfb_banked(void *fb, int pitch)
 {
-	int sz, offs, pending;
+	int sz, offs, pending, winsz;
 	unsigned char *pptr = fb;
+
+	winsz = cur_mi->win_size << 10;
 
 	/* assume initial window offset at 0 */
 	offs = 0;
 	pending = cur_pgsize;
 	while(pending > 0) {
-		sz = pending > 65536 ? 65536 : pending;
+		sz = pending > winsz ? winsz : pending;
 		memcpy((void*)0xa0000, pptr, sz);
 		pptr += sz;
 		pending -= sz;

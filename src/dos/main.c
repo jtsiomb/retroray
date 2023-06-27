@@ -65,7 +65,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	add_log_file("retroray.log");
+	/*add_log_file("retroray.log");*/
 
 	if(vid_init() == -1) {
 		return 1;
@@ -160,7 +160,10 @@ void app_redisplay(void)
 
 void app_swap_buffers(void)
 {
-	vid_blitfb(framebuf, opt.vsync);
+	if(opt.vsync) {
+		vid_vsync();
+	}
+	vid_blitfb32(framebuf, 0);
 }
 
 void app_quit(void)
