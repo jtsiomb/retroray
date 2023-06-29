@@ -90,24 +90,14 @@ void dtx_substring(const char *str, int start, int end)
 void dtx_printf(const char *fmt, ...)
 {
 	va_list ap;
-	int buf_size;
-	char *buf, tmp;
+	static char buf[1024];
 
 	if(!dtx_font) {
 		return;
 	}
 
 	va_start(ap, fmt);
-	buf_size = vsnprintf(&tmp, 0, fmt, ap);
-	va_end(ap);
-
-	if(buf_size == -1) {
-		buf_size = 512;
-	}
-
-	buf = alloca(buf_size + 1);
-	va_start(ap, fmt);
-	vsnprintf(buf, buf_size + 1, fmt, ap);
+	vsnprintf(buf, sizeof buf, fmt, ap);
 	va_end(ap);
 
 	dtx_string(buf);
