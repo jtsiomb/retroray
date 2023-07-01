@@ -207,7 +207,7 @@ void vid_blitfb(void *fb, int pitch)
 
 void vid_blitfb32(uint32_t *src, int pitch)
 {
-	int i, j, winpos, winleft;
+	int i, j, winpos, winleft, endskip;
 	unsigned char *dest;
 	uint16_t *dest16;
 
@@ -223,7 +223,7 @@ void vid_blitfb32(uint32_t *src, int pitch)
 	if(vid_islinear()) {
 		winleft = INT_MAX;
 	} else {
-		winleft = 65536;/*cur_mode->win_size << 10;*/
+		winleft = cur_mode->win_size << 10;
 		winpos = 0;
 		vid_setwin(0, 0);
 	}
@@ -242,22 +242,26 @@ void vid_blitfb32(uint32_t *src, int pitch)
 
 	case 24:
 		dest = vid_vmem;
+		endskip = cur_mode->pitch - cur_mode->width * 3;
+
 		for(i=0; i<cur_mode->height; i++) {
 			for(j=0; j<cur_mode->width; j++) {
 				uint32_t pixel = src[j];
 				if(winleft <= 0) {
 					winpos += cur_mode->win_step;
 					vid_setwin(0, winpos);
-					winleft = 65536;/*cur_mode->win_size << 10;*/
+					winleft = cur_mode->win_size << 10;
 					dest = vid_vmem;
 				}
-				dest[0] = (pixel >> 16) & 0xff;
+				dest[0] = pixel & 0xff;
 				dest[1] = (pixel >> 8) & 0xff;
-				dest[2] = pixel & 0xff;
+				dest[2] = (pixel >> 16) & 0xff;
 				dest += 3;
 				winleft -= 3;
 			}
 			src = (uint32_t*)((char*)src + pitch);
+			dest += endskip;
+			winleft -= endskip;
 		}
 		break;
 

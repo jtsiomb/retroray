@@ -20,6 +20,7 @@ static const char *memsize_str(long sz);
 static int get_mode_info(int mode, struct vbe_mode_info *mi);
 static int conv_vbeinfo(int mode, struct vid_modeinfo *mi, struct vbe_mode_info *vbemi);
 static unsigned int calc_mask(int nbits, int pos);
+static void print_mode_info(int mode, struct vid_modeinfo *mi);
 
 static void pack(uint32_t *pix, int r, int g, int b);
 static void unpack(uint32_t pix, int *r, int *g, int *b);
@@ -170,6 +171,8 @@ retry:
 	} else {
 		minf->ops.blitfb = blitfb_banked;
 	}
+
+	print_mode_info(mode, minf);
 	return 0;
 }
 
@@ -319,6 +322,28 @@ static unsigned int calc_mask(int nbits, int pos)
 		mask = (mask << 1) | 1;
 	}
 	return mask << pos;
+}
+
+static void print_mode_info(int mode, struct vid_modeinfo *mi)
+{
+	infomsg("VBE mode %04x\n", mode);
+	infomsg("  %dx%d %d bpp (%d colors)\n", mi->width, mi->height,
+		   mi->bpp, mi->ncolors);
+	infomsg("  pitch: %d bytes, %d vmem pages\n", mi->pitch, mi->pages);
+
+	if(mi->bpp > 8) {
+		infomsg("  RGB mask %06x %06x %06x (pos: %d %d %d)\n", (unsigned int)mi->rmask,
+				(unsigned int)mi->gmask, (unsigned int)mi->bmask, mi->rshift,
+				mi->gshift, mi->bshift);
+	}
+
+	if(mode & VBE_MODE_LFB) {
+		infomsg("  LFB address %xh, size: %d\n", (unsigned int)mi->vmem_addr,
+				(int)mi->vmem_size);
+	} else {
+		infomsg("  banked window %d kb, granularity: %d kb, step: %d\n", mi->win_size,
+				mi->win_gran, mi->win_step);
+	}
 }
 
 
