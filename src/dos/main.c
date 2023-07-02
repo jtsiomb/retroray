@@ -44,6 +44,8 @@ static uint32_t *vmem;
 static int quit, disp_pending, dirty_valid;
 static rtk_rect dirty;
 static int mx, my;
+static rtk_rect rband;
+
 
 int main(int argc, char **argv)
 {
@@ -231,6 +233,18 @@ void app_vsync(int vsync)
 {
 }
 
+void app_rband(int x, int y, int w, int h)
+{
+	if(!(w | h)) {
+		w = h = 0;
+	}
+
+	rband.x = x;
+	rband.y = y;
+	rband.width = w;
+	rband.height = h;
+}
+
 static void draw_cursor(int x, int y)
 {
 	int i;
@@ -243,4 +257,29 @@ static void draw_cursor(int x, int y)
 		if(x > offs) fbptr[-offs] ^= 0xffffff;
 		if(x < win_width - offs - 1) fbptr[offs] ^= 0xffffff;
 	}
+}
+
+static void draw_rband(void)
+{
+	int i;
+	rtk_rect rect;
+	uint32_t *fbptr, *bptr;
+
+	rect = rband;
+	fix_rect(&rect);
+
+	fbptr = framebuf + rect.y * win_width + rect.x;
+	bptr = fbptr + win_width * (rect.height - 1);
+
+	for(i=0; i<rect.width; i++) {
+		fbptr[i] ^= 0xffffff;
+		bptr[i] ^= 0xffffff;
+	}
+	fbptr += win_width;
+	for(i=0; i<rect.height-2; i++) {
+		fbptr[0] ^= 0xffffff;
+		fbptr[rect.width - 1] ^= 0xffffff;
+		fbptr += win_width;
+	}
+	app_redisplay(rect.x, rect.y, rect.width, rect.height);
 }

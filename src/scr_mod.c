@@ -253,7 +253,6 @@ static void mdl_display(void)
 	if(rendering) {
 		if(!render(framebuf)) {
 			rendering = 0;
-			vpdirty = 1;
 		}
 		app_redisplay(rendrect.x, rendrect.y, rendrect.width, rendrect.height);
 	}
@@ -584,30 +583,6 @@ static void fix_rect(rtk_rect *rect)
 	rect->height = h;
 }
 
-static void draw_rband(void)
-{
-	int i;
-	rtk_rect rect;
-	uint32_t *fbptr, *bptr;
-
-	rect = rband;
-	fix_rect(&rect);
-
-	fbptr = framebuf + rect.y * win_width + rect.x;
-	bptr = fbptr + win_width * (rect.height - 1);
-
-	for(i=0; i<rect.width; i++) {
-		fbptr[i] ^= 0xffffff;
-		bptr[i] ^= 0xffffff;
-	}
-	fbptr += win_width;
-	for(i=0; i<rect.height-2; i++) {
-		fbptr[0] ^= 0xffffff;
-		fbptr[rect.width - 1] ^= 0xffffff;
-		fbptr += win_width;
-	}
-	app_redisplay(rect.x, rect.y, rect.width, rect.height);
-}
 
 void primray(cgm_ray *ray, int x, int y)
 {
