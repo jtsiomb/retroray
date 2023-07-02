@@ -2,6 +2,7 @@
 #include <string.h>
 #include "imago2.h"
 #include "rtk_impl.h"
+#include "app.h"
 
 static rtk_draw_ops gfx;
 
@@ -10,6 +11,8 @@ static void draw_window(rtk_widget *w);
 static void draw_button(rtk_widget *w);
 static void draw_checkbox(rtk_widget *w);
 static void draw_separator(rtk_widget *w);
+
+static void invalfb(rtk_widget *w);
 
 
 static rtk_widget *hover, *focused, *pressed;
@@ -56,7 +59,7 @@ void rtk_move(rtk_widget *w, int x, int y)
 {
 	w->any.x = x;
 	w->any.y = y;
-	w->any.flags |= GEOMCHG;
+	w->any.flags |= GEOMCHG | DIRTY;
 }
 
 void rtk_pos(rtk_widget *w, int *xptr, int *yptr)
@@ -69,13 +72,21 @@ void rtk_resize(rtk_widget *w, int xsz, int ysz)
 {
 	w->any.width = xsz;
 	w->any.height = ysz;
-	w->any.flags |= GEOMCHG;
+	w->any.flags |= GEOMCHG | DIRTY;
 }
 
 void rtk_size(rtk_widget *w, int *xptr, int *yptr)
 {
 	*xptr = w->any.width;
 	*yptr = w->any.height;
+}
+
+void rtk_get_rect(rtk_widget *w, rtk_rect *r)
+{
+	r->x = w->any.x;
+	r->y = w->any.y;
+	r->width = w->any.width;
+	r->height = w->any.height;
 }
 
 int rtk_set_text(rtk_widget *w, const char *str)
@@ -89,6 +100,7 @@ int rtk_set_text(rtk_widget *w, const char *str)
 
 	calc_widget_rect(w, &rect);
 	rtk_resize(w, rect.width, rect.height);
+	rtk_invalidate(w);
 	return 0;
 }
 
@@ -100,6 +112,7 @@ const char *rtk_get_text(rtk_widget *w)
 void rtk_set_value(rtk_widget *w, int val)
 {
 	w->any.value = val;
+	rtk_invalidate(w);
 }
 
 int rtk_get_value(rtk_widget *w)
@@ -111,6 +124,16 @@ void rtk_set_callback(rtk_widget *w, rtk_callback cbfunc, void *cls)
 {
 	w->any.cbfunc = cbfunc;
 	w->any.cbcls = cls;
+}
+
+void rtk_invalidate(rtk_widget *w)
+{
+	w->any.flags |= DIRTY;
+}
+
+void rtk_validate(rtk_widget *w)
+{
+	w->any.flags &= ~DIRTY;
 }
 
 void rtk_win_layout(rtk_widget *w, int layout)
@@ -131,6 +154,7 @@ void rtk_win_clear(rtk_widget *w)
 	}
 
 	w->win.clist = w->win.ctail = 0;
+	rtk_invalidate(w);
 }
 
 void rtk_win_add(rtk_widget *par, rtk_widget *child)
@@ -154,6 +178,7 @@ void rtk_win_add(rtk_widget *par, rtk_widget *child)
 	child->any.next = 0;
 
 	child->any.par = par;
+	rtk_invalidate(par);
 }
 
 void rtk_win_rm(rtk_widget *par, rtk_widget *child)
@@ -175,6 +200,7 @@ void rtk_win_rm(rtk_widget *par, rtk_widget *child)
 		prev = prev->any.next;
 	}
 	par->win.clist = dummy.any.next;
+	rtk_invalidate(par);
 }
 
 int rtk_win_has(rtk_widget *par, rtk_widget *child)
@@ -198,6 +224,7 @@ void rtk_bn_mode(rtk_widget *w, int mode)
 {
 	RTK_ASSERT_TYPE(w, RTK_BUTTON);
 	w->bn.mode = mode;
+	rtk_invalidate(w);
 }
 
 void rtk_bn_set_icon(rtk_widget *w, rtk_icon *icon)
@@ -209,6 +236,7 @@ void rtk_bn_set_icon(rtk_widget *w, rtk_icon *icon)
 
 	calc_widget_rect(w, &rect);
 	rtk_resize(w, rect.width, rect.height);
+	rtk_invalidate(w);
 }
 
 rtk_icon *rtk_bn_get_icon(rtk_widget *w)
@@ -460,13 +488,22 @@ static void calc_layout(rtk_widget *w)
 	w->any.width = rect.width;
 	w->any.height = rect.height;
 
-	w->any.flags = (w->any.flags & ~GEOMCHG) | DIRTY;
+	w->any.flags &= ~GEOMCHG;
+	rtk_invalidate(w);
 }
 
 void rtk_draw_widget(rtk_widget *w)
 {
+	int dirty;
+
 	if(need_relayout(w)) {
+		dbgmsg("calc layout %s\n", w->any.text ? w->any.text : "?");
 		calc_layout(w);
+	}
+
+	dirty = w->any.flags & DIRTY;
+	if(!dirty && w->any.type != RTK_WIN) {
+		return;
 	}
 
 	switch(w->any.type) {
@@ -490,7 +527,10 @@ void rtk_draw_widget(rtk_widget *w)
 		break;
 	}
 
-	w->any.flags &= ~DIRTY;
+	if(dirty) {
+		rtk_validate(w);
+		invalfb(w);
+	}
 }
 
 static void widget_rect(rtk_widget *w, rtk_rect *rect)
@@ -576,12 +616,18 @@ static void draw_window(rtk_widget *w)
 {
 	rtk_rect rect;
 	rtk_widget *c;
+	int win_dirty = w->any.flags & DIRTY;
 
-	widget_rect(w, &rect);
-	gfx.fill(&rect, COL_BG);
+	if(win_dirty) {
+		widget_rect(w, &rect);
+		gfx.fill(&rect, COL_BG);
+	}
 
 	c = w->win.clist;
 	while(c) {
+		if(win_dirty) {
+			rtk_invalidate(c);
+		}
 		rtk_draw_widget(c);
 		c = c->any.next;
 	}
@@ -666,10 +712,20 @@ static void sethover(rtk_widget *w)
 
 	if(hover) {
 		hover->any.flags &= ~HOVER;
+
+		if(hover->type != RTK_WIN) {
+			rtk_invalidate(hover);
+			invalfb(hover);
+		}
 	}
 	hover = w;
 	if(w) {
 		w->any.flags |= HOVER;
+
+		if(w->type != RTK_WIN) {
+			rtk_invalidate(w);
+			invalfb(w);
+		}
 	}
 }
 
@@ -679,10 +735,14 @@ static void setpress(rtk_widget *w)
 
 	if(pressed) {
 		pressed->any.flags &= ~PRESS;
+		rtk_invalidate(pressed);
+		invalfb(pressed);
 	}
 	pressed = w;
 	if(w) {
 		w->any.flags |= PRESS;
+		rtk_invalidate(w);
+		invalfb(w);
 	}
 }
 
@@ -697,6 +757,8 @@ static void click(rtk_widget *w, int x, int y)
 		if(w->any.cbfunc) {
 			w->any.cbfunc(w, w->any.cbcls);
 		}
+		rtk_invalidate(w);
+		invalfb(w);
 		break;
 
 	default:
@@ -754,4 +816,30 @@ int rtk_input_mmotion(rtk_widget *w, int x, int y)
 		return 1;
 	}
 	return 0;
+}
+
+
+void rtk_rect_union(rtk_rect *a, const rtk_rect *b)
+{
+	int x0, y0, x1, y1;
+
+	x0 = a->x;
+	y0 = a->y;
+	x1 = a->x + a->width;
+	y1 = a->y + a->height;
+
+	if(b->x < x0) x0 = b->x;
+	if(b->y < y0) y0 = b->y;
+	if(b->x + b->width > x1) x1 = b->x + b->width;
+	if(b->y + b->height > y1) y1 = b->y + b->height;
+
+	a->x = x0;
+	a->y = y0;
+	a->width = x1 - x0;
+	a->height = y1 - y0;
+}
+
+static void invalfb(rtk_widget *w)
+{
+	app_redisplay(w->any.x, w->any.y, w->any.width, w->any.height);
 }

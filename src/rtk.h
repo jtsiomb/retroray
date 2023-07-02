@@ -57,6 +57,7 @@ void rtk_move(rtk_widget *w, int x, int y);
 void rtk_pos(rtk_widget *w, int *xptr, int *yptr);
 void rtk_resize(rtk_widget *w, int xsz, int ysz);
 void rtk_size(rtk_widget *w, int *xptr, int *yptr);
+void rtk_get_rect(rtk_widget *w, rtk_rect *r);
 
 int rtk_set_text(rtk_widget *w, const char *str);
 const char *rtk_get_text(rtk_widget *w);
@@ -65,6 +66,9 @@ void rtk_set_value(rtk_widget *w, int val);
 int rtk_get_value(rtk_widget *w);
 
 void rtk_set_callback(rtk_widget *w, rtk_callback cbfunc, void *cls);
+
+void rtk_invalidate(rtk_widget *w);
+void rtk_validate(rtk_widget *w);
 
 /* window functions */
 void rtk_win_layout(rtk_widget *w, int layout);
@@ -99,5 +103,8 @@ void rtk_draw_widget(rtk_widget *w);
 int rtk_input_key(rtk_widget *w, int key, int press);
 int rtk_input_mbutton(rtk_widget *w, int bn, int press, int x, int y);
 int rtk_input_mmotion(rtk_widget *w, int x, int y);
+
+/* misc */
+void rtk_rect_union(rtk_rect *a, const rtk_rect *b);
 
 #endif	/* RTK_H_ */

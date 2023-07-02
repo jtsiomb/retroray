@@ -197,12 +197,33 @@ void vid_getpal(int idx, int count, struct vid_color *col)
 	cur_mode->ops.getpal(idx, count, col);
 }
 
+void vid_blit(int x, int y, int w, int h, void *src, int pitch)
+{
+	if(pitch <= 0) {
+		pitch = cur_mode->width << 2;
+	}
+	cur_mode->ops.blit(x, y, w, h, src, pitch);
+}
+
 void vid_blitfb(void *fb, int pitch)
 {
 	if(pitch <= 0) {
-		pitch = cur_mode->pitch;
+		pitch = cur_mode->width << 2;
 	}
 	cur_mode->ops.blitfb(fb, pitch);
+}
+
+void vid_blit32(int x, int y, int w, int h, uint32_t *src, int pitch)
+{
+	if(cur_mode->bpp == 32) {
+		vid_blit(x, y, w, h, src, pitch);
+		return;
+	}
+
+	if(pitch <= 0) {
+		pitch = cur_mode->width << 2;
+	}
+	/* XXX */
 }
 
 void vid_blitfb32(uint32_t *src, int pitch)

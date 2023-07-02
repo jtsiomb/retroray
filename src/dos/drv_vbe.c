@@ -25,6 +25,8 @@ static void print_mode_info(int mode, struct vid_modeinfo *mi);
 static void pack(uint32_t *pix, int r, int g, int b);
 static void unpack(uint32_t pix, int *r, int *g, int *b);
 static void clear(uint32_t color);
+static void blit_lfb(int x, int y, int w, int h, void *fb, int pitch);
+static void blit_banked(int x, int y, int w, int h, void *fb, int pitch);
 static void blitfb_lfb(void *fb, int pitch);
 static void blitfb_banked(void *fb, int pitch);
 static void flip(int vsync);
@@ -167,8 +169,10 @@ retry:
 	cur_pgsize = minf->height * minf->pitch;
 
 	if(mode & VBE_MODE_LFB) {
+		minf->ops.blit = blit_lfb;
 		minf->ops.blitfb = blitfb_lfb;
 	} else {
+		minf->ops.blit = blit_banked;
 		minf->ops.blitfb = blitfb_banked;
 	}
 
@@ -308,6 +312,7 @@ static int conv_vbeinfo(int mode, struct vid_modeinfo *mi, struct vbe_mode_info 
 	mi->ops.getpal = vga_getpal;
 	mi->ops.vsync = vid_vsync;
 	mi->ops.clear = clear;
+	mi->ops.blit = 0;
 	mi->ops.blitfb = 0;
 	mi->ops.flip = flip;
 	return 0;
@@ -365,16 +370,44 @@ static void clear(uint32_t color)
 {
 }
 
+static void blit_lfb(int x, int y, int w, int h, void *fb, int pitch)
+{
+	int i, pixsz, spansz;
+	unsigned char *dest, *src;
+
+	dbgmsg("blit: %d,%d (%dx%d)\n", x, y, w, h);
+
+	pixsz = (cur_mi->bpp + 7) >> 3;
+	spansz = w * pixsz;
+
+	dest = (char*)vid_vmem + cur_mi->pitch * y + x * pixsz;
+	src = fb;
+
+	for(i=0; i<h; i++) {
+		memcpy(dest, src, spansz);
+		dest += cur_mi->pitch;
+		src += pitch;
+	}
+}
+
+static void blit_banked(int x, int y, int w, int h, void *fb, int pitch)
+{
+	abort();
+}
+
 static void blitfb_lfb(void *fb, int pitch)
 {
-	int i;
+	int i, pixsz, spansz;
 	unsigned char *dest, *src;
+
+	pixsz = (cur_mi->bpp + 7) >> 3;
+	spansz = cur_mi->width * pixsz;
 
 	dest = vid_vmem;
 	src = fb;
 
 	for(i=0; i<cur_mi->height; i++) {
-		memcpy(dest, src, cur_mi->pitch);
+		memcpy(dest, src, spansz);
 		dest += cur_mi->pitch;
 		src += pitch;
 	}

@@ -29,6 +29,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "options.h"
 #include "cpuid.h"
 #include "util.h"
+#include "rtk.h"
 
 static INLINE int clamp(int x, int a, int b)
 {
@@ -40,13 +41,15 @@ static INLINE int clamp(int x, int a, int b)
 static void draw_cursor(int x, int y);
 
 static uint32_t *vmem;
-static int quit, disp_pending;
+static int quit, disp_pending, dirty_valid;
+static rtk_rect dirty;
+static int mx, my;
 
 int main(int argc, char **argv)
 {
 	int i;
 	int vmidx;
-	int mx, my, mdx, mdy, prev_mx, prev_my, bnstate, bndiff;
+	int mdx, mdy, prev_mx, prev_my, bnstate, bndiff;
 	static int prev_bnstate;
 	char *env;
 
@@ -94,7 +97,7 @@ int main(int argc, char **argv)
 	if(app_init() == -1) {
 		goto break_evloop;
 	}
-	disp_pending = 1;
+	app_redisplay(0, 0, 0, 0);
 
 	app_reshape(win_width, win_height);
 	mx = win_width / 2;
@@ -115,7 +118,11 @@ int main(int argc, char **argv)
 		}
 
 		while((key = kb_getkey()) != -1) {
-			app_keyboard(key, 1);
+			if(key == 'r' && (modkeys & KEY_MOD_CTRL)) {
+				app_redisplay(0, 0, 0, 0);
+			} else {
+				app_keyboard(key, 1);
+			}
 			if(quit) goto break_evloop;
 		}
 
@@ -144,10 +151,10 @@ int main(int argc, char **argv)
 			app_display();
 		}
 
+		app_swap_buffers();
+
 		draw_cursor(prev_mx, prev_my);
 		draw_cursor(mx, my);
-
-		app_swap_buffers();
 	}
 
 break_evloop:
@@ -162,9 +169,28 @@ long app_getmsec(void)
 	return time(0) * 1000;	/* TODO */
 }
 
-void app_redisplay(void)
+void app_redisplay(int x, int y, int w, int h)
 {
+	rtk_rect r;
+
+	if((w | h) == 0) {
+		r.x = r.y = 0;
+		r.width = win_width;
+		r.height = win_height;
+	} else {
+		r.x = x;
+		r.y = y;
+		r.width = w;
+		r.height = h;
+	}
+
+	if(dirty_valid) {
+		rtk_rect_union(&dirty, &r);
+	} else {
+		dirty = r;
+	}
 	disp_pending = 1;
+	dirty_valid = 1;
 }
 
 void app_swap_buffers(void)
@@ -172,7 +198,20 @@ void app_swap_buffers(void)
 	if(opt.vsync) {
 		vid_vsync();
 	}
-	vid_blitfb32(framebuf, 0);
+	if(!dirty_valid) return;
+	if(dirty.width < win_width || dirty.height < win_height) {
+		uint32_t *src = framebuf + dirty.y * win_width + dirty.x;
+		vid_blit32(dirty.x, dirty.y, dirty.width, dirty.height, src, 0);
+
+		if(mx >= dirty.x && my >= dirty.y && mx < dirty.x + dirty.width && my < dirty.y + dirty.height) {
+			draw_cursor(mx, my);
+		}
+	} else {
+		vid_blitfb32(framebuf, 0);
+		draw_cursor(mx, my);
+	}
+
+	dirty_valid = 0;
 }
 
 void app_quit(void)
@@ -195,7 +234,7 @@ void app_vsync(int vsync)
 static void draw_cursor(int x, int y)
 {
 	int i;
-	uint32_t *fbptr = framebuf + y * win_width + x;
+	uint32_t *fbptr = vmem + y * win_width + x;
 
 	for(i=0; i<3; i++) {
 		int offs = i + 1;

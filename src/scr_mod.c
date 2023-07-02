@@ -68,6 +68,8 @@ enum {
 };
 static rtk_widget *tools[NUM_TOOLS];
 
+static int vpdirty;
+
 
 static int mdl_init(void);
 static void mdl_destroy(void);
@@ -91,6 +93,8 @@ static void act_rmobj(void);
 static void fix_rect(rtk_rect *rect);
 static void draw_rband(void);
 static void moveobj(struct object *obj, int px0, int py0, int px1, int py1);
+
+static void inval_vport(void);
 
 
 struct app_screen scr_model = {
@@ -119,6 +123,7 @@ static rtk_rect rband;
 static int rband_valid;
 
 static int rendering;
+static rtk_rect rendrect;
 
 
 static int mdl_init(void)
@@ -170,6 +175,8 @@ static int mdl_init(void)
 		return -1;
 	}
 	gen_sphere(mesh_sph, 1.0f, 16, 8, 1.0f, 1.0f);
+
+	vpdirty = 1;
 	return 0;
 }
 
@@ -199,57 +206,60 @@ static void mdl_stop(void)
 static void mdl_display(void)
 {
 	int i, num;
-	static int frameno;
 
-	gaw_clear(GAW_COLORBUF | GAW_DEPTHBUF);
+	/* viewport */
+	if(vpdirty) {
+		gaw_clear(GAW_COLORBUF | GAW_DEPTHBUF);
 
-	rtk_draw_widget(toolbar);
+		gaw_matrix_mode(GAW_MODELVIEW);
+		gaw_load_identity();
+		gaw_translate(0, 0, -cam_dist);
+		gaw_rotate(cam_phi, 1, 0, 0);
+		gaw_rotate(cam_theta, 0, 1, 0);
+		gaw_get_modelview(view_matrix);
+		cgm_mcopy(view_matrix_inv, view_matrix);
+		cgm_minverse(view_matrix_inv);
 
-	gaw_matrix_mode(GAW_MODELVIEW);
-	gaw_load_identity();
-	gaw_translate(0, 0, -cam_dist);
-	gaw_rotate(cam_phi, 1, 0, 0);
-	gaw_rotate(cam_theta, 0, 1, 0);
-	gaw_get_modelview(view_matrix);
-	cgm_mcopy(view_matrix_inv, view_matrix);
-	cgm_minverse(view_matrix_inv);
+		draw_grid();
 
-	draw_grid();
+		num = scn_num_objects(scn);
+		for(i=0; i<num; i++) {
+			setup_material(scn->objects[i]->mtl);
 
-	num = scn_num_objects(scn);
-	for(i=0; i<num; i++) {
-		setup_material(scn->objects[i]->mtl);
+			if(i == selobj) {
+				gaw_zoffset(1);
+				gaw_enable(GAW_POLYGON_OFFSET);
+				draw_object(scn->objects[i]);
+				gaw_disable(GAW_POLYGON_OFFSET);
 
-		if(i == selobj) {
-			gaw_zoffset(1);
-			gaw_enable(GAW_POLYGON_OFFSET);
-			draw_object(scn->objects[i]);
-			gaw_disable(GAW_POLYGON_OFFSET);
-
-			gaw_save();
-			gaw_disable(GAW_LIGHTING);
-			gaw_poly_wire();
-			gaw_color3f(0, 1, 0);
-			draw_object(scn->objects[i]);
-			gaw_poly_gouraud();
-			gaw_restore();
-		} else {
-			draw_object(scn->objects[i]);
+				gaw_save();
+				gaw_disable(GAW_LIGHTING);
+				gaw_poly_wire();
+				gaw_color3f(0, 1, 0);
+				draw_object(scn->objects[i]);
+				gaw_poly_gouraud();
+				gaw_restore();
+			} else {
+				draw_object(scn->objects[i]);
+			}
 		}
+		vpdirty = 0;
+
+		/* dirty all GUI windows */
+		rtk_invalidate(toolbar);
 	}
 
+	/* render layer */
 	if(rendering) {
-		if(render(framebuf)) {
-			app_redisplay();
-		} else {
+		if(!render(framebuf)) {
 			rendering = 0;
+			vpdirty = 1;
 		}
+		app_redisplay(rendrect.x, rendrect.y, rendrect.width, rendrect.height);
 	}
 
-	use_font(uifont);
-	dtx_position(550, 475);
-	dtx_color(0.3, 0.3, 0.1, 1);
-	dtx_printf("update: %ld", frameno++);
+	/* GUI */
+	rtk_draw_widget(toolbar);
 
 	if(rband_valid) {
 		draw_rband();
@@ -331,7 +341,6 @@ static void mdl_reshape(int x, int y)
 static void mdl_keyb(int key, int press)
 {
 	if(rtk_input_key(toolbar, key, press)) {
-		app_redisplay();
 		return;
 	}
 
@@ -370,7 +379,6 @@ static void mdl_mouse(int bn, int press, int x, int y)
 {
 	struct rayhit hit;
 	if(!vpdrag && rtk_input_mbutton(toolbar, bn, press, x, y)) {
-		app_redisplay();
 		return;
 	}
 
@@ -392,18 +400,26 @@ static void mdl_mouse(int bn, int press, int x, int y)
 				rendering = 1;
 				rend_size(win_width, win_height);
 				fix_rect(&rband);
+				rendrect = rband;
 				rend_begin(rband.x, rband.y, rband.width, rband.height);
 			}
+			app_redisplay(rband.x, rband.y, rband.width, rband.height);
 
 		} else if(bn == 0 && x == rband.x && y == rband.y) {
 			primray(&pickray, x, y);
 			if(scn_intersect(scn, &pickray, &hit)) {
-				selobj = scn_object_index(scn, hit.obj);
+				int newsel = scn_object_index(scn, hit.obj);
+				if(newsel != selobj) {
+					selobj = newsel;
+					inval_vport();
+				}
 			} else {
+				if(selobj != -1) {
+					inval_vport();
+				}
 				selobj = -1;
 			}
 		}
-		app_redisplay();
 	}
 }
 
@@ -412,7 +428,6 @@ static void mdl_motion(int x, int y)
 	int dx, dy;
 
 	if(!vpdrag && rtk_input_mmotion(toolbar, x, y)) {
-		app_redisplay();
 		return;
 	}
 
@@ -426,13 +441,13 @@ static void mdl_motion(int x, int y)
 			cam_phi += dy * 0.5f;
 			if(cam_phi < -90) cam_phi = -90;
 			if(cam_phi > 90) cam_phi = 90;
-			app_redisplay();
+			inval_vport();
 		}
 
 		if(mouse_state[2]) {
 			cam_dist += dy * 0.1f;
 			if(cam_dist < 0) cam_dist = 0;
-			app_redisplay();
+			inval_vport();
 		}
 	} else {
 		if(mouse_state[0]) {
@@ -456,7 +471,6 @@ static void mdl_motion(int x, int y)
 			default:
 				break;
 			}
-			app_redisplay();
 		}
 	}
 }
@@ -507,16 +521,23 @@ static void tbn_callback(rtk_widget *w, void *cls)
 static void act_settool(int tidx)
 {
 	int i;
+	rtk_rect r;
+
 	prev_tool = cur_tool;
 	cur_tool = tidx;
 	for(i=0; i<NUM_TOOLS; i++) {
 		if(i == cur_tool) {
-			rtk_set_value(tools[i], 1);
+			if(!rtk_get_value(tools[i])) {
+				rtk_set_value(tools[i], 1);
+				rtk_get_rect(tools[i], &r);
+			}
 		} else {
-			rtk_set_value(tools[i], 0);
+			if(rtk_get_value(tools[i])) {
+				rtk_set_value(tools[i], 0);
+				rtk_get_rect(tools[i], &r);
+			}
 		}
 	}
-	app_redisplay();
 }
 
 static void act_addobj(void)
@@ -525,7 +546,7 @@ static void act_addobj(void)
 	add_sphere();
 	selobj = idx;
 
-	app_redisplay();
+	inval_vport();
 }
 
 static void act_rmobj(void)
@@ -533,7 +554,7 @@ static void act_rmobj(void)
 	if(selobj >= 0) {
 		scn_rm_object(scn, selobj);
 		selobj = -1;
-		app_redisplay();
+		inval_vport();
 	}
 }
 
@@ -585,6 +606,7 @@ static void draw_rband(void)
 		fbptr[rect.width - 1] ^= 0xffffff;
 		fbptr += win_width;
 	}
+	app_redisplay(rect.x, rect.y, rect.width, rect.height);
 }
 
 void primray(cgm_ray *ray, int x, int y)
@@ -627,4 +649,12 @@ static void moveobj(struct object *obj, int px0, int py0, int px1, int py1)
 	cgm_vsub(&p1, &p0);
 	cgm_vadd(&obj->pos, &p1);
 	obj->xform_valid = 0;
+
+	inval_vport();
+}
+
+static void inval_vport(void)
+{
+	vpdirty = 1;
+	app_redisplay(0, 0, 0, 0);
 }

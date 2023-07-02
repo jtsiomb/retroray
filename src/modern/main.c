@@ -84,6 +84,7 @@ int main(int argc, char **argv)
 	win_aspect = (float)win_width / win_height;
 
 	init_logger();
+	add_log_stream(stdout);
 
 	if(app_init() == -1) {
 		return 1;
@@ -98,8 +99,9 @@ long app_getmsec(void)
 	return glutGet(GLUT_ELAPSED_TIME);
 }
 
-void app_redisplay(void)
+void app_redisplay(int x, int y, int w, int h)
 {
+	dbgmsg("fakeupd: %d,%d (%dx%d)\n", x, y, w, h);
 	glutPostRedisplay();
 }
 

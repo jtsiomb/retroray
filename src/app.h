@@ -106,7 +106,7 @@ void app_chscr(struct app_screen *scr);
 
 /* defined in main.c */
 long app_getmsec(void);
-void app_redisplay(void);
+void app_redisplay(int x, int y, int w, int h);
 void app_swap_buffers(void);
 void app_quit(void);
 void app_resize(int x, int y);
