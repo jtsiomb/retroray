@@ -129,18 +129,7 @@ void app_swap_buffers(void)
 	glDrawPixels(win_width, win_height, GL_BGRA, GL_UNSIGNED_BYTE, framebuf);
 	glDisable(GL_ALPHA_TEST);
 
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_LIGHTING);
-	glBegin(GL_LINE_LOOP);
-	glColor3f(1, 0, 0);
-	glVertex2f(0, 0);
-	glVertex2f(win_width, 0);
-	glVertex2f(win_width, win_height);
-	glVertex2f(0, win_height);
-	glEnd();
-
 	if(rband.width | rband.height) {
-
 		glPushAttrib(GL_ENABLE_BIT);
 		glDisable(GL_DEPTH_TEST);
 		glDisable(GL_LIGHTING);
