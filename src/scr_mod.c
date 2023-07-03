@@ -90,7 +90,6 @@ static void act_settool(int tidx);
 static void act_addobj(void);
 static void act_rmobj(void);
 
-static void fix_rect(rtk_rect *rect);
 static void draw_rband(void);
 static void moveobj(struct object *obj, int px0, int py0, int px1, int py1);
 
@@ -259,10 +258,6 @@ static void mdl_display(void)
 
 	/* GUI */
 	rtk_draw_widget(toolbar);
-
-	if(rband_valid) {
-		draw_rband();
-	}
 }
 
 static void draw_object(struct object *obj)
@@ -391,6 +386,7 @@ static void mdl_mouse(int bn, int press, int x, int y)
 
 		if(rband_valid) {
 			rband_valid = 0;
+			app_rband(0, 0, 0, 0);
 
 			if(cur_tool == TOOL_REND_AREA) {
 				if(prev_tool >= 0) {
@@ -398,7 +394,7 @@ static void mdl_mouse(int bn, int press, int x, int y)
 				}
 				rendering = 1;
 				rend_size(win_width, win_height);
-				fix_rect(&rband);
+				rtk_fix_rect(&rband);
 				rendrect = rband;
 				rend_begin(rband.x, rband.y, rband.width, rband.height);
 			}
@@ -457,6 +453,7 @@ static void mdl_motion(int x, int y)
 					rband.width = x - rband.x;
 					rband.height = y - rband.y;
 					rband_valid = 1;
+					app_rband(rband.x, rband.y, rband.width, rband.height);
 				}
 				break;
 
@@ -555,32 +552,6 @@ static void act_rmobj(void)
 		selobj = -1;
 		inval_vport();
 	}
-}
-
-static void fix_rect(rtk_rect *rect)
-{
-	int x, y, w, h;
-
-	x = rband.x;
-	y = rband.y;
-
-	if(rband.width < 0) {
-		w = -rband.width;
-		x += rband.width;
-	} else {
-		w = rband.width;
-	}
-	if(rband.height < 0) {
-		h = -rband.height;
-		y += rband.height;
-	} else {
-		h = rband.height;
-	}
-
-	rect->x = x;
-	rect->y = y;
-	rect->width = w;
-	rect->height = h;
 }
 
 

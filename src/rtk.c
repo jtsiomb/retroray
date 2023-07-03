@@ -818,6 +818,31 @@ int rtk_input_mmotion(rtk_widget *w, int x, int y)
 	return 0;
 }
 
+void rtk_fix_rect(rtk_rect *rect)
+{
+	int x, y, w, h;
+
+	x = rect->x;
+	y = rect->y;
+
+	if(rect->width < 0) {
+		w = -rect->width;
+		x += rect->width;
+	} else {
+		w = rect->width;
+	}
+	if(rect->height < 0) {
+		h = -rect->height;
+		y += rect->height;
+	} else {
+		h = rect->height;
+	}
+
+	rect->x = x;
+	rect->y = y;
+	rect->width = w;
+	rect->height = h;
+}
 
 void rtk_rect_union(rtk_rect *a, const rtk_rect *b)
 {

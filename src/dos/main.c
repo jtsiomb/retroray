@@ -44,7 +44,7 @@ static uint32_t *vmem;
 static int quit, disp_pending, dirty_valid;
 static rtk_rect dirty;
 static int mx, my;
-static rtk_rect rband;
+static rtk_rect rband, prev_rband;
 
 
 int main(int argc, char **argv)
@@ -200,20 +200,28 @@ void app_swap_buffers(void)
 	if(opt.vsync) {
 		vid_vsync();
 	}
-	if(!dirty_valid) return;
-	if(dirty.width < win_width || dirty.height < win_height) {
-		uint32_t *src = framebuf + dirty.y * win_width + dirty.x;
-		vid_blit32(dirty.x, dirty.y, dirty.width, dirty.height, src, 0);
+	if(dirty_valid) {
+		if(dirty.width < win_width || dirty.height < win_height) {
+			uint32_t *src = framebuf + dirty.y * win_width + dirty.x;
+			vid_blit32(dirty.x, dirty.y, dirty.width, dirty.height, src, 0);
 
-		if(mx >= dirty.x && my >= dirty.y && mx < dirty.x + dirty.width && my < dirty.y + dirty.height) {
+			if(mx >= dirty.x && my >= dirty.y && mx < dirty.x + dirty.width && my < dirty.y + dirty.height) {
+				draw_cursor(mx, my);
+			}
+		} else {
+			vid_blitfb32(framebuf, 0);
 			draw_cursor(mx, my);
 		}
-	} else {
-		vid_blitfb32(framebuf, 0);
-		draw_cursor(mx, my);
+		dirty_valid = 0;
 	}
 
-	dirty_valid = 0;
+	if(rband.width) {
+		if(prev_rband.width) {
+			draw_rband(&prev_rband);
+		}
+		draw_rband(&rband);
+		prev_rband = rband;
+	}
 }
 
 void app_quit(void)
@@ -237,6 +245,7 @@ void app_rband(int x, int y, int w, int h)
 {
 	if(!(w | h)) {
 		w = h = 0;
+		prev_rband.width = 0;
 	}
 
 	rband.x = x;
@@ -259,16 +268,16 @@ static void draw_cursor(int x, int y)
 	}
 }
 
-static void draw_rband(void)
+static void draw_rband(rtk_rect *r)
 {
 	int i;
 	rtk_rect rect;
 	uint32_t *fbptr, *bptr;
 
-	rect = rband;
-	fix_rect(&rect);
+	rect = *r;
+	rtk_fix_rect(&rect);
 
-	fbptr = framebuf + rect.y * win_width + rect.x;
+	fbptr = vmem + rect.y * win_width + rect.x;
 	bptr = fbptr + win_width * (rect.height - 1);
 
 	for(i=0; i<rect.width; i++) {
@@ -281,5 +290,4 @@ static void draw_rband(void)
 		fbptr[rect.width - 1] ^= 0xffffff;
 		fbptr += win_width;
 	}
-	app_redisplay(rect.x, rect.y, rect.width, rect.height);
 }

@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <assert.h>
 #include "miniglut.h"
 #include "app.h"
+#include "rtk.h"
 #include "logger.h"
 
 static void display(void);
@@ -45,6 +46,7 @@ static void (*glx_swap_interval_sgi)();
 static PROC wgl_swap_interval_ext;
 #endif
 
+static rtk_rect rband;
 
 
 int main(int argc, char **argv)
@@ -101,16 +103,16 @@ long app_getmsec(void)
 
 void app_redisplay(int x, int y, int w, int h)
 {
-	dbgmsg("fakeupd: %d,%d (%dx%d)\n", x, y, w, h);
+	/*dbgmsg("fakeupd: %d,%d (%dx%d)\n", x, y, w, h);*/
 	glutPostRedisplay();
 }
 
 void app_swap_buffers(void)
 {
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
-	glLoadIdentity();
-	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
 	glRasterPos2i(-1, 1);
@@ -120,7 +122,27 @@ void app_swap_buffers(void)
 	glDrawPixels(win_width, win_height, GL_BGRA, GL_UNSIGNED_BYTE, framebuf);
 	glDisable(GL_ALPHA_TEST);
 
-	glMatrixMode(GL_PROJECTION);
+	if(rband.width | rband.height) {
+		glOrtho(0, win_width, win_height, 0, -1, 1);
+
+		glPushAttrib(GL_ENABLE_BIT);
+		glDisable(GL_DEPTH_TEST);
+		glDisable(GL_LIGHTING);
+
+		glEnable(GL_COLOR_LOGIC_OP);
+		glLogicOp(GL_XOR);
+
+		glBegin(GL_LINE_LOOP);
+		glColor3f(1, 1, 1);
+		glVertex2f(rband.x, rband.y);
+		glVertex2f(rband.x + rband.width, rband.y);
+		glVertex2f(rband.x + rband.width, rband.y + rband.height);
+		glVertex2f(rband.x, rband.y + rband.height);
+		glEnd();
+
+		glPopAttrib();
+	}
+
 	glPopMatrix();
 	glMatrixMode(GL_MODELVIEW);
 
@@ -179,6 +201,16 @@ void app_vsync(int vsync)
 	}
 }
 #endif
+
+void app_rband(int x, int y, int w, int h)
+{
+	rband.x = x;
+	rband.y = y;
+	rband.width = w;
+	rband.height = h;
+
+	glutPostRedisplay();
+}
 
 
 static void display(void)

@@ -105,6 +105,7 @@ int rtk_input_mbutton(rtk_widget *w, int bn, int press, int x, int y);
 int rtk_input_mmotion(rtk_widget *w, int x, int y);
 
 /* misc */
+void rtk_fix_rect(rtk_rect *r);
 void rtk_rect_union(rtk_rect *a, const rtk_rect *b);
 
 #endif	/* RTK_H_ */
