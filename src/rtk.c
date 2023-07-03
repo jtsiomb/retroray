@@ -941,5 +941,19 @@ void rtk_rect_union(rtk_rect *a, const rtk_rect *b)
 
 static void invalfb(rtk_widget *w)
 {
-	app_redisplay(w->any.x, w->any.y, w->any.width, w->any.height);
+	rtk_rect rect;
+
+	rect.x = w->any.x;
+	rect.y = w->any.y;
+	rect.width = w->any.width;
+	rect.height = w->any.height;
+
+	if(w->type == RTK_WIN && (w->any.flags & FRAME)) {
+		rect.x -= WINFRM_SZ;
+		rect.y -= WINFRM_SZ + WINFRM_TBAR;
+		rect.width += WINFRM_SZ * 2;
+		rect.height += WINFRM_SZ * 2 + WINFRM_TBAR;
+	}
+
+	app_redisplay(rect.x, rect.y, rect.width, rect.height);
 }
