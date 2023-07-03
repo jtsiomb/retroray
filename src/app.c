@@ -202,9 +202,10 @@ void app_keyboard(int key, int press)
 			msec = get_msec();
 			if(msec - prev_esc < 1000) {
 				app_quit();
+				return;
 			}
 			prev_esc = msec;
-			return;
+			break;
 #endif
 
 		case 'q':

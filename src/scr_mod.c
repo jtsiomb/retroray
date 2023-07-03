@@ -524,11 +524,12 @@ static void act_settool(int tidx)
 	int i;
 	rtk_rect r;
 
-	if(tidx == prev_tool) return;
+	if(tidx == cur_tool) return;
 
-	if(prev_tool == TOOL_REND_AREA) {
-		app_redisplay(totalrend.x, totalrend.y, totalrend.width, totalrend.height);
+	if(cur_tool == TOOL_REND_AREA) {
 		totalrend.width = 0;
+		app_redisplay(totalrend.x, totalrend.y, totalrend.width, totalrend.height);
+		inval_vport();
 	}
 
 	prev_tool = cur_tool;
