@@ -24,6 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #define DEF_XRES		640
 #define DEF_YRES		480
+#define DEF_BPP			32
 #define DEF_VSYNC		1
 #define DEF_FULLSCR		0
 #define DEF_MOUSE_SPEED	50
@@ -31,7 +32,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 struct options opt = {
-	DEF_XRES, DEF_YRES,
+	DEF_XRES, DEF_YRES, DEF_BPP,
 	DEF_VSYNC,
 	DEF_FULLSCR,
 	DEF_MOUSE_SPEED, DEF_SBALL_SPEED,
@@ -48,6 +49,7 @@ int load_options(const char *fname)
 
 	opt.xres = ts_lookup_int(cfg, "options.video.xres", DEF_XRES);
 	opt.yres = ts_lookup_int(cfg, "options.video.yres", DEF_YRES);
+	opt.bpp = ts_lookup_int(cfg, "options.video.bpp", DEF_BPP);
 	opt.vsync = ts_lookup_int(cfg, "options.video.vsync", DEF_VSYNC);
 	opt.fullscreen = ts_lookup_int(cfg, "options.video.fullscreen", DEF_FULLSCR);
 
@@ -79,6 +81,7 @@ int save_options(const char *fname)
 	fprintf(fp, "\tvideo {\n");
 	WROPT(2, "xres = %d", opt.xres, DEF_XRES);
 	WROPT(2, "yres = %d", opt.yres, DEF_YRES);
+	WROPT(2, "bpp = %d", opt.bpp, DEF_BPP);
 	WROPT(2, "vsync = %d", opt.vsync, DEF_VSYNC);
 	WROPT(2, "fullscreen = %d", opt.fullscreen, DEF_FULLSCR);
 	fprintf(fp, "\t}\n");

@@ -40,27 +40,35 @@ struct scene *create_scene(void)
 
 void free_scene(struct scene *scn)
 {
-	int i;
-
 	if(!scn) return;
+
+	scn_clear(scn);
+
+	darr_free(scn->objects);
+	darr_free(scn->lights);
+	darr_free(scn->mtl);
+	free(scn);
+}
+
+void scn_clear(struct scene *scn)
+{
+	int i;
 
 	for(i=0; i<darr_size(scn->objects); i++) {
 		free_object(scn->objects[i]);
 	}
-	darr_free(scn->objects);
+	darr_clear(scn->objects);
 
 	for(i=0; i<darr_size(scn->lights); i++) {
 		free_light(scn->lights[i]);
 	}
-	darr_free(scn->lights);
+	darr_clear(scn->lights);
 
 	for(i=0; i<darr_size(scn->mtl); i++) {
 		mtl_destroy(scn->mtl[i]);
 		free(scn->mtl[i]);
 	}
-	darr_free(scn->mtl);
-
-	free(scn);
+	darr_clear(scn->mtl);
 }
 
 int scn_add_object(struct scene *scn, struct object *obj)

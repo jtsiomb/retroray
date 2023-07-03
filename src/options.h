@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #define OPTIONS_H_
 
 struct options {
-	int xres, yres;
+	int xres, yres, bpp;
 	int vsync;
 	int fullscreen;
 

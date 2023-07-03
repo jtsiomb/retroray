@@ -330,6 +330,8 @@ static void mdl_reshape(int x, int y)
 	cgm_minverse(proj_matrix_inv);
 
 	rtk_resize(toolbar, win_width, TOOLBAR_HEIGHT);
+
+	inval_vport();
 }
 
 static void mdl_keyb(int key, int press)
@@ -491,6 +493,11 @@ static void tbn_callback(rtk_widget *w, void *cls)
 	int id = (intptr_t)cls;
 
 	switch(id) {
+	case TBN_NEW:
+		scn_clear(scn);
+		inval_vport();
+		break;
+
 	case TBN_SEL:
 	case TBN_MOVE:
 	case TBN_ROT:

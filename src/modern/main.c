@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <assert.h>
 #include "miniglut.h"
 #include "app.h"
+#include "options.h"
 #include "rtk.h"
 #include "logger.h"
 
@@ -52,7 +53,10 @@ static rtk_rect rband;
 int main(int argc, char **argv)
 {
 	glutInit(&argc, argv);
-	glutInitWindowSize(640, 480);
+
+	load_options(CFGFILE);
+
+	glutInitWindowSize(opt.xres, opt.yres);
 	glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
 	glutCreateWindow("RetroRay");
 
@@ -109,21 +113,33 @@ void app_redisplay(int x, int y, int w, int h)
 
 void app_swap_buffers(void)
 {
+	glViewport(0, 0, win_width, win_height);
+
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 	glLoadIdentity();
+	glOrtho(0, win_width, win_height, 0, -1, 1);
 
-	glRasterPos2i(-1, 1);
+	glRasterPos2i(0, 0);
 	glPixelZoom(1, -1);
 	glEnable(GL_ALPHA_TEST);
 	glAlphaFunc(GL_GREATER, 0.5f);
 	glDrawPixels(win_width, win_height, GL_BGRA, GL_UNSIGNED_BYTE, framebuf);
 	glDisable(GL_ALPHA_TEST);
 
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_LIGHTING);
+	glBegin(GL_LINE_LOOP);
+	glColor3f(1, 0, 0);
+	glVertex2f(0, 0);
+	glVertex2f(win_width, 0);
+	glVertex2f(win_width, win_height);
+	glVertex2f(0, win_height);
+	glEnd();
+
 	if(rband.width | rband.height) {
-		glOrtho(0, win_width, win_height, 0, -1, 1);
 
 		glPushAttrib(GL_ENABLE_BIT);
 		glDisable(GL_DEPTH_TEST);

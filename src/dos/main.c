@@ -61,6 +61,11 @@ int main(int argc, char **argv)
 	__djgpp_nearptr_enable();
 #endif
 
+	if(!have_mouse()) {
+		fprintf(stderr, "No mouse detected. Make sure the mouse driver is installed\n");
+		return 1;
+	}
+
 	init_logger();
 
 	if(read_cpuid(&cpuid) == 0) {
@@ -70,10 +75,7 @@ int main(int argc, char **argv)
 	init_timer(0);
 	kb_init();
 
-	if(!have_mouse()) {
-		fprintf(stderr, "No mouse detected. Make sure the mouse driver is installed\n");
-		return 1;
-	}
+	load_options(CFGFILE);
 
 	if((env = getenv("RRLOG"))) {
 		if(tolower(env[0]) == 'c' && tolower(env[1]) == 'o' && tolower(env[2]) == 'm'
@@ -88,15 +90,15 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	if((vmidx = vid_findmode(640, 480, 32)) == -1) {
+	if((vmidx = vid_findmode(opt.xres, opt.yres, opt.bpp)) == -1) {
 		return 1;
 	}
 	if(!(vmem = vid_setmode(vmidx))) {
 		return 1;
 	}
 
-	win_width = 640;
-	win_height = 480;
+	win_width = opt.xres;
+	win_height = opt.yres;
 	win_aspect = (float)win_width / (float)win_height;
 
 	if(app_init() == -1) {

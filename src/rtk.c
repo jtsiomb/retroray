@@ -497,7 +497,6 @@ void rtk_draw_widget(rtk_widget *w)
 	int dirty;
 
 	if(need_relayout(w)) {
-		dbgmsg("calc layout %s\n", w->any.text ? w->any.text : "?");
 		calc_layout(w);
 	}
 

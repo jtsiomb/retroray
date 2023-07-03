@@ -77,8 +77,6 @@ int app_init(void)
 #endif
 	rend_init();
 
-	load_options("retroray.cfg");
-	app_resize(opt.xres, opt.yres);
 	app_vsync(opt.vsync);
 	if(opt.fullscreen) {
 		app_fullscreen(1);
@@ -165,8 +163,6 @@ void app_reshape(int x, int y)
 	int numpix = x * y;
 	int prev_numpix = win_width * win_height;
 
-	dbgmsg("reshape(%d, %d)\n", x, y);
-
 	if(!framebuf || numpix > prev_numpix) {
 		void *tmp;
 		if(!(tmp = realloc(framebuf, numpix * sizeof *framebuf))) {
@@ -188,6 +184,8 @@ void app_reshape(int x, int y)
 	if(cur_scr && cur_scr->reshape) {
 		cur_scr->reshape(x, y);
 	}
+
+	app_redisplay(0, 0, 0, 0);
 }
 
 void app_keyboard(int key, int press)

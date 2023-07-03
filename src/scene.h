@@ -69,6 +69,8 @@ struct rayhit;	/* declared in rt.h */
 struct scene *create_scene(void);
 void free_scene(struct scene *scn);
 
+void scn_clear(struct scene *scn);
+
 int scn_add_object(struct scene *scn, struct object *obj);
 int scn_rm_object(struct scene *scn, int idx);
 int scn_num_objects(const struct scene *scn);

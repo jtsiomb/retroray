@@ -22,6 +22,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "logger.h"
 #include "scene.h"
 
+#define CFGFILE	"retroray.cfg"
+
 enum {
 	KEY_BACKSP = 8,
 	KEY_ESC	= 27,
