@@ -1,6 +1,7 @@
 !ifdef __UNIX__
-dosobj = src/dos/main.obj src/dos/keyb.obj src/dos/mouse.obj src/dos/cdpmi.obj &
-	src/dos/vidsys.obj src/dos/drv_vga.obj src/dos/drv_vbe.obj src/dos/drv_s3.obj
+dosobj = src/dos/main.obj src/dos/keyb.obj src/dos/mouse.obj src/dos/timer.obj &
+	src/dos/cdpmi.obj src/dos/vidsys.obj src/dos/drv_vga.obj src/dos/drv_vbe.obj &
+	src/dos/drv_s3.obj
 appobj = src/app.obj src/cmesh.obj src/darray.obj src/font.obj src/logger.obj &
 	src/meshgen.obj src/meshload.obj src/options.obj src/rbtree.obj src/geom.obj &
 	src/rend.obj src/rtk.obj src/scene.obj src/scr_mod.obj src/scr_rend.obj &
@@ -11,8 +12,9 @@ gawobj = src/gaw/gaw_sw.obj src/gaw/gawswtnl.obj src/gaw/polyclip.obj src/gaw/po
 incpath = -Isrc -Isrc/dos -Ilibs -Ilibs/imago/src -Ilibs/treestor/include -Ilibs/drawtext
 libpath = libpath libs/dos
 !else
-dosobj = src\dos\main.obj src\dos\keyb.obj src\dos\mouse.obj src\dos\cdpmi.obj &
-	src\dos\vidsys.obj src\dos\drv_vga.obj src\dos\drv_vbe.obj src\dos\drv_s3.obj
+dosobj = src\dos\main.obj src\dos\keyb.obj src\dos\mouse.obj src\dos\timer.obj &
+	src\dos\cdpmi.obj src\dos\vidsys.obj src\dos\drv_vga.obj src\dos\drv_vbe.obj &
+	src\dos\drv_s3.obj
 appobj = src\app.obj src\cmesh.obj src\darray.obj src\font.obj src\logger.obj &
 	src\meshgen.obj src\meshload.obj src\options.obj src\rbtree.obj src\geom.obj &
 	src\rend.obj src\rtk.obj src\scene.obj src\scr_mod.obj src\scr_rend.obj &

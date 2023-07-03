@@ -96,9 +96,9 @@ int main(int argc, char **argv)
 	return 0;
 }
 
-long app_getmsec(void)
+unsigned long get_msec(void)
 {
-	return glutGet(GLUT_ELAPSED_TIME);
+	return (unsigned long)glutGet(GLUT_ELAPSED_TIME);
 }
 
 void app_redisplay(int x, int y, int w, int h)

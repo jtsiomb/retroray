@@ -105,7 +105,6 @@ void app_sball_button(int bn, int st);
 void app_chscr(struct app_screen *scr);
 
 /* defined in main.c */
-long app_getmsec(void);
 void app_redisplay(int x, int y, int w, int h);
 void app_swap_buffers(void);
 void app_quit(void);

@@ -23,6 +23,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <time.h>
 #include "gaw/gaw.h"
 #include "app.h"
+#include "timer.h"
 #include "rend.h"
 #include "options.h"
 #include "font.h"
@@ -111,7 +112,7 @@ int app_init(void)
 		}
 	}
 
-	time_msec = app_getmsec();
+	time_msec = get_msec();
 
 	for(i=0; i<num_screens; i++) {
 		if(screens[i]->name && start_scr_name && strcmp(screens[i]->name, start_scr_name) == 0) {
@@ -154,7 +155,7 @@ void app_shutdown(void)
 
 void app_display(void)
 {
-	time_msec = app_getmsec();
+	time_msec = get_msec();
 
 	cur_scr->display();
 }
@@ -191,11 +192,18 @@ void app_reshape(int x, int y)
 
 void app_keyboard(int key, int press)
 {
+	long msec;
+	static long prev_esc;
+
 	if(press) {
 		switch(key) {
 #ifdef DBG_ESCQUIT
 		case 27:
-			app_quit();
+			msec = get_msec();
+			if(msec - prev_esc < 1000) {
+				app_quit();
+			}
+			prev_esc = msec;
 			return;
 #endif
 

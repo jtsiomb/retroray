@@ -69,6 +69,7 @@ enum {
 static rtk_widget *tools[NUM_TOOLS];
 
 static int vpdirty;
+static rtk_rect totalrend;
 
 
 static int mdl_init(void);
@@ -388,15 +389,20 @@ static void mdl_mouse(int bn, int press, int x, int y)
 			app_rband(0, 0, 0, 0);
 
 			if(cur_tool == TOOL_REND_AREA) {
-				if(prev_tool >= 0) {
-					act_settool(prev_tool);
+				if(rband.width && rband.height) {
+					rendering = 1;
+					rend_size(win_width, win_height);
+					rtk_fix_rect(&rband);
+					rendrect = rband;
+					rend_begin(rband.x, rband.y, rband.width, rband.height);
+					app_redisplay(rband.x, rband.y, rband.width, rband.height);
+
+					if(totalrend.width) {
+						rtk_rect_union(&totalrend, &rband);
+					} else {
+						totalrend = rband;
+					}
 				}
-				rendering = 1;
-				rend_size(win_width, win_height);
-				rtk_fix_rect(&rband);
-				rendrect = rband;
-				rend_begin(rband.x, rband.y, rband.width, rband.height);
-				app_redisplay(rband.x, rband.y, rband.width, rband.height);
 			}
 
 		} else if(bn == 0 && x == rband.x && y == rband.y) {
@@ -517,6 +523,13 @@ static void act_settool(int tidx)
 {
 	int i;
 	rtk_rect r;
+
+	if(tidx == prev_tool) return;
+
+	if(prev_tool == TOOL_REND_AREA) {
+		app_redisplay(totalrend.x, totalrend.y, totalrend.width, totalrend.height);
+		totalrend.width = 0;
+	}
 
 	prev_tool = cur_tool;
 	cur_tool = tidx;

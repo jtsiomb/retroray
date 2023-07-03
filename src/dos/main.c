@@ -21,6 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <ctype.h>
 #include <time.h>
 #include "app.h"
+#include "timer.h"
 #include "keyb.h"
 #include "vidsys.h"
 #include "cdpmi.h"
@@ -66,6 +67,7 @@ int main(int argc, char **argv)
 		print_cpuid(&cpuid);
 	}
 
+	init_timer(0);
 	kb_init();
 
 	if(!have_mouse()) {
@@ -157,11 +159,6 @@ break_evloop:
 	vid_cleanup();
 	kb_shutdown();
 	return 0;
-}
-
-long app_getmsec(void)
-{
-	return time(0) * 1000;	/* TODO */
 }
 
 void app_redisplay(int x, int y, int w, int h)
