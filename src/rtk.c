@@ -126,6 +126,23 @@ void rtk_set_callback(rtk_widget *w, rtk_callback cbfunc, void *cls)
 	w->any.cbcls = cls;
 }
 
+void rtk_show(rtk_widget *w)
+{
+	w->any.flags |= VISIBLE;
+	rtk_invalidate(w);
+}
+
+void rtk_hide(rtk_widget *w)
+{
+	w->any.flags &= ~VISIBLE;
+	invalfb(w);
+}
+
+int rtk_visible(const rtk_widget *w)
+{
+	return w->any.flags & VISIBLE;
+}
+
 void rtk_invalidate(rtk_widget *w)
 {
 	w->any.flags |= DIRTY;
@@ -247,7 +264,8 @@ rtk_icon *rtk_bn_get_icon(rtk_widget *w)
 
 /* --- constructors --- */
 
-rtk_widget *rtk_create_window(rtk_widget *par, const char *title, int x, int y, int width, int height)
+rtk_widget *rtk_create_window(rtk_widget *par, const char *title, int x, int y,
+		int width, int height, unsigned int flags)
 {
 	rtk_widget *w;
 
@@ -259,6 +277,8 @@ rtk_widget *rtk_create_window(rtk_widget *par, const char *title, int x, int y, 
 	rtk_set_text(w, title);
 	rtk_move(w, x, y);
 	rtk_resize(w, width, height);
+
+	w->any.flags |= flags << 16;
 	return w;
 }
 
@@ -496,6 +516,10 @@ void rtk_draw_widget(rtk_widget *w)
 {
 	int dirty;
 
+	if(!(w->any.flags & VISIBLE)) {
+		return;
+	}
+
 	if(need_relayout(w)) {
 		calc_layout(w);
 	}
@@ -562,6 +586,9 @@ static void abs_pos(rtk_widget *w, int *xpos, int *ypos)
 #define COL_LBEV	0xffaaaaaa
 #define COL_SBEV	0xff222222
 #define COL_TEXT	0xff000000
+#define COL_WINFRM	0xff2244aa
+#define COL_WINFRM_LIT	0xff4466ff
+#define COL_WINFRM_SHAD	0xff051166
 
 static void hline(int x, int y, int sz, uint32_t col)
 {
@@ -585,6 +612,16 @@ static void vline(int x, int y, int sz, uint32_t col)
 
 enum {FRM_SOLID, FRM_OUTSET, FRM_INSET};
 
+enum {UICOL_BG, UICOL_LBEV, UICOL_SBEV};
+static uint32_t uicol[3];
+
+static void uicolor(uint32_t col, uint32_t lcol, uint32_t scol)
+{
+	uicol[UICOL_BG] = col;
+	uicol[UICOL_LBEV] = lcol;
+	uicol[UICOL_SBEV] = scol;
+}
+
 static void draw_frame(rtk_rect *rect, int type)
 {
 	int tlcol, brcol;
@@ -594,12 +631,12 @@ static void draw_frame(rtk_rect *rect, int type)
 		tlcol = brcol = 0xff000000;
 		break;
 	case FRM_OUTSET:
-		tlcol = COL_LBEV;
-		brcol = COL_SBEV;
+		tlcol = uicol[UICOL_LBEV];
+		brcol = uicol[UICOL_SBEV];
 		break;
 	case FRM_INSET:
-		tlcol = COL_SBEV;
-		brcol = COL_LBEV;
+		tlcol = uicol[UICOL_SBEV];
+		brcol = uicol[UICOL_LBEV];
 		break;
 	default:
 		break;
@@ -611,14 +648,47 @@ static void draw_frame(rtk_rect *rect, int type)
 	vline(rect->x + rect->width - 1, rect->y + 1, rect->height - 2, brcol);
 }
 
+#define WINFRM_SZ	2
+#define WINFRM_TBAR	16
+
 static void draw_window(rtk_widget *w)
 {
-	rtk_rect rect;
+	rtk_rect rect, frmrect, tbrect;
 	rtk_widget *c;
 	int win_dirty = w->any.flags & DIRTY;
 
 	if(win_dirty) {
 		widget_rect(w, &rect);
+
+		if(w->any.flags & FRAME) {
+			uicolor(COL_WINFRM, COL_WINFRM_LIT, COL_WINFRM_SHAD);
+
+			frmrect = rect;
+			frmrect.width += WINFRM_SZ * 2;
+			frmrect.height += WINFRM_SZ * 2 + WINFRM_TBAR;
+			frmrect.x -= WINFRM_SZ;
+			frmrect.y -= WINFRM_SZ + WINFRM_TBAR;
+
+			tbrect.x = rect.x;
+			tbrect.y = rect.y - WINFRM_TBAR;
+			tbrect.width = rect.width;
+			tbrect.height = WINFRM_TBAR;
+
+			draw_frame(&frmrect, FRM_OUTSET);
+			frmrect.x++;
+			frmrect.y++;
+			frmrect.width -= 2;
+			frmrect.height -= 2;
+			draw_frame(&frmrect, FRM_INSET);
+
+			draw_frame(&tbrect, FRM_OUTSET);
+			tbrect.x++;
+			tbrect.y++;
+			tbrect.width -= 2;
+			tbrect.height -= 2;
+			gfx.fill(&tbrect, COL_WINFRM);
+		}
+
 		gfx.fill(&rect, COL_BG);
 	}
 
@@ -645,6 +715,8 @@ static void draw_button(rtk_widget *w)
 	} else {
 		pressed = w->any.flags & PRESS;
 	}
+
+	uicolor(COL_BG, COL_LBEV, COL_SBEV);
 
 	if(rect.width > 2 && rect.height > 2) {
 		draw_frame(&rect, pressed ? FRM_INSET : FRM_OUTSET);
@@ -674,6 +746,8 @@ static void draw_separator(rtk_widget *w)
 	rtk_rect rect;
 
 	if(!win) return;
+
+	uicolor(COL_BG, COL_LBEV, COL_SBEV);
 
 	widget_rect(w, &rect);
 	abs_pos(w, &rect.x, &rect.y);

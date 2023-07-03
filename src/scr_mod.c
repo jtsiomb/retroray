@@ -15,7 +15,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#include <assert.h>
 #include "gaw/gaw.h"
 #include "app.h"
 #include "rtk.h"
@@ -25,48 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "meshgen.h"
 #include "font.h"
 #include "rend.h"
-
-enum {
-	TBN_NEW, TBN_OPEN, TBN_SAVE, TBN_SEP1,
-	TBN_SEL, TBN_MOVE, TBN_ROT, TBN_SCALE, TBN_SEP2,
-	TBN_ADD, TBN_RM, TBN_SEP3,
-	TBN_UNION, TBN_ISECT, TBN_DIFF, TBN_SEP4,
-	TBN_MTL, TBN_REND, TBN_REND_AREA, TBN_VIEWREND, TBN_SEP5, TBN_CFG,
-
-	NUM_TOOL_BUTTONS
-};
-static const char *tbn_icon_name[] = {
-	"new", "open", "save", 0,
-	"sel", "move", "rot", "scale", 0,
-	"add", "remove", 0,
-	"union", "isect", "diff", 0,
-	"mtl", "rend", "rend-area", "viewrend", 0, "cfg"
-};
-static int tbn_icon_pos[][2] = {
-	{0,0}, {16,0}, {32,0}, {-1,-1},
-	{48,0}, {64,0}, {80,0}, {96,0}, {-1,-1},
-	{112,0}, {112,16}, {-1,-1},
-	{0,16}, {16,16}, {32,16}, {-1,-1},
-	{48,16}, {64,16}, {64, 32}, {80,16}, {-1,-1}, {96,16}
-};
-static int tbn_istool[] = {
-	0, 0, 0, 0,
-	1, 1, 1, 1, 0,
-	0, 0, 0,
-	1, 1, 1, 0,
-	0, 0, 1, 0, 0, 0
-};
-static rtk_icon *tbn_icons[NUM_TOOL_BUTTONS];
-static rtk_widget *tbn_buttons[NUM_TOOL_BUTTONS];
-
-#define TOOLBAR_HEIGHT	26
-
-enum {
-	TOOL_SEL, TOOL_MOVE, TOOL_ROT, TOOL_SCALE,
-	TOOL_UNION, TOOL_ISECT, TOOL_DIFF, TOOL_REND_AREA,
-	NUM_TOOLS
-};
-static rtk_widget *tools[NUM_TOOLS];
+#include "modui.h"
 
 static int vpdirty;
 static rtk_rect totalrend;
@@ -85,7 +43,6 @@ static void mdl_motion(int x, int y);
 static void draw_object(struct object *obj);
 static void setup_material(struct material *mtl);
 static void draw_grid(void);
-static void tbn_callback(rtk_widget *w, void *cls);
 
 static void act_settool(int tidx);
 static void act_addobj(void);
@@ -104,8 +61,6 @@ struct app_screen scr_model = {
 	mdl_keyb, mdl_mouse, mdl_motion
 };
 
-static rtk_widget *toolbar;
-static rtk_iconsheet *icons;
 
 static struct cmesh *mesh_sph;
 
@@ -127,47 +82,10 @@ static rtk_rect rendrect;
 
 static int mdl_init(void)
 {
-	int i, toolidx;
-	rtk_widget *w;
-
-	if(!(icons = rtk_load_iconsheet("data/icons.png"))) {
-		errormsg("failed to load iconsheet\n");
+	if(modui_init() == -1) {
+		errormsg("failed to initialize modeller UI\n");
 		return -1;
 	}
-	for(i=0; i<NUM_TOOL_BUTTONS; i++) {
-		if(tbn_icon_name[i]) {
-			tbn_icons[i] = rtk_define_icon(icons, tbn_icon_name[i],
-					tbn_icon_pos[i][0], tbn_icon_pos[i][1], 16, 16);
-		} else {
-			tbn_icons[i] = 0;
-		}
-	}
-
-	if(!(toolbar = rtk_create_window(0, "toolbar", 0, 0, win_width, TOOLBAR_HEIGHT))) {
-		return -1;
-	}
-	rtk_win_layout(toolbar, RTK_HBOX);
-
-	toolidx = 0;
-	for(i=0; i<NUM_TOOL_BUTTONS; i++) {
-		if(!tbn_icons[i]) {
-			rtk_create_separator(toolbar);
-		} else {
-			if(!(w = rtk_create_iconbutton(toolbar, tbn_icons[i], 0))) {
-				return -1;
-			}
-			tbn_buttons[i] = w;
-			rtk_set_callback(w, tbn_callback, (void*)(intptr_t)i);
-			if(tbn_istool[i]) {
-				rtk_bn_mode(w, RTK_TOGGLEBN);
-				tools[toolidx++] = w;
-			}
-			if(i == TBN_SEL) {
-				rtk_set_value(w, 1);
-			}
-		}
-	}
-	assert(toolidx == NUM_TOOLS);
 
 	if(!(mesh_sph = cmesh_alloc())) {
 		errormsg("failed to allocate sphere vis mesh\n");
@@ -182,7 +100,7 @@ static int mdl_init(void)
 static void mdl_destroy(void)
 {
 	cmesh_free(mesh_sph);
-	rtk_free_iconsheet(icons);
+	modui_cleanup();
 }
 
 static int mdl_start(void)
@@ -246,6 +164,7 @@ static void mdl_display(void)
 
 		/* dirty all GUI windows */
 		rtk_invalidate(toolbar);
+		rtk_invalidate(mtlwin);
 	}
 
 	/* render layer */
@@ -258,6 +177,7 @@ static void mdl_display(void)
 
 	/* GUI */
 	rtk_draw_widget(toolbar);
+	rtk_draw_widget(mtlwin);
 }
 
 static void draw_object(struct object *obj)
@@ -488,7 +408,7 @@ static void add_sphere(void)
 	scn_add_object(scn, obj);
 }
 
-static void tbn_callback(rtk_widget *w, void *cls)
+void tbn_callback(rtk_widget *w, void *cls)
 {
 	int id = (intptr_t)cls;
 
@@ -509,6 +429,16 @@ static void tbn_callback(rtk_widget *w, void *cls)
 	case TBN_DIFF:
 		act_settool(id - TBN_UNION + TOOL_UNION);
 		break;
+
+	case TBN_MTL:
+		if(rtk_visible(mtlwin)) {
+			rtk_hide(mtlwin);
+			inval_vport();
+		} else {
+			rtk_show(mtlwin);
+		}
+		break;
+
 	case TBN_REND_AREA:
 		act_settool(TOOL_REND_AREA);
 		break;

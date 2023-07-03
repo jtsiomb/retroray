@@ -11,7 +11,12 @@ enum {
 	HOVER		= 0x010,
 	PRESS		= 0x020,
 	GEOMCHG		= 0x100,
-	DIRTY		= 0x200
+	DIRTY		= 0x200,
+
+	/* window flags */
+	FRAME		= RTK_WIN_FRAME << 16,
+	MOVABLE		= RTK_WIN_MOVABLE << 16,
+	RESIZABLE	= RTK_WIN_RESIZABLE << 16
 };
 
 typedef struct rtk_any {

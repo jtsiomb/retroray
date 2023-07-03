@@ -1,6 +1,8 @@
 #ifndef RTK_H_
 #define RTK_H_
 
+#include "sizeint.h"
+
 /* widget type */
 enum {
 	RTK_ANY,
@@ -13,6 +15,12 @@ enum {
 };
 /* window layout */
 enum { RTK_NONE, RTK_VBOX, RTK_HBOX };
+/* window flags */
+enum {
+	RTK_WIN_FRAME		= 1,
+	RTK_WIN_MOVABLE		= 2,
+	RTK_WIN_RESIZABLE	= 4
+};
 /* button mode */
 enum { RTK_PUSHBN, RTK_TOGGLEBN };
 
@@ -67,6 +75,10 @@ int rtk_get_value(rtk_widget *w);
 
 void rtk_set_callback(rtk_widget *w, rtk_callback cbfunc, void *cls);
 
+void rtk_show(rtk_widget *w);
+void rtk_hide(rtk_widget *w);
+int rtk_visible(const rtk_widget *w);
+
 void rtk_invalidate(rtk_widget *w);
 void rtk_validate(rtk_widget *w);
 
@@ -82,7 +94,8 @@ void rtk_bn_mode(rtk_widget *w, int mode);
 void rtk_bn_set_icon(rtk_widget *w, rtk_icon *icon);
 rtk_icon *rtk_bn_get_icon(rtk_widget *w);
 
-rtk_widget *rtk_create_window(rtk_widget *par, const char *title, int x, int y, int w, int h);
+rtk_widget *rtk_create_window(rtk_widget *par, const char *title, int x, int y,
+		int width, int height, unsigned int flags);
 rtk_widget *rtk_create_button(rtk_widget *par, const char *str, rtk_callback cbfunc);
 rtk_widget *rtk_create_iconbutton(rtk_widget *par, rtk_icon *icon, rtk_callback cbfunc);
 rtk_widget *rtk_create_label(rtk_widget *par, const char *text);
