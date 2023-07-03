@@ -687,6 +687,8 @@ static void draw_window(rtk_widget *w)
 			tbrect.width -= 2;
 			tbrect.height -= 2;
 			gfx.fill(&tbrect, COL_WINFRM);
+
+			gfx.drawtext(tbrect.x, tbrect.y + tbrect.height - 1, w->any.text);
 		}
 
 		gfx.fill(&rect, COL_BG);

@@ -326,11 +326,21 @@ static void gui_blit(int x, int y, rtk_icon *icon)
 
 static void gui_drawtext(int x, int y, const char *str)
 {
+	use_font(uifont);
+	dtx_position(x, y);
+	dtx_color(0, 0, 0, 1);
+	dtx_string(str);
 }
 
 static void gui_textrect(const char *str, rtk_rect *rect)
 {
-	rect->x = rect->y = 0;
-	rect->width = 20;
-	rect->height = 10;/* TODO */
+	struct dtx_box dbox;
+
+	use_font(uifont);
+	dtx_string_box(str, &dbox);
+
+	rect->x = dbox.x;
+	rect->y = dbox.y;
+	rect->width = dbox.width;
+	rect->height = dbox.height;
 }
