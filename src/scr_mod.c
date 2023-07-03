@@ -90,7 +90,6 @@ static void act_settool(int tidx);
 static void act_addobj(void);
 static void act_rmobj(void);
 
-static void draw_rband(void);
 static void moveobj(struct object *obj, int px0, int py0, int px1, int py1);
 
 static void inval_vport(void);
@@ -397,8 +396,8 @@ static void mdl_mouse(int bn, int press, int x, int y)
 				rtk_fix_rect(&rband);
 				rendrect = rband;
 				rend_begin(rband.x, rband.y, rband.width, rband.height);
+				app_redisplay(rband.x, rband.y, rband.width, rband.height);
 			}
-			app_redisplay(rband.x, rband.y, rband.width, rband.height);
 
 		} else if(bn == 0 && x == rband.x && y == rband.y) {
 			primray(&pickray, x, y);

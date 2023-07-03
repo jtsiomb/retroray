@@ -375,7 +375,7 @@ static void blit_lfb(int x, int y, int w, int h, void *fb, int pitch)
 	int i, pixsz, spansz;
 	unsigned char *dest, *src;
 
-	dbgmsg("blit: %d,%d (%dx%d)\n", x, y, w, h);
+	/*dbgmsg("blit: %d,%d (%dx%d)\n", x, y, w, h);*/
 
 	pixsz = (cur_mi->bpp + 7) >> 3;
 	spansz = w * pixsz;

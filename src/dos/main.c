@@ -39,11 +39,12 @@ static INLINE int clamp(int x, int a, int b)
 }
 
 static void draw_cursor(int x, int y);
+static void draw_rband(rtk_rect *r);
 
 static uint32_t *vmem;
-static int quit, disp_pending, dirty_valid;
+static int quit, dirty_valid;
 static rtk_rect dirty;
-static int mx, my;
+static int mx, my, prev_mx, prev_my;
 static rtk_rect rband, prev_rband;
 
 
@@ -51,7 +52,7 @@ int main(int argc, char **argv)
 {
 	int i;
 	int vmidx;
-	int mdx, mdy, prev_mx, prev_my, bnstate, bndiff;
+	int mdx, mdy, bnstate, bndiff;
 	static int prev_bnstate;
 	char *env;
 
@@ -104,6 +105,7 @@ int main(int argc, char **argv)
 	app_reshape(win_width, win_height);
 	mx = win_width / 2;
 	my = win_height / 2;
+	prev_mx = prev_my = -1;
 
 	for(;;) {
 		int key;
@@ -133,8 +135,6 @@ int main(int argc, char **argv)
 		prev_bnstate = bnstate;
 
 		read_mouse_rel(&mdx, &mdy);
-		prev_mx = mx;
-		prev_my = my;
 		mx = clamp(mx + mdx, 0, win_width - 1);
 		my = clamp(my + mdy, 0, win_height - 1);
 		mdx = mx - prev_mx;
@@ -148,15 +148,8 @@ int main(int argc, char **argv)
 			app_motion(mx, my);
 		}
 
-		if(disp_pending) {
-			disp_pending = 0;
-			app_display();
-		}
-
+		app_display();
 		app_swap_buffers();
-
-		draw_cursor(prev_mx, prev_my);
-		draw_cursor(mx, my);
 	}
 
 break_evloop:
@@ -191,7 +184,6 @@ void app_redisplay(int x, int y, int w, int h)
 	} else {
 		dirty = r;
 	}
-	disp_pending = 1;
 	dirty_valid = 1;
 }
 
@@ -204,24 +196,25 @@ void app_swap_buffers(void)
 		if(dirty.width < win_width || dirty.height < win_height) {
 			uint32_t *src = framebuf + dirty.y * win_width + dirty.x;
 			vid_blit32(dirty.x, dirty.y, dirty.width, dirty.height, src, 0);
-
-			if(mx >= dirty.x && my >= dirty.y && mx < dirty.x + dirty.width && my < dirty.y + dirty.height) {
-				draw_cursor(mx, my);
-			}
 		} else {
 			vid_blitfb32(framebuf, 0);
-			draw_cursor(mx, my);
 		}
 		dirty_valid = 0;
 	}
-
-	if(rband.width) {
-		if(prev_rband.width) {
-			draw_rband(&prev_rband);
-		}
-		draw_rband(&rband);
-		prev_rband = rband;
+	if(prev_mx >= 0) {
+		draw_cursor(prev_mx, prev_my);
 	}
+	draw_cursor(mx, my);
+	prev_mx = mx;
+	prev_my = my;
+
+	if(prev_rband.width) {
+		draw_rband(&prev_rband);
+	}
+	if(rband.width) {
+		draw_rband(&rband);
+	}
+	prev_rband = rband;
 }
 
 void app_quit(void)
@@ -245,7 +238,6 @@ void app_rband(int x, int y, int w, int h)
 {
 	if(!(w | h)) {
 		w = h = 0;
-		prev_rband.width = 0;
 	}
 
 	rband.x = x;
@@ -276,6 +268,10 @@ static void draw_rband(rtk_rect *r)
 
 	rect = *r;
 	rtk_fix_rect(&rect);
+
+	if(rect.width <= 0 || rect.height <= 0) {
+		return;
+	}
 
 	fbptr = vmem + rect.y * win_width + rect.x;
 	bptr = fbptr + win_width * (rect.height - 1);
