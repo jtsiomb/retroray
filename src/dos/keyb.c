@@ -238,7 +238,7 @@ static void INTERRUPT kbintr()
 		c = (keystate[KEY_LSHIFT] | keystate[KEY_RSHIFT]) ? scantbl_shift[code] : key;
 	}
 
-	if(press) {
+	if(press && !keystate[key]) {
 		/* append to buffer */
 		last_key = c;
 		buffer[buf_widx] = c;
