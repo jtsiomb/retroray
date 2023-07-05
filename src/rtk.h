@@ -10,6 +10,7 @@ enum {
 	RTK_BUTTON,
 	RTK_LABEL,
 	RTK_CHECKBOX,
+	RTK_TEXTBOX,
 	RTK_SLIDER,
 	RTK_SEP
 };
@@ -94,13 +95,23 @@ void rtk_bn_mode(rtk_widget *w, int mode);
 void rtk_bn_set_icon(rtk_widget *w, rtk_icon *icon);
 rtk_icon *rtk_bn_get_icon(rtk_widget *w);
 
+/* slider functions */
+void rtk_slider_set_range(rtk_widget *w, int vmin, int vmax);
+void rtk_slider_get_range(const rtk_widget *w, int *vmin, int *vmax);
+
+/* basic widgets */
 rtk_widget *rtk_create_window(rtk_widget *par, const char *title, int x, int y,
 		int width, int height, unsigned int flags);
 rtk_widget *rtk_create_button(rtk_widget *par, const char *str, rtk_callback cbfunc);
 rtk_widget *rtk_create_iconbutton(rtk_widget *par, rtk_icon *icon, rtk_callback cbfunc);
 rtk_widget *rtk_create_label(rtk_widget *par, const char *text);
 rtk_widget *rtk_create_checkbox(rtk_widget *par, const char *text, int chk, rtk_callback cbfunc);
+rtk_widget *rtk_create_textbox(rtk_widget *par, const char *text, rtk_callback cbfunc);
+rtk_widget *rtk_create_slider(rtk_widget *par, int vmin, int vmax, int val, rtk_callback cbfunc);
 rtk_widget *rtk_create_separator(rtk_widget *par);
+
+/* compound widgets */
+rtk_widget *rtk_create_field(rtk_widget *par, const char *lbtext, rtk_callback cbfunc);
 
 /* icon functions */
 rtk_iconsheet *rtk_load_iconsheet(const char *fname);

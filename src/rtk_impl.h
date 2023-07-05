@@ -42,11 +42,23 @@ typedef struct rtk_button {
 	rtk_icon *icon;
 } rtk_button;
 
+typedef struct rtk_textbox {
+	rtk_any any;
+	int cursor;
+} rtk_textbox;
+
+typedef struct rtk_slider {
+	rtk_any any;
+	int vmin, vmax;
+} rtk_slider;
+
 typedef union rtk_widget {
 	int type;
 	rtk_any any;
 	rtk_window win;
 	rtk_button bn;
+	rtk_textbox tbox;
+	rtk_slider slider;
 } rtk_widget;
 
 typedef struct rtk_iconsheet {

@@ -94,6 +94,9 @@ static int create_toolbar(void)
 			if(!(w = rtk_create_iconbutton(toolbar, tbn_icons[i], 0))) {
 				return -1;
 			}
+			if(tbn_icon_name[i]) {
+				rtk_set_text(w, tbn_icon_name[i]);
+			}
 			tbn_buttons[i] = w;
 			rtk_set_callback(w, tbn_callback, (void*)(intptr_t)i);
 			if(tbn_istool[i]) {
@@ -112,10 +115,14 @@ static int create_toolbar(void)
 
 static int create_mtlwin(void)
 {
+	rtk_widget *w;
+
 	if(!(mtlwin = rtk_create_window(0, "Materials", win_width / 2, 64, 256, 380,
 					RTK_WIN_FRAME | RTK_WIN_MOVABLE | RTK_WIN_RESIZABLE))) {
 		return -1;
 	}
+	rtk_create_label(mtlwin, "Name:");
+	rtk_create_textbox(mtlwin, "foo", 0);
 
 	return 0;
 }

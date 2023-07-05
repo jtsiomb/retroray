@@ -26,7 +26,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "rend.h"
 #include "modui.h"
 
-static int vpdirty;
+static int vpdirty, vpnav;
 static rtk_rect totalrend;
 
 
@@ -50,7 +50,7 @@ static void act_rmobj(void);
 
 static void moveobj(struct object *obj, int px0, int py0, int px1, int py1);
 
-static void inval_vport(void);
+void inval_vport(void);
 
 
 struct app_screen scr_model = {
@@ -125,7 +125,7 @@ static void mdl_display(void)
 	int i, num;
 
 	/* viewport */
-	if(vpdirty) {
+	if(vpdirty || vpnav) {
 		gaw_clear(GAW_COLORBUF | GAW_DEPTHBUF);
 
 		gaw_matrix_mode(GAW_MODELVIEW);
@@ -256,7 +256,7 @@ static void mdl_reshape(int x, int y)
 
 static void mdl_keyb(int key, int press)
 {
-	if(rtk_input_key(toolbar, key, press)) {
+	if(rtk_input_key(0, key, press)) {
 		return;
 	}
 
@@ -294,7 +294,7 @@ static int vpdrag;
 static void mdl_mouse(int bn, int press, int x, int y)
 {
 	struct rayhit hit;
-	if(!vpdrag && rtk_input_mbutton(toolbar, bn, press, x, y)) {
+	if(!vpdrag && rtk_input_mbutton(0, bn, press, x, y)) {
 		return;
 	}
 
@@ -303,7 +303,15 @@ static void mdl_mouse(int bn, int press, int x, int y)
 		rband.x = x;
 		rband.y = y;
 		vpdrag |= (1 << bn);
+		if(modkeys) {
+			vpnav |= (1 << bn);
+			dbgmsg("vpnav on\n");
+		}
 	} else {
+		vpnav &= ~(1 << bn);
+		if(!vpnav) {
+			dbgmsg("vpnav off\n");
+		}
 		vpdrag &= ~(1 << bn);
 
 		if(rband_valid) {
@@ -349,14 +357,15 @@ static void mdl_motion(int x, int y)
 {
 	int dx, dy;
 
-	if(!vpdrag && rtk_input_mmotion(toolbar, x, y)) {
+	if(!vpdrag && rtk_input_mmotion(0, x, y)) {
 		return;
 	}
 
 	dx = x - mouse_x;
 	dy = y - mouse_y;
 
-	if(modkeys) {
+	if(vpnav) {
+		dbgmsg("vpnav %d,%d\n", dx, dy);
 		/* navigation */
 		if(mouse_state[0]) {
 			cam_theta += dx * 0.5f;
@@ -549,7 +558,7 @@ static void moveobj(struct object *obj, int px0, int py0, int px1, int py1)
 	inval_vport();
 }
 
-static void inval_vport(void)
+void inval_vport(void)
 {
 	vpdirty = 1;
 	app_redisplay(0, 0, 0, 0);

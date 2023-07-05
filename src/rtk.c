@@ -10,12 +10,20 @@ static void calc_widget_rect(rtk_widget *w, rtk_rect *rect);
 static void draw_window(rtk_widget *w);
 static void draw_button(rtk_widget *w);
 static void draw_checkbox(rtk_widget *w);
+static void draw_textbox(rtk_widget *w);
+static void draw_slider(rtk_widget *w);
 static void draw_separator(rtk_widget *w);
 
 static void invalfb(rtk_widget *w);
+void inval_vport(void);	/* scr_mod.c */
 
 
 static rtk_widget *hover, *focused, *pressed;
+static int prev_mx, prev_my;
+
+#define MAX_WINDOWS		32
+static rtk_widget *winlist[MAX_WINDOWS];
+static int num_win;
 
 
 void rtk_setup(rtk_draw_ops *drawop)
@@ -36,9 +44,24 @@ rtk_widget *rtk_create_widget(void)
 
 void rtk_free_widget(rtk_widget *w)
 {
+	int i;
 	if(!w) return;
 
 	if(w->type == RTK_WIN) {
+		if(!w->any.par) {
+			for(i=0; i<num_win; i++) {
+				if(winlist[i] == w) {
+					if(i < num_win - 1) {
+						winlist[i] = winlist[--num_win];
+					} else {
+						winlist[i] = 0;
+						num_win--;
+					}
+					break;
+				}
+			}
+		}
+
 		while(w->win.clist) {
 			rtk_widget *c = w->win.clist;
 			w->win.clist = w->win.clist->any.next;
@@ -57,9 +80,16 @@ int rtk_type(rtk_widget *w)
 
 void rtk_move(rtk_widget *w, int x, int y)
 {
+	if(!w->any.par) {
+		invalfb(w);
+	}
 	w->any.x = x;
 	w->any.y = y;
 	w->any.flags |= GEOMCHG | DIRTY;
+	if(!w->any.par) {
+		invalfb(w);
+		inval_vport();
+	}
 }
 
 void rtk_pos(rtk_widget *w, int *xptr, int *yptr)
@@ -70,9 +100,16 @@ void rtk_pos(rtk_widget *w, int *xptr, int *yptr)
 
 void rtk_resize(rtk_widget *w, int xsz, int ysz)
 {
+	if(!w->any.par) {
+		invalfb(w);
+	}
 	w->any.width = xsz;
 	w->any.height = ysz;
 	w->any.flags |= GEOMCHG | DIRTY;
+	if(!w->any.par) {
+		invalfb(w);
+		inval_vport();
+	}
 }
 
 void rtk_size(rtk_widget *w, int *xptr, int *yptr)
@@ -262,6 +299,24 @@ rtk_icon *rtk_bn_get_icon(rtk_widget *w)
 	return w->bn.icon;
 }
 
+/* --- slider functions --- */
+void rtk_slider_set_range(rtk_widget *w, int vmin, int vmax)
+{
+	RTK_ASSERT_TYPE(w, RTK_SLIDER);
+
+	w->slider.vmin = vmin;
+	w->slider.vmax = vmax;
+}
+
+void rtk_slider_get_range(const rtk_widget *w, int *vmin, int *vmax)
+{
+	RTK_ASSERT_TYPE(w, RTK_SLIDER);
+
+	*vmin = w->slider.vmin;
+	*vmax = w->slider.vmax;
+}
+
+
 /* --- constructors --- */
 
 rtk_widget *rtk_create_window(rtk_widget *par, const char *title, int x, int y,
@@ -273,10 +328,18 @@ rtk_widget *rtk_create_window(rtk_widget *par, const char *title, int x, int y,
 		return 0;
 	}
 	w->type = RTK_WIN;
-	if(par) rtk_win_add(par, w);
+	if(par) {
+		rtk_win_add(par, w);
+	} else {
+		if(num_win < MAX_WINDOWS) {
+			winlist[num_win++] = w;
+		}
+	}
+
 	rtk_set_text(w, title);
 	rtk_move(w, x, y);
 	rtk_resize(w, width, height);
+	rtk_win_layout(w, RTK_VBOX);
 
 	w->any.flags |= flags << 16;
 	return w;
@@ -335,6 +398,36 @@ rtk_widget *rtk_create_checkbox(rtk_widget *par, const char *text, int chk, rtk_
 	rtk_set_text(w, text);
 	rtk_set_value(w, chk ? 1 : 0);
 	rtk_set_callback(w, cbfunc, 0);
+	return w;
+}
+
+rtk_widget *rtk_create_textbox(rtk_widget *par, const char *text, rtk_callback cbfunc)
+{
+	rtk_widget *w;
+
+	if(!(w = rtk_create_widget())) {
+		return 0;
+	}
+	w->type = RTK_TEXTBOX;
+	if(par) rtk_win_add(par, w);
+	rtk_set_text(w, text);
+	rtk_set_callback(w, cbfunc, 0);
+	rtk_resize(w, 40, 1);
+	return w;
+}
+
+rtk_widget *rtk_create_slider(rtk_widget *par, int vmin, int vmax, int val, rtk_callback cbfunc)
+{
+	rtk_widget *w;
+
+	if(!(w = rtk_create_widget())) {
+		return 0;
+	}
+	w->type = RTK_SLIDER;
+	if(par) rtk_win_add(par, w);
+	rtk_set_callback(w, cbfunc, 0);
+	rtk_slider_set_range(w, vmin, vmax);
+	rtk_set_value(w, val);
 	return w;
 }
 
@@ -443,6 +536,13 @@ static void calc_widget_rect(rtk_widget *w, rtk_rect *rect)
 		rect->height = txrect.height + PAD * 2;
 		break;
 
+	case RTK_TEXTBOX:
+		gfx.textrect("Q|I", &txrect);
+		if(rect->height < txrect.height + OFFS * 2) {
+			rect->height = txrect.height + OFFS * 2;
+		}
+		break;
+
 	case RTK_SEP:
 		if(w->any.par->win.layout == RTK_VBOX) {
 			rect->width = w->any.par->any.width - PAD * 2;
@@ -542,6 +642,14 @@ void rtk_draw_widget(rtk_widget *w)
 		draw_checkbox(w);
 		break;
 
+	case RTK_TEXTBOX:
+		draw_textbox(w);
+		break;
+
+	case RTK_SLIDER:
+		draw_slider(w);
+		break;
+
 	case RTK_SEP:
 		draw_separator(w);
 		break;
@@ -586,9 +694,10 @@ static void abs_pos(rtk_widget *w, int *xpos, int *ypos)
 #define COL_LBEV	0xffaaaaaa
 #define COL_SBEV	0xff222222
 #define COL_TEXT	0xff000000
-#define COL_WINFRM	0xff2244aa
-#define COL_WINFRM_LIT	0xff4466ff
-#define COL_WINFRM_SHAD	0xff051166
+#define COL_WINFRM	0xff6688cc
+#define COL_WINFRM_LIT	0xff88aaff
+#define COL_WINFRM_SHAD	0xff224466
+#define COL_TBOX	0xffeeccbb
 
 static void hline(int x, int y, int sz, uint32_t col)
 {
@@ -742,6 +851,34 @@ static void draw_checkbox(rtk_widget *w)
 {
 }
 
+static void draw_textbox(rtk_widget *w)
+{
+	rtk_rect rect;
+
+	widget_rect(w, &rect);
+	abs_pos(w, &rect.x, &rect.y);
+
+	uicolor(COL_TBOX, COL_LBEV, COL_SBEV);
+
+	if(rect.width > 2 && rect.height > 2) {
+		draw_frame(&rect, FRM_INSET);
+
+		rect.x++;
+		rect.y++;
+		rect.width -= 2;
+		rect.height -= 2;
+	}
+
+	gfx.fill(&rect, COL_TBOX);
+	if(w->any.text) {
+		gfx.drawtext(rect.x, rect.y + rect.height - PAD, w->any.text);
+	}
+}
+
+static void draw_slider(rtk_widget *w)
+{
+}
+
 static void draw_separator(rtk_widget *w)
 {
 	rtk_widget *win = w->any.par;
@@ -775,9 +912,20 @@ static void draw_separator(rtk_widget *w)
 
 static int hittest(rtk_widget *w, int x, int y)
 {
-	if(x < w->any.x || y < w->any.y) return 0;
-	if(x >= w->any.x + w->any.width) return 0;
-	if(y >= w->any.y + w->any.height) return 0;
+	int x0 = w->any.x;
+	int y0 = w->any.y;
+	int x1 = w->any.x + w->any.width;
+	int y1 = w->any.y + w->any.height;
+
+	if(w->type == RTK_WIN && (w->any.flags & FRAME)) {
+		x0 -= WINFRM_SZ;
+		y0 -= WINFRM_SZ + WINFRM_TBAR;
+		x1 += WINFRM_SZ;
+		y1 += WINFRM_SZ;
+	}
+
+	if(x < x0 || y < y0) return 0;
+	if(x >= x1 || y >= y1) return 0;
 	return 1;
 }
 
@@ -802,6 +950,8 @@ static void sethover(rtk_widget *w)
 			invalfb(w);
 		}
 	}
+
+	/*dbgmsg("hover \"%s\"\n", w ? (w->any.text ? w->any.text : "?") : "-");*/
 }
 
 static void setpress(rtk_widget *w)
@@ -848,32 +998,62 @@ int rtk_input_key(rtk_widget *w, int key, int press)
 
 int rtk_input_mbutton(rtk_widget *w, int bn, int press, int x, int y)
 {
-	if(!hittest(w, x, y)) {
-		return 0;
-	}
+	int res = 0;
 
 	if(press) {
 		if(hover && hittest(hover, x, y)) {
 			setpress(hover);
+			res = 1;
 		}
+		prev_mx = x;
+		prev_my = y;
 	} else {
 		if(pressed && hittest(pressed, x, y)) {
 			click(pressed, x, y);
+			res = 1;
 		}
 		setpress(0);
 	}
 
-	return 1;
+	return res;
 }
 
 int rtk_input_mmotion(rtk_widget *w, int x, int y)
 {
+	int i;
 	rtk_widget *c;
 
-	if(!hittest(w, x, y)) {
-		int res = hover ? 1 : 0;
+	if(w == 0) {
+		if(pressed) {
+			/* dragging something */
+			int dx = x - prev_mx;
+			int dy = y - prev_my;
+			prev_mx = x;
+			prev_my = y;
+
+			switch(pressed->type) {
+			case RTK_WIN:
+				if(pressed->any.flags & MOVABLE) {
+					rtk_move(pressed, pressed->any.x + dx, pressed->any.y + dy);
+				}
+				break;
+
+			default:
+				break;
+			}
+			return 1;
+		}
+
+		for(i=0; i<num_win; i++) {
+			w = winlist[i];
+
+			if(rtk_input_mmotion(w, x, y)) {
+				return 1;
+			}
+		}
+
 		sethover(0);
-		return res;
+		return 0;
 	}
 
 	if(w->type == RTK_WIN) {
@@ -886,7 +1066,7 @@ int rtk_input_mmotion(rtk_widget *w, int x, int y)
 		}
 	}
 
-	if(hover != w) {
+	if(hittest(w, x, y)) {
 		sethover(w);
 		return 1;
 	}
