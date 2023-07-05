@@ -30,6 +30,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <GL/glu.h>
 #endif
 
+#ifndef GL_CLAMP_TO_EDGE
+#define GL_CLAMP_TO_EDGE	0x812f
+#endif
 
 static const float *vertex_ptr, *normal_ptr, *texcoord_ptr, *color_ptr;
 static int vertex_nelem, texcoord_nelem, color_nelem;

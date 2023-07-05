@@ -47,6 +47,13 @@ static void (*glx_swap_interval_sgi)();
 static PROC wgl_swap_interval_ext;
 #endif
 
+#ifndef GL_BGRA
+#define GL_BGRA	0x80e1
+#endif
+#ifndef GL_CLAMP_TO_EDGE
+#define GL_CLAMP_TO_EDGE	0x812f
+#endif
+
 static rtk_rect rband;
 
 

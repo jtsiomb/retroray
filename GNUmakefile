@@ -29,7 +29,7 @@ LDFLAGS = $(ldsys_pre) $(libs) $(ldsys)
 
 sys := $(shell uname -s | sed 's/MINGW.*/mingw/')
 ifeq ($(sys), mingw)
-	bin = game.exe
+	bin = retroray.exe
 
 	ldsys = -lopengl32 -lglu32 -lgdi32 -lwinmm
 	ldsys_pre = -static-libgcc -lmingw32 -mconsole
