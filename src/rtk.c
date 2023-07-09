@@ -4,8 +4,9 @@
 #include "rtk.h"
 #include "rtk_impl.h"
 
-static void on_key(rtk_widget *w, int key, int press);
-static void on_click(rtk_widget *w);
+static void on_any_nop();
+static void on_window_drag(rtk_widget *w, int dx, int dy, int total_dx, int total_dy);
+static void on_button_click(rtk_widget *w);
 
 void inval_vport(void);	/* scr_mod.c */
 
@@ -45,6 +46,12 @@ rtk_widget *rtk_create_widget(int type)
 	}
 	w->type = type;
 	w->flags = VISIBLE | ENABLED | GEOMCHG | DIRTY;
+
+	w->on_key = on_any_nop;
+	w->on_click = on_any_nop;
+	w->on_drag = on_any_nop;
+	w->on_drop = on_any_nop;
+
 	return w;
 }
 
@@ -329,7 +336,7 @@ rtk_widget *rtk_create_window(rtk_widget *par, const char *title, int x, int y,
 	if(par) {
 		rtk_win_add(par, w);
 	}
-
+	w->on_drag = on_window_drag;
 	rtk_set_text(w, title);
 	rtk_move(w, x, y);
 	rtk_resize(w, width, height);
@@ -347,6 +354,7 @@ rtk_widget *rtk_create_button(rtk_widget *par, const char *str, rtk_callback cbf
 		return 0;
 	}
 	if(par) rtk_win_add(par, w);
+	w->on_click = on_button_click;
 	rtk_set_text(w, str);
 	rtk_set_callback(w, cbfunc, 0);
 	return w;
@@ -360,6 +368,7 @@ rtk_widget *rtk_create_iconbutton(rtk_widget *par, rtk_icon *icon, rtk_callback 
 		return 0;
 	}
 	if(par) rtk_win_add(par, w);
+	w->on_click = on_button_click;
 	rtk_bn_set_icon(w, icon);
 	rtk_set_callback(w, cbfunc, 0);
 	return w;
@@ -402,6 +411,8 @@ rtk_widget *rtk_create_textbox(rtk_widget *par, const char *text, rtk_callback c
 	rtk_set_text(w, text);
 	rtk_set_callback(w, cbfunc, 0);
 	rtk_resize(w, 40, 1);
+
+	w->flags |= CANFOCUS;
 	return w;
 }
 
@@ -513,29 +524,8 @@ static void setpress(rtk_widget *w, int press)
 	} else {
 		w->flags &= ~PRESS;
 	}
-	w->flags |= PRESS;
 	rtk_invalidate(w);
 	rtk_invalfb(w);
-}
-
-static void click(rtk_widget *w, int x, int y)
-{
-	switch(w->type) {
-	case RTK_BUTTON:
-		if(((rtk_button*)w)->mode == RTK_TOGGLEBN) {
-	case RTK_CHECKBOX:
-			w->value ^= 1;
-		}
-		if(w->cbfunc) {
-			w->cbfunc(w, w->cbcls);
-		}
-		rtk_invalidate(w);
-		rtk_invalfb(w);
-		break;
-
-	default:
-		break;
-	}
 }
 
 /* --- screen functions --- */
@@ -568,6 +558,44 @@ int rtk_add_window(rtk_screen *scr, rtk_widget *win)
 	return 0;
 }
 
+static rtk_widget *find_widget_at(rtk_widget *w, int x, int y, unsigned int flags)
+{
+	rtk_widget *c, *res;
+	rtk_window *win;
+
+	if(w->type != RTK_WIN) {
+		if((w->flags & flags) && rtk_hittest(w, x, y)) {
+			return w;
+		}
+		return 0;
+	}
+
+	win = (rtk_window*)w;
+	c = win->clist;
+	while(c) {
+		if((res = find_widget_at(c, x, y, flags))) {
+			return res;
+		}
+		c = c->next;
+	}
+	return rtk_hittest(w, x, y) ? w : 0;
+}
+
+rtk_widget *rtk_find_widget_at(rtk_screen *scr, int x, int y, unsigned int flags)
+{
+	int i;
+	rtk_widget *w;
+
+	if(!flags) flags = ~0;
+
+	for(i=0; i<scr->num_win; i++) {
+		if((w = find_widget_at(scr->winlist[i], x, y, flags))) {
+			return w;
+		}
+	}
+	return 0;
+}
+
 int rtk_input_key(rtk_screen *scr, int key, int press)
 {
 	if(scr->focus) {
@@ -579,10 +607,64 @@ int rtk_input_key(rtk_screen *scr, int key, int press)
 
 int rtk_input_mbutton(rtk_screen *scr, int bn, int press, int x, int y)
 {
+	int handled = 0;
+	rtk_widget *w;
+
+	w = rtk_find_widget_at(scr, x, y, 0);
+	if(press) {
+		scr->prev_mx = x;
+		scr->prev_my = y;
+		if(bn == 0) {
+			scr->press = w;
+			scr->press_x = x;
+			scr->press_y = y;
+
+			if(w) setpress(w, 1);
+		}
+		handled = w ? 1 : 0;
+	} else {
+		if(bn == 0) {
+			if(w) {
+				if(scr->press == w) {
+					w->on_click(w);
+				} else {
+					w->on_drop(scr->press, w);
+				}
+				handled = 1;
+			}
+
+			if(scr->press) {
+				setpress(scr->press, 0);
+				scr->press = 0;
+			}
+		}
+	}
+	return handled;
 }
 
 int rtk_input_mmotion(rtk_screen *scr, int x, int y)
 {
+	int dx, dy;
+	rtk_widget *w;
+
+	dx = x - scr->prev_mx;
+	dy = y - scr->prev_my;
+	scr->prev_mx = x;
+	scr->prev_my = y;
+
+	if(scr->press) {
+		w = scr->press;
+		if((dx | dy)) {
+			w->on_drag(w, dx, dy, x - scr->press_x, y - scr->press_y);
+		}
+		return 1;
+	}
+
+	if(!(w = rtk_find_widget_at(scr, x, y, 0))) {
+		return 0;
+	}
+	sethover(scr, w);
+	return 1;
 }
 
 
@@ -632,4 +714,39 @@ void rtk_rect_union(rtk_rect *a, const rtk_rect *b)
 	a->y = y0;
 	a->width = x1 - x0;
 	a->height = y1 - y0;
+}
+
+
+/* --- widget event handlers --- */
+static void on_any_nop()
+{
+}
+
+static void on_window_drag(rtk_widget *w, int dx, int dy, int total_dx, int total_dy)
+{
+	if(w->flags & MOVABLE) {
+		rtk_move(w, w->x + dx, w->y + dy);
+	}
+}
+
+static void on_button_click(rtk_widget *w)
+{
+	rtk_button *bn = (rtk_button*)w;
+
+	switch(w->type) {
+	case RTK_BUTTON:
+		if(bn->mode == RTK_TOGGLEBN) {
+		case RTK_CHECKBOX:
+			bn->value ^= 1;
+		}
+		if(bn->cbfunc) {
+			bn->cbfunc(w, bn->cbcls);
+		}
+		rtk_invalidate(w);
+		rtk_invalfb(w);
+		break;
+
+	default:
+		break;
+	}
 }

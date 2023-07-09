@@ -31,7 +31,9 @@ enum {
 	rtk_callback cbfunc; \
 	void *cbcls; \
 	void (*on_key)(rtk_widget *w, int key, int press); \
-	void (*on_click)(rtk_widget *w)
+	void (*on_click)(rtk_widget *w); \
+	void (*on_drag)(rtk_widget *w, int dx, int dy, int total_dx, int total_dy); \
+	void (*on_drop)(rtk_widget *w, rtk_widget *targ)
 
 typedef struct rtk_widget {
 	WIDGET_COMMON;
@@ -71,8 +73,11 @@ typedef struct rtk_iconsheet {
 typedef struct rtk_screen {
 	rtk_widget *winlist[MAX_WINDOWS];
 	int num_win;
-	rtk_widget *hover, *focus, *drag;
+	rtk_widget *hover, *focus;
 	int prev_mx, prev_my;
+
+	rtk_widget *press;					/* currently pressed widget */
+	int press_x, press_y;				/* position of last mouse press */
 } rtk_screen;
 
 #define RTK_ASSERT_TYPE(w, t)	assert(w->type == t)

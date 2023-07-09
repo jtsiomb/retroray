@@ -128,6 +128,7 @@ rtk_screen *rtk_create_screen(void);
 void rtk_free_screen(rtk_screen *scr);
 
 int rtk_add_window(rtk_screen *scr, rtk_widget *win);
+rtk_widget *rtk_find_widget_at(rtk_screen *scr, int x, int y, unsigned int flags);
 
 int rtk_input_resize(rtk_screen *scr, int x, int y);
 int rtk_input_key(rtk_screen *scr, int key, int press);

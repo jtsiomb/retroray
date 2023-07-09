@@ -137,8 +137,6 @@ static int create_mtlwin(void)
 
 void modui_cleanup(void)
 {
-	rtk_free_widget(toolbar);
-	rtk_free_widget(mtlwin);
 	rtk_free_iconsheet(icons);
 	rtk_free_screen(modui);
 }
