@@ -23,7 +23,7 @@ enum {
 	NUM_TOOL_BUTTONS
 };
 
-
+extern rtk_screen *modui;
 extern rtk_widget *toolbar, *mtlwin;
 extern rtk_widget *tools[NUM_TOOLS];
 

@@ -256,7 +256,7 @@ static void mdl_reshape(int x, int y)
 
 static void mdl_keyb(int key, int press)
 {
-	if(rtk_input_key(0, key, press)) {
+	if(rtk_input_key(modui, key, press)) {
 		return;
 	}
 
@@ -294,7 +294,7 @@ static int vpdrag;
 static void mdl_mouse(int bn, int press, int x, int y)
 {
 	struct rayhit hit;
-	if(!vpdrag && rtk_input_mbutton(0, bn, press, x, y)) {
+	if(!vpdrag && rtk_input_mbutton(modui, bn, press, x, y)) {
 		return;
 	}
 
@@ -357,7 +357,7 @@ static void mdl_motion(int x, int y)
 {
 	int dx, dy;
 
-	if(!vpdrag && rtk_input_mmotion(0, x, y)) {
+	if(!vpdrag && rtk_input_mmotion(modui, x, y)) {
 		return;
 	}
 

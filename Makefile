@@ -4,8 +4,8 @@ dosobj = src/dos/main.obj src/dos/keyb.obj src/dos/mouse.obj src/dos/timer.obj &
 	src/dos/drv_s3.obj
 appobj = src/app.obj src/cmesh.obj src/darray.obj src/font.obj src/logger.obj &
 	src/meshgen.obj src/meshload.obj src/options.obj src/rbtree.obj src/geom.obj &
-	src/rend.obj src/rtk.obj src/scene.obj src/scr_mod.obj src/modui.obj &
-	src/scr_rend.obj src/texture.obj src/material.obj &
+	src/rend.obj src/rtk.obj src/rtk_draw.obj src/scene.obj src/scr_mod.obj &
+	src/modui.obj src/scr_rend.obj src/texture.obj src/material.obj &
 	src/util.obj src/util_s.obj src/cpuid.obj src/cpuid_s.obj
 gawobj = src/gaw/gaw_sw.obj src/gaw/gawswtnl.obj src/gaw/polyclip.obj src/gaw/polyfill.obj
 
@@ -17,8 +17,8 @@ dosobj = src\dos\main.obj src\dos\keyb.obj src\dos\mouse.obj src\dos\timer.obj &
 	src\dos\drv_s3.obj
 appobj = src\app.obj src\cmesh.obj src\darray.obj src\font.obj src\logger.obj &
 	src\meshgen.obj src\meshload.obj src\options.obj src\rbtree.obj src\geom.obj &
-	src\rend.obj src\rtk.obj src\scene.obj src\scr_mod.obj src\modui.obj &
-	src\scr_rend.obj src\texture.obj src\material.obj &
+	src\rend.obj src\rtk.obj src\rtk_draw.obj src\scene.obj src\scr_mod.obj &
+	src\modui.obj src\scr_rend.obj src\texture.obj src\material.obj &
 	src\util.obj src\util_s.obj src\cpuid.obj src\cpuid_s.obj
 gawobj = src\gaw\gaw_sw.obj src\gaw\gawswtnl.obj src\gaw\polyclip.obj src\gaw\polyfill.obj
 

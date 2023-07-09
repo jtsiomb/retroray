@@ -26,7 +26,7 @@ enum {
 enum { RTK_PUSHBN, RTK_TOGGLEBN };
 
 typedef struct rtk_screen rtk_screen;
-typedef union rtk_widget rtk_widget;
+typedef struct rtk_widget rtk_widget;
 typedef struct rtk_icon rtk_icon;
 typedef struct rtk_iconsheet rtk_iconsheet;
 
@@ -56,7 +56,7 @@ typedef void (*rtk_callback)(rtk_widget*, void*);
 void rtk_setup(rtk_draw_ops *drawop);
 
 /* widget functions */
-rtk_widget *rtk_create_widget(void);
+rtk_widget *rtk_create_widget(int type);
 void rtk_free_widget(rtk_widget *w);
 
 int rtk_type(rtk_widget *w);
@@ -123,10 +123,16 @@ rtk_icon *rtk_lookup_icon(rtk_iconsheet *is, const char *name);
 
 void rtk_draw_widget(rtk_widget *w);
 
-/* input events */
-int rtk_input_key(rtk_widget *w, int key, int press);
-int rtk_input_mbutton(rtk_widget *w, int bn, int press, int x, int y);
-int rtk_input_mmotion(rtk_widget *w, int x, int y);
+/* screen functions */
+rtk_screen *rtk_create_screen(void);
+void rtk_free_screen(rtk_screen *scr);
+
+int rtk_add_window(rtk_screen *scr, rtk_widget *win);
+
+int rtk_input_resize(rtk_screen *scr, int x, int y);
+int rtk_input_key(rtk_screen *scr, int key, int press);
+int rtk_input_mbutton(rtk_screen *scr, int bn, int press, int x, int y);
+int rtk_input_mmotion(rtk_screen *scr, int x, int y);
 
 /* misc */
 void rtk_fix_rect(rtk_rect *r);

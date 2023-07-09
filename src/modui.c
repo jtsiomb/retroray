@@ -45,6 +45,7 @@ static rtk_icon *tbn_icons[NUM_TOOL_BUTTONS];
 static rtk_widget *tbn_buttons[NUM_TOOL_BUTTONS];
 static rtk_iconsheet *icons;
 
+rtk_screen *modui;
 rtk_widget *toolbar, *mtlwin;
 rtk_widget *tools[NUM_TOOLS];
 
@@ -55,6 +56,10 @@ int modui_init(void)
 {
 	if(!(icons = rtk_load_iconsheet("data/icons.png"))) {
 		errormsg("failed to load iconsheet\n");
+		return -1;
+	}
+
+	if(!(modui = rtk_create_screen())) {
 		return -1;
 	}
 
@@ -84,6 +89,7 @@ static int create_toolbar(void)
 	if(!(toolbar = rtk_create_window(0, "toolbar", 0, 0, win_width, TOOLBAR_HEIGHT, 0))) {
 		return -1;
 	}
+	rtk_add_window(modui, toolbar);
 	rtk_win_layout(toolbar, RTK_HBOX);
 
 	toolidx = 0;
@@ -121,6 +127,8 @@ static int create_mtlwin(void)
 					RTK_WIN_FRAME | RTK_WIN_MOVABLE | RTK_WIN_RESIZABLE))) {
 		return -1;
 	}
+	rtk_add_window(modui, mtlwin);
+
 	rtk_create_label(mtlwin, "Name:");
 	rtk_create_textbox(mtlwin, "foo", 0);
 
@@ -132,4 +140,5 @@ void modui_cleanup(void)
 	rtk_free_widget(toolbar);
 	rtk_free_widget(mtlwin);
 	rtk_free_iconsheet(icons);
+	rtk_free_screen(modui);
 }
