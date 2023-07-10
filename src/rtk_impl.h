@@ -10,6 +10,7 @@ enum {
 	ENABLED		= 0x002,
 	HOVER		= 0x010,
 	PRESS		= 0x020,
+	FOCUS		= 0x040,
 	GEOMCHG		= 0x100,
 	DIRTY		= 0x200,
 	CANFOCUS	= 0x400,
@@ -74,6 +75,7 @@ typedef struct rtk_screen {
 	rtk_widget *winlist[MAX_WINDOWS];
 	int num_win;
 	rtk_widget *hover, *focus;
+	rtk_window *focuswin;
 	int prev_mx, prev_my;
 
 	rtk_widget *press;					/* currently pressed widget */
@@ -85,6 +87,7 @@ typedef struct rtk_screen {
 extern rtk_draw_ops rtk_gfx;
 
 void rtk_calc_widget_rect(rtk_widget *w, rtk_rect *rect);
+void rtk_abs_pos(rtk_widget *w, int *xpos, int *ypos);
 int rtk_hittest(rtk_widget *w, int x, int y);
 void rtk_invalfb(rtk_widget *w);
 

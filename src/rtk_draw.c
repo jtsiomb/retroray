@@ -6,6 +6,7 @@ rtk_draw_ops rtk_gfx;
 #define gfx rtk_gfx
 
 static void draw_window(rtk_widget *w);
+static void draw_label(rtk_widget *w);
 static void draw_button(rtk_widget *w);
 static void draw_checkbox(rtk_widget *w);
 static void draw_textbox(rtk_widget *w);
@@ -85,12 +86,31 @@ void rtk_calc_widget_rect(rtk_widget *w, rtk_rect *rect)
 	}
 }
 
+void rtk_abs_pos(rtk_widget *w, int *xpos, int *ypos)
+{
+	int x, y, px, py;
+
+	x = w->x;
+	y = w->y;
+
+	if(w->par) {
+		rtk_abs_pos((rtk_widget*)w->par, &px, &py);
+		x += px;
+		y += py;
+	}
+
+	*xpos = x;
+	*ypos = y;
+}
+
+
 int rtk_hittest(rtk_widget *w, int x, int y)
 {
-	int x0 = w->x;
-	int y0 = w->y;
-	int x1 = w->x + w->width;
-	int y1 = w->y + w->height;
+	int x0, y0, x1, y1;
+
+	rtk_abs_pos(w, &x0, &y0);
+	x1 = x0 + w->width;
+	y1 = y0 + w->height;
 
 	if(w->type == RTK_WIN && (w->flags & FRAME)) {
 		x0 -= WINFRM_SZ;
@@ -199,6 +219,10 @@ void rtk_draw_widget(rtk_widget *w)
 		draw_window(w);
 		break;
 
+	case RTK_LABEL:
+		draw_label(w);
+		break;
+
 	case RTK_BUTTON:
 		draw_button(w);
 		break;
@@ -237,32 +261,18 @@ static void widget_rect(rtk_widget *w, rtk_rect *rect)
 	rect->height = w->height;
 }
 
-static void abs_pos(rtk_widget *w, int *xpos, int *ypos)
-{
-	int x, y, px, py;
-
-	x = w->x;
-	y = w->y;
-
-	if(w->par) {
-		abs_pos((rtk_widget*)w->par, &px, &py);
-		x += px;
-		y += py;
-	}
-
-	*xpos = x;
-	*ypos = y;
-}
-
-#define COL_BG			0xff666666
-#define COL_BGHL		0xff808080
-#define COL_LBEV		0xffaaaaaa
-#define COL_SBEV		0xff222222
-#define COL_TEXT		0xff000000
-#define COL_WINFRM		0xff6688cc
-#define COL_WINFRM_LIT	0xff88aaff
-#define COL_WINFRM_SHAD	0xff224466
-#define COL_TBOX		0xffeeccbb
+#define COL_BG					0xff666666
+#define COL_BGHL				0xff808080
+#define COL_LBEV				0xffaaaaaa
+#define COL_SBEV				0xff222222
+#define COL_TEXT				0xff000000
+#define COL_WINFRM_FOCUS		0xff6688cc
+#define COL_WINFRM_LIT_FOCUS	0xff88aaff
+#define COL_WINFRM_SHAD_FOCUS	0xff224466
+#define COL_WINFRM				0xff667788
+#define COL_WINFRM_LIT			0xff8899aa
+#define COL_WINFRM_SHAD			0xff224455
+#define COL_TBOX				0xffeeccbb
 
 static void hline(int x, int y, int sz, uint32_t col)
 {
@@ -284,7 +294,12 @@ static void vline(int x, int y, int sz, uint32_t col)
 	gfx.fill(&rect, col);
 }
 
-enum {FRM_SOLID, FRM_OUTSET, FRM_INSET};
+enum {
+	FRM_SOLID,
+	FRM_OUTSET,
+	FRM_INSET,
+	FRM_FILLBG = 0x100
+};
 
 enum {UICOL_BG, UICOL_LBEV, UICOL_SBEV};
 static uint32_t uicol[3];
@@ -296,9 +311,13 @@ static void uicolor(uint32_t col, uint32_t lcol, uint32_t scol)
 	uicol[UICOL_SBEV] = scol;
 }
 
-static void draw_frame(rtk_rect *rect, int type)
+static void draw_frame(rtk_rect *rect, int type, int sz)
 {
-	int tlcol, brcol;
+	int i, tlcol, brcol, fillbg;
+	rtk_rect r = *rect;
+
+	fillbg = type & FRM_FILLBG;
+	type &= ~FRM_FILLBG;
 
 	switch(type) {
 	case FRM_OUTSET:
@@ -316,10 +335,23 @@ static void draw_frame(rtk_rect *rect, int type)
 		break;
 	}
 
-	hline(rect->x, rect->y, rect->width, tlcol);
-	vline(rect->x, rect->y + 1, rect->height - 2, tlcol);
-	hline(rect->x, rect->y + rect->height - 1, rect->width, brcol);
-	vline(rect->x + rect->width - 1, rect->y + 1, rect->height - 2, brcol);
+	for(i=0; i<sz; i++) {
+		if(r.width <= 2 || r.height <= 2) break;
+
+		hline(r.x, r.y, r.width, tlcol);
+		vline(r.x, r.y + 1, r.height - 2, tlcol);
+		hline(r.x, r.y + r.height - 1, r.width, brcol);
+		vline(r.x + r.width - 1, r.y + 1, r.height - 2, brcol);
+
+		r.x++;
+		r.y++;
+		r.width -= 2;
+		r.height -= 2;
+	}
+
+	if(fillbg) {
+		gfx.fill(&r, uicol[UICOL_BG]);
+	}
 }
 
 static void draw_window(rtk_widget *w)
@@ -333,7 +365,11 @@ static void draw_window(rtk_widget *w)
 		widget_rect(w, &rect);
 
 		if(w->flags & FRAME) {
-			uicolor(COL_WINFRM, COL_WINFRM_LIT, COL_WINFRM_SHAD);
+			if(w->flags & FOCUS) {
+				uicolor(COL_WINFRM_FOCUS, COL_WINFRM_LIT_FOCUS, COL_WINFRM_SHAD_FOCUS);
+			} else {
+				uicolor(COL_WINFRM, COL_WINFRM_LIT, COL_WINFRM_SHAD);
+			}
 
 			frmrect = rect;
 			frmrect.width += WINFRM_SZ * 2;
@@ -346,19 +382,18 @@ static void draw_window(rtk_widget *w)
 			tbrect.width = rect.width;
 			tbrect.height = WINFRM_TBAR;
 
-			draw_frame(&frmrect, FRM_OUTSET);
+			draw_frame(&frmrect, FRM_OUTSET, 1);
 			frmrect.x++;
 			frmrect.y++;
 			frmrect.width -= 2;
 			frmrect.height -= 2;
-			draw_frame(&frmrect, FRM_INSET);
+			draw_frame(&frmrect, FRM_INSET, 1);
 
-			draw_frame(&tbrect, FRM_OUTSET);
+			draw_frame(&tbrect, FRM_OUTSET | FRM_FILLBG, 1);
 			tbrect.x++;
 			tbrect.y++;
 			tbrect.width -= 2;
 			tbrect.height -= 2;
-			gfx.fill(&tbrect, COL_WINFRM);
 
 			gfx.drawtext(tbrect.x, tbrect.y + tbrect.height - 1, w->text);
 		}
@@ -376,6 +411,16 @@ static void draw_window(rtk_widget *w)
 	}
 }
 
+static void draw_label(rtk_widget *w)
+{
+	rtk_rect rect;
+
+	widget_rect(w, &rect);
+	rtk_abs_pos(w, &rect.x, &rect.y);
+
+	gfx.drawtext(rect.x + PAD, rect.y + rect.height - PAD, w->text);
+}
+
 static void draw_button(rtk_widget *w)
 {
 	int pressed;
@@ -383,7 +428,7 @@ static void draw_button(rtk_widget *w)
 	rtk_button *bn = (rtk_button*)w;
 
 	widget_rect(w, &rect);
-	abs_pos(w, &rect.x, &rect.y);
+	rtk_abs_pos(w, &rect.x, &rect.y);
 
 	if(bn->mode == RTK_TOGGLEBN) {
 		pressed = w->value;
@@ -391,23 +436,19 @@ static void draw_button(rtk_widget *w)
 		pressed = w->flags & PRESS;
 	}
 
-	uicolor(COL_BG, COL_LBEV, COL_SBEV);
+	uicolor(w->flags & HOVER ? COL_BGHL : COL_BG, COL_LBEV, COL_SBEV);
 
-	if(rect.width > 2 && rect.height > 2) {
-		draw_frame(&rect, pressed ? FRM_INSET : FRM_OUTSET);
+	draw_frame(&rect, (pressed ? FRM_INSET : FRM_OUTSET) | FRM_FILLBG, 1);
+	rect.x++;
+	rect.y++;
+	rect.width -= 2;
+	rect.height -= 2;
 
-		rect.x++;
-		rect.y++;
-		rect.width -= 2;
-		rect.height -= 2;
-	}
-
-	gfx.fill(&rect, w->flags & HOVER ? COL_BGHL : COL_BG);
 	if(bn->icon) {
 		int offs = w->flags & PRESS ? PAD + 1 : PAD;
 		gfx.blit(rect.x + offs, rect.y + offs, bn->icon);
-	} else {
-		gfx.fill(&rect, 0xff802020);
+	} else if(w->text) {
+		gfx.drawtext(rect.x + PAD, rect.y + rect.height - PAD, w->text);
 	}
 }
 
@@ -420,20 +461,17 @@ static void draw_textbox(rtk_widget *w)
 	rtk_rect rect;
 
 	widget_rect(w, &rect);
-	abs_pos(w, &rect.x, &rect.y);
+	rtk_abs_pos(w, &rect.x, &rect.y);
 
 	uicolor(COL_TBOX, COL_LBEV, COL_SBEV);
 
-	if(rect.width > 2 && rect.height > 2) {
-		draw_frame(&rect, FRM_INSET);
+	draw_frame(&rect, FRM_INSET | FRM_FILLBG, w->flags & FOCUS ? 2 : 1);
 
-		rect.x++;
-		rect.y++;
-		rect.width -= 2;
-		rect.height -= 2;
-	}
+	rect.x++;
+	rect.y++;
+	rect.width -= 2;
+	rect.height -= 2;
 
-	gfx.fill(&rect, COL_TBOX);
 	if(w->text) {
 		gfx.drawtext(rect.x, rect.y + rect.height - PAD, w->text);
 	}
@@ -453,7 +491,7 @@ static void draw_separator(rtk_widget *w)
 	uicolor(COL_BG, COL_LBEV, COL_SBEV);
 
 	widget_rect(w, &rect);
-	abs_pos(w, &rect.x, &rect.y);
+	rtk_abs_pos(w, &rect.x, &rect.y);
 
 	switch(win->layout) {
 	case RTK_VBOX:
@@ -470,6 +508,6 @@ static void draw_separator(rtk_widget *w)
 		break;
 	}
 
-	draw_frame(&rect, FRM_INSET);
+	draw_frame(&rect, FRM_INSET, 1);
 }
 

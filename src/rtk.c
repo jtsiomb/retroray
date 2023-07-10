@@ -3,6 +3,7 @@
 #include "imago2.h"
 #include "rtk.h"
 #include "rtk_impl.h"
+#include "logger.h"
 
 static void on_any_nop();
 static void on_window_drag(rtk_widget *w, int dx, int dy, int total_dx, int total_dy);
@@ -528,6 +529,35 @@ static void setpress(rtk_widget *w, int press)
 	rtk_invalfb(w);
 }
 
+static void setfocus(rtk_screen *scr, rtk_widget *w)
+{
+	rtk_window *win;
+
+	if(scr->focus) {
+		scr->focus->flags &= ~FOCUS;
+	}
+
+	if(w->flags & CANFOCUS) {
+		w->flags |= FOCUS;
+		scr->focus = w;
+	}
+
+	if(scr->focuswin) {
+		scr->focuswin->flags &= ~FOCUS;
+		rtk_invalidate((rtk_widget*)scr->focuswin);
+	}
+
+	win = (rtk_window*)w;
+	while(win->par) {
+		win = win->par;
+	}
+	win->flags |= FOCUS;
+	scr->focuswin = win;
+
+	rtk_invalidate(w);
+	rtk_invalidate((rtk_widget*)win);
+}
+
 /* --- screen functions --- */
 rtk_screen *rtk_create_screen(void)
 {
@@ -624,14 +654,18 @@ int rtk_input_mbutton(rtk_screen *scr, int bn, int press, int x, int y)
 		handled = w ? 1 : 0;
 	} else {
 		if(bn == 0) {
+			rtk_widget *newfocus = 0;
 			if(w) {
 				if(scr->press == w) {
+					newfocus = rtk_find_widget_at(scr, x, y, 0);
 					w->on_click(w);
 				} else {
 					w->on_drop(scr->press, w);
 				}
 				handled = 1;
 			}
+
+			setfocus(scr, newfocus);
 
 			if(scr->press) {
 				setpress(scr->press, 0);
