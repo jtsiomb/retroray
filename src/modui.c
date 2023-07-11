@@ -130,7 +130,7 @@ static int create_mtlwin(void)
 	rtk_add_window(modui, mtlwin);
 
 	rtk_create_label(mtlwin, "Name:");
-	rtk_create_textbox(mtlwin, "foo", 0);
+	rtk_create_textbox(mtlwin, 0, 0);
 
 	return 0;
 }

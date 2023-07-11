@@ -30,9 +30,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #define DEF_MOUSE_SPEED	50
 #define DEF_SBALL_SPEED	50
 
+#define DEF_SCALE		1
 
 struct options opt = {
 	DEF_XRES, DEF_YRES, DEF_BPP,
+#if !defined(MSDOS) && !defined(__MSDOS__)
+	DEF_SCALE,
+#endif
 	DEF_VSYNC,
 	DEF_FULLSCR,
 	DEF_MOUSE_SPEED, DEF_SBALL_SPEED,
@@ -50,6 +54,9 @@ int load_options(const char *fname)
 	opt.xres = ts_lookup_int(cfg, "options.video.xres", DEF_XRES);
 	opt.yres = ts_lookup_int(cfg, "options.video.yres", DEF_YRES);
 	opt.bpp = ts_lookup_int(cfg, "options.video.bpp", DEF_BPP);
+#if !defined(MSDOS) && !defined(__MSDOS__)
+	opt.scale = ts_lookup_int(cfg, "options.video.scale", DEF_SCALE);
+#endif
 	opt.vsync = ts_lookup_int(cfg, "options.video.vsync", DEF_VSYNC);
 	opt.fullscreen = ts_lookup_int(cfg, "options.video.fullscreen", DEF_FULLSCR);
 
@@ -82,6 +89,9 @@ int save_options(const char *fname)
 	WROPT(2, "xres = %d", opt.xres, DEF_XRES);
 	WROPT(2, "yres = %d", opt.yres, DEF_YRES);
 	WROPT(2, "bpp = %d", opt.bpp, DEF_BPP);
+#if !defined(MSDOS) && !defined(__MSDOS__)
+	WROPT(2, "scale = %d", opt.scale, DEF_SCALE);
+#endif
 	WROPT(2, "vsync = %d", opt.vsync, DEF_VSYNC);
 	WROPT(2, "fullscreen = %d", opt.fullscreen, DEF_FULLSCR);
 	fprintf(fp, "\t}\n");

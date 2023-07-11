@@ -20,6 +20,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 struct options {
 	int xres, yres, bpp;
+#if !defined(MSDOS) && !defined(__MSDOS__)
+	int scale;
+#endif
 	int vsync;
 	int fullscreen;
 

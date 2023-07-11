@@ -1,9 +1,12 @@
 #include "app.h"
 #include "rtk.h"
 #include "rtk_impl.h"
+#include "util.h"
 
 rtk_draw_ops rtk_gfx;
 #define gfx rtk_gfx
+
+static int fontheight;
 
 static void draw_window(rtk_widget *w);
 static void draw_label(rtk_widget *w);
@@ -21,6 +24,15 @@ static void draw_separator(rtk_widget *w);
 
 #define WINFRM_SZ	2
 #define WINFRM_TBAR	16
+
+void rtk_init_drawing(void)
+{
+	const char *s = "QI|9g/";
+	rtk_rect r;
+
+	gfx.textrect(s, &r);
+	fontheight = r.height;
+}
 
 
 void rtk_calc_widget_rect(rtk_widget *w, rtk_rect *rect)
@@ -195,6 +207,29 @@ static void calc_layout(rtk_widget *w)
 
 	w->flags &= ~GEOMCHG;
 	rtk_invalidate(w);
+}
+
+static int calc_substr_width(const char *str, int start, int end)
+{
+	rtk_rect rect;
+	int len;
+	char *buf;
+
+	if(end <= 0) {
+		end = strlen(str);
+	}
+	if(end <= start) {
+		return 0;
+	}
+
+	len = end - start;
+	buf = alloca(len + 1);
+
+	memcpy(buf, str + start, len);
+	buf[len] = 0;
+
+	gfx.textrect(buf, &rect);
+	return rect.width;
 }
 
 void rtk_draw_widget(rtk_widget *w)
@@ -459,6 +494,8 @@ static void draw_checkbox(rtk_widget *w)
 static void draw_textbox(rtk_widget *w)
 {
 	rtk_rect rect;
+	rtk_textbox *tb = (rtk_textbox*)w;
+	int curx = 0;
 
 	widget_rect(w, &rect);
 	rtk_abs_pos(w, &rect.x, &rect.y);
@@ -473,8 +510,19 @@ static void draw_textbox(rtk_widget *w)
 	rect.height -= 2;
 
 	if(w->text) {
-		gfx.drawtext(rect.x, rect.y + rect.height - PAD, w->text);
+		gfx.drawtext(rect.x + PAD, rect.y + rect.height - PAD, w->text);
+
+		if(w->flags & FOCUS) {
+			curx = calc_substr_width(w->text, tb->scroll, tb->cursor);
+		}
 	}
+
+	/* cursor */
+	if(w->flags & FOCUS) {
+		vline(rect.x + PAD + curx, rect.y + rect.height - PAD - fontheight, fontheight, 0xff000000);
+	}
+
+	rtk_invalfb(w);
 }
 
 static void draw_slider(rtk_widget *w)

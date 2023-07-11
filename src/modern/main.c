@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 
 	load_options(CFGFILE);
 
-	glutInitWindowSize(opt.xres, opt.yres);
+	glutInitWindowSize(opt.xres * opt.scale, opt.yres * opt.scale);
 	glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
 	glutCreateWindow("RetroRay");
 
@@ -92,8 +92,8 @@ int main(int argc, char **argv)
 	wgl_swap_interval_ext = wglGetProcAddress("wglSwapIntervalEXT");
 #endif
 
-	win_width = glutGet(GLUT_WINDOW_WIDTH);
-	win_height = glutGet(GLUT_WINDOW_HEIGHT);
+	win_width = opt.xres;
+	win_height = opt.yres;
 	win_aspect = (float)win_width / win_height;
 
 	init_logger();
@@ -120,7 +120,7 @@ void app_redisplay(int x, int y, int w, int h)
 
 void app_swap_buffers(void)
 {
-	glViewport(0, 0, win_width, win_height);
+	glViewport(0, 0, win_width * opt.scale, win_height * opt.scale);
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
@@ -130,7 +130,7 @@ void app_swap_buffers(void)
 	glOrtho(0, win_width, win_height, 0, -1, 1);
 
 	glRasterPos2i(0, 0);
-	glPixelZoom(1, -1);
+	glPixelZoom(opt.scale, -opt.scale);
 	glEnable(GL_ALPHA_TEST);
 	glAlphaFunc(GL_GREATER, 0.5f);
 	glDrawPixels(win_width, win_height, GL_BGRA, GL_UNSIGNED_BYTE, framebuf);
@@ -169,9 +169,11 @@ void app_quit(void)
 
 void app_resize(int x, int y)
 {
-	if(x == win_width && y == win_height) return;
+	if(x == win_width * opt.scale && y == win_height * opt.scale) {
+		return;
+	}
 
-	glutReshapeWindow(x, y);
+	glutReshapeWindow(x * opt.scale, y * opt.scale);
 }
 
 void app_fullscreen(int fs)
@@ -233,7 +235,7 @@ static void display(void)
 
 static void reshape(int x, int y)
 {
-	app_reshape(x, y);
+	app_reshape(x / opt.scale, y / opt.scale);
 }
 
 static void keydown(unsigned char key, int x, int y)
@@ -267,12 +269,12 @@ static void skeyup(int key, int x, int y)
 static void mouse(int bn, int st, int x, int y)
 {
 	modkeys = glutGetModifiers();
-	app_mouse(bn - GLUT_LEFT_BUTTON, st == GLUT_DOWN, x, y);
+	app_mouse(bn - GLUT_LEFT_BUTTON, st == GLUT_DOWN, x / opt.scale, y / opt.scale);
 }
 
 static void motion(int x, int y)
 {
-	app_motion(x, y);
+	app_motion(x / opt.scale, y / opt.scale);
 }
 
 static int translate_skey(int key)

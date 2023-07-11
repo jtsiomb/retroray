@@ -54,7 +54,8 @@ typedef struct rtk_button {
 
 typedef struct rtk_textbox {
 	WIDGET_COMMON;
-	int cursor;
+	int cursor, scroll;
+	int len, bufsz;
 } rtk_textbox;
 
 typedef struct rtk_slider {
@@ -86,6 +87,7 @@ typedef struct rtk_screen {
 
 extern rtk_draw_ops rtk_gfx;
 
+void rtk_init_drawing(void);
 void rtk_calc_widget_rect(rtk_widget *w, rtk_rect *rect);
 void rtk_abs_pos(rtk_widget *w, int *xpos, int *ypos);
 int rtk_hittest(rtk_widget *w, int x, int y);

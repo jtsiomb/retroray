@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "imago2.h"
+#include "app.h"
 #include "rtk.h"
 #include "rtk_impl.h"
 #include "logger.h"
@@ -8,6 +10,7 @@
 static void on_any_nop();
 static void on_window_drag(rtk_widget *w, int dx, int dy, int total_dx, int total_dy);
 static void on_button_click(rtk_widget *w);
+static void on_textbox_key(rtk_widget *w, int key, int press);
 
 void inval_vport(void);	/* scr_mod.c */
 
@@ -15,6 +18,8 @@ void inval_vport(void);	/* scr_mod.c */
 void rtk_setup(rtk_draw_ops *drawop)
 {
 	rtk_gfx = *drawop;
+
+	rtk_init_drawing();
 }
 
 static int wsize(int type)
@@ -183,6 +188,13 @@ int rtk_visible(const rtk_widget *w)
 void rtk_invalidate(rtk_widget *w)
 {
 	w->flags |= DIRTY;
+
+#if !defined(MSDOS) && !defined(__MSDOS__)
+	/* this is necessary because the GLUT backend will have to see a
+	 * glutRedisplay in order for anything to be redrawn
+	 */
+	rtk_invalfb(w);
+#endif
 }
 
 void rtk_validate(rtk_widget *w)
@@ -409,7 +421,10 @@ rtk_widget *rtk_create_textbox(rtk_widget *par, const char *text, rtk_callback c
 		return 0;
 	}
 	if(par) rtk_win_add(par, w);
-	rtk_set_text(w, text);
+	w->on_key = on_textbox_key;
+	if(text) {
+		rtk_set_text(w, text);
+	}
 	rtk_set_callback(w, cbfunc, 0);
 	rtk_resize(w, 40, 1);
 
@@ -502,7 +517,6 @@ static void sethover(rtk_screen *scr, rtk_widget *w)
 
 		if(scr->hover->type != RTK_WIN) {
 			rtk_invalidate(scr->hover);
-			rtk_invalfb(scr->hover);
 		}
 	}
 	scr->hover = w;
@@ -511,7 +525,6 @@ static void sethover(rtk_screen *scr, rtk_widget *w)
 
 		if(w->type != RTK_WIN) {
 			rtk_invalidate(w);
-			rtk_invalfb(w);
 		}
 	}
 
@@ -526,7 +539,6 @@ static void setpress(rtk_widget *w, int press)
 		w->flags &= ~PRESS;
 	}
 	rtk_invalidate(w);
-	rtk_invalfb(w);
 }
 
 static void setfocus(rtk_screen *scr, rtk_widget *w)
@@ -777,10 +789,57 @@ static void on_button_click(rtk_widget *w)
 			bn->cbfunc(w, bn->cbcls);
 		}
 		rtk_invalidate(w);
-		rtk_invalfb(w);
 		break;
 
 	default:
 		break;
 	}
+}
+
+static void on_textbox_key(rtk_widget *w, int key, int press)
+{
+	rtk_textbox *tb = (rtk_textbox*)w;
+
+	if(!press) return;
+
+	switch(key) {
+	case KEY_BACKSP:
+		if(tb->cursor > 0) {
+			if(tb->cursor < tb->len) {
+				memmove(tb->text + tb->cursor - 1, tb->text + tb->cursor, tb->len - tb->cursor + 1);
+			} else {
+				tb->text[--tb->cursor] = 0;
+			}
+			tb->len--;
+		}
+		rtk_invalidate(w);
+		return;
+
+	default:
+		if(!isprint(key)) {
+			return;
+		}
+		break;
+	}
+
+	/* we end up here if it's a printable character */
+	if(tb->len >= tb->bufsz - 1) {
+		int nsz = tb->bufsz ? tb->bufsz * 2 : 16;
+		void *tmp = realloc(tb->text, nsz);
+		if(!tmp) return;
+		tb->text = tmp;
+		tb->bufsz = nsz;
+	}
+
+	if(tb->cursor < tb->len) {
+		memmove(tb->text + tb->cursor + 1, tb->text + tb->cursor, tb->len - tb->cursor);
+		tb->text[tb->cursor++] = key;
+		tb->len++;
+	} else {
+		tb->text[tb->len++] = key;
+		tb->text[tb->len] = 0;
+		tb->cursor++;
+	}
+
+	rtk_invalidate(w);
 }
