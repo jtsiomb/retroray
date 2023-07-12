@@ -28,6 +28,7 @@ static int wsize(int type)
 	case RTK_LABEL:
 	case RTK_CHECKBOX:
 	case RTK_SEP:
+	case RTK_DRAWBOX:
 		return sizeof(rtk_widget);
 	case RTK_WIN:
 		return sizeof(rtk_window);
@@ -103,6 +104,12 @@ void rtk_pos(rtk_widget *w, int *xptr, int *yptr)
 	*yptr = w->y;
 }
 
+void rtk_abspos(rtk_widget *w, int *xptr, int *yptr)
+{
+	*xptr = w->absx;
+	*yptr = w->absy;
+}
+
 void rtk_resize(rtk_widget *w, int xsz, int ysz)
 {
 	if(!w->par) {
@@ -131,6 +138,14 @@ void rtk_get_rect(rtk_widget *w, rtk_rect *r)
 	r->height = w->height;
 }
 
+void rtk_get_absrect(rtk_widget *w, rtk_rect *r)
+{
+	r->x = w->absx;
+	r->y = w->absy;
+	r->width = w->width;
+	r->height = w->height;
+}
+
 int rtk_set_text(rtk_widget *w, const char *str)
 {
 	rtk_rect rect;
@@ -139,6 +154,12 @@ int rtk_set_text(rtk_widget *w, const char *str)
 
 	free(w->text);
 	w->text = s;
+
+	if(w->type == RTK_TEXTBOX) {
+		rtk_textbox *tb = (rtk_textbox*)w;
+		tb->cursor = tb->scroll = 0;
+		tb->bufsz = strlen(str) + 1;
+	}
 
 	rtk_calc_widget_rect(w, &rect);
 	rtk_resize(w, rect.width, rect.height);
@@ -457,6 +478,39 @@ rtk_widget *rtk_create_separator(rtk_widget *par)
 	return w;
 }
 
+rtk_widget *rtk_create_drawbox(rtk_widget *par, int width, int height, rtk_callback cbfunc)
+{
+	rtk_widget *w;
+
+	if(!(w = rtk_create_widget(RTK_DRAWBOX))) {
+		return 0;
+	}
+	if(par) rtk_win_add(par, w);
+	rtk_resize(w, width, height);
+	rtk_set_callback(w, cbfunc, 0);
+	return w;
+}
+
+/* --- compound widgets --- */
+rtk_widget *rtk_create_field(rtk_widget *par, const char *lbtext, rtk_callback cbfunc)
+{
+	rtk_widget *hbox;
+	rtk_widget *lb, *tb;
+
+	if(!(hbox = rtk_create_window(par, "field", 0, 0, 0, 0, 0))) {
+		return 0;
+	}
+	rtk_win_layout(hbox, RTK_HBOX);
+	if(!(lb = rtk_create_label(hbox, lbtext))) {
+		rtk_free_widget(hbox);
+		return 0;
+	}
+	if(!(tb = rtk_create_textbox(hbox, 0, cbfunc))) {
+		rtk_free_widget(hbox);
+		return 0;
+	}
+	return tb;
+}
 
 /* --- icon functions --- */
 rtk_iconsheet *rtk_load_iconsheet(const char *fname)
@@ -807,10 +861,39 @@ static void on_textbox_key(rtk_widget *w, int key, int press)
 		if(tb->cursor > 0) {
 			if(tb->cursor < tb->len) {
 				memmove(tb->text + tb->cursor - 1, tb->text + tb->cursor, tb->len - tb->cursor + 1);
+				tb->cursor--;
 			} else {
 				tb->text[--tb->cursor] = 0;
 			}
 			tb->len--;
+		}
+		rtk_invalidate(w);
+		return;
+
+	case KEY_HOME:
+		tb->cursor = 0;
+		tb->scroll = 0;
+		rtk_invalidate(w);
+		return;
+
+	case KEY_END:
+		tb->cursor = tb->len;
+		rtk_invalidate(w);
+		return;
+
+	case KEY_LEFT:
+		if(tb->cursor > 0) {
+			tb->cursor--;
+		}
+		if(tb->cursor < tb->scroll) {
+			tb->scroll = tb->cursor;
+		}
+		rtk_invalidate(w);
+		return;
+
+	case KEY_RIGHT:
+		if(tb->cursor < tb->len) {
+			tb->cursor++;
 		}
 		rtk_invalidate(w);
 		return;
@@ -831,14 +914,14 @@ static void on_textbox_key(rtk_widget *w, int key, int press)
 		tb->bufsz = nsz;
 	}
 
-	if(tb->cursor < tb->len) {
-		memmove(tb->text + tb->cursor + 1, tb->text + tb->cursor, tb->len - tb->cursor);
-		tb->text[tb->cursor++] = key;
-		tb->len++;
-	} else {
+	if(tb->len <= 0 || tb->cursor >= tb->len) {
 		tb->text[tb->len++] = key;
 		tb->text[tb->len] = 0;
 		tb->cursor++;
+	} else {
+		memmove(tb->text + tb->cursor + 1, tb->text + tb->cursor, tb->len - tb->cursor + 1);
+		tb->text[tb->cursor++] = key;
+		tb->len++;
 	}
 
 	rtk_invalidate(w);

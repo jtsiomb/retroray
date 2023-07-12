@@ -12,7 +12,8 @@ enum {
 	RTK_CHECKBOX,
 	RTK_TEXTBOX,
 	RTK_SLIDER,
-	RTK_SEP
+	RTK_SEP,
+	RTK_DRAWBOX
 };
 /* window layout */
 enum { RTK_NONE, RTK_VBOX, RTK_HBOX };
@@ -64,9 +65,11 @@ rtk_widget *rtk_parent(rtk_widget *w);
 
 void rtk_move(rtk_widget *w, int x, int y);
 void rtk_pos(rtk_widget *w, int *xptr, int *yptr);
+void rtk_abspos(rtk_widget *w, int *xptr, int *yptr);
 void rtk_resize(rtk_widget *w, int xsz, int ysz);
 void rtk_size(rtk_widget *w, int *xptr, int *yptr);
 void rtk_get_rect(rtk_widget *w, rtk_rect *r);
+void rtk_get_absrect(rtk_widget *w, rtk_rect *r);
 
 int rtk_set_text(rtk_widget *w, const char *str);
 const char *rtk_get_text(rtk_widget *w);
@@ -109,6 +112,7 @@ rtk_widget *rtk_create_checkbox(rtk_widget *par, const char *text, int chk, rtk_
 rtk_widget *rtk_create_textbox(rtk_widget *par, const char *text, rtk_callback cbfunc);
 rtk_widget *rtk_create_slider(rtk_widget *par, int vmin, int vmax, int val, rtk_callback cbfunc);
 rtk_widget *rtk_create_separator(rtk_widget *par);
+rtk_widget *rtk_create_drawbox(rtk_widget *par, int width, int height, rtk_callback cbfunc);
 
 /* compound widgets */
 rtk_widget *rtk_create_field(rtk_widget *par, const char *lbtext, rtk_callback cbfunc);

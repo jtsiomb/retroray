@@ -34,11 +34,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "gaw/gaw_sw.h"
 #endif
 
-static void gui_fill(rtk_rect *rect, uint32_t color);
-static void gui_blit(int x, int y, rtk_icon *icon);
-static void gui_drawtext(int x, int y, const char *str);
-static void gui_textrect(const char *str, rtk_rect *rect);
-
 int mouse_x, mouse_y, mouse_state[3];
 unsigned int modkeys;
 int win_width, win_height;
@@ -291,7 +286,7 @@ void app_chscr(struct app_screen *scr)
 	cur_scr = scr;
 }
 
-static void gui_fill(rtk_rect *rect, uint32_t color)
+void gui_fill(rtk_rect *rect, uint32_t color)
 {
 	int i, j;
 	uint32_t *fb = framebuf + rect->y * win_width + rect->x;
@@ -304,7 +299,7 @@ static void gui_fill(rtk_rect *rect, uint32_t color)
 	}
 }
 
-static void gui_blit(int x, int y, rtk_icon *icon)
+void gui_blit(int x, int y, rtk_icon *icon)
 {
 	int i, j;
 	uint32_t *dest, *src;
@@ -324,7 +319,7 @@ static void gui_blit(int x, int y, rtk_icon *icon)
 	}
 }
 
-static void gui_drawtext(int x, int y, const char *str)
+void gui_drawtext(int x, int y, const char *str)
 {
 	use_font(uifont);
 	dtx_position(x, y);
@@ -332,7 +327,7 @@ static void gui_drawtext(int x, int y, const char *str)
 	dtx_string(str);
 }
 
-static void gui_textrect(const char *str, rtk_rect *rect)
+void gui_textrect(const char *str, rtk_rect *rect)
 {
 	struct dtx_box dbox;
 

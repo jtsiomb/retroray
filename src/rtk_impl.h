@@ -24,6 +24,7 @@ enum {
 #define WIDGET_COMMON \
 	int type; \
 	int x, y, width, height; \
+	int absx, absy; \
 	char *text; \
 	int value; \
 	unsigned int flags; \

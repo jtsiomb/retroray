@@ -15,6 +15,7 @@ static void draw_checkbox(rtk_widget *w);
 static void draw_textbox(rtk_widget *w);
 static void draw_slider(rtk_widget *w);
 static void draw_separator(rtk_widget *w);
+static void draw_drawbox(rtk_widget *w);
 
 
 #define BEVELSZ		1
@@ -49,6 +50,7 @@ void rtk_calc_widget_rect(rtk_widget *w, rtk_rect *rect)
 
 	switch(w->type) {
 	case RTK_WIN:
+	case RTK_DRAWBOX:
 		rect->width = w->width;
 		rect->height = w->height;
 		break;
@@ -75,9 +77,8 @@ void rtk_calc_widget_rect(rtk_widget *w, rtk_rect *rect)
 		break;
 
 	case RTK_TEXTBOX:
-		gfx.textrect("Q|I", &txrect);
-		if(rect->height < txrect.height + OFFS * 2) {
-			rect->height = txrect.height + OFFS * 2;
+		if(rect->height < fontheight + OFFS * 2) {
+			rect->height = fontheight + OFFS * 2;
 		}
 		break;
 
@@ -96,6 +97,8 @@ void rtk_calc_widget_rect(rtk_widget *w, rtk_rect *rect)
 	default:
 		rect->width = rect->height = 0;
 	}
+
+	rtk_abs_pos(w, &w->absx, &w->absy);
 }
 
 void rtk_abs_pos(rtk_widget *w, int *xpos, int *ypos)
@@ -120,7 +123,8 @@ int rtk_hittest(rtk_widget *w, int x, int y)
 {
 	int x0, y0, x1, y1;
 
-	rtk_abs_pos(w, &x0, &y0);
+	x0 = w->absx;
+	y0 = w->absy;
 	x1 = x0 + w->width;
 	y1 = y0 + w->height;
 
@@ -215,11 +219,11 @@ static int calc_substr_width(const char *str, int start, int end)
 	int len;
 	char *buf;
 
-	if(end <= 0) {
-		end = strlen(str);
-	}
 	if(end <= start) {
 		return 0;
+	}
+	if(end <= 0) {
+		end = strlen(str);
 	}
 
 	len = end - start;
@@ -278,6 +282,10 @@ void rtk_draw_widget(rtk_widget *w)
 		draw_separator(w);
 		break;
 
+	case RTK_DRAWBOX:
+		draw_drawbox(w);
+		break;
+
 	default:
 		break;
 	}
@@ -292,6 +300,14 @@ static void widget_rect(rtk_widget *w, rtk_rect *rect)
 {
 	rect->x = w->x;
 	rect->y = w->y;
+	rect->width = w->width;
+	rect->height = w->height;
+}
+
+static void abs_widget_rect(rtk_widget *w, rtk_rect *rect)
+{
+	rect->x = w->absx;
+	rect->y = w->absy;
 	rect->width = w->width;
 	rect->height = w->height;
 }
@@ -450,8 +466,7 @@ static void draw_label(rtk_widget *w)
 {
 	rtk_rect rect;
 
-	widget_rect(w, &rect);
-	rtk_abs_pos(w, &rect.x, &rect.y);
+	abs_widget_rect(w, &rect);
 
 	gfx.drawtext(rect.x + PAD, rect.y + rect.height - PAD, w->text);
 }
@@ -462,8 +477,7 @@ static void draw_button(rtk_widget *w)
 	rtk_rect rect;
 	rtk_button *bn = (rtk_button*)w;
 
-	widget_rect(w, &rect);
-	rtk_abs_pos(w, &rect.x, &rect.y);
+	abs_widget_rect(w, &rect);
 
 	if(bn->mode == RTK_TOGGLEBN) {
 		pressed = w->value;
@@ -497,8 +511,7 @@ static void draw_textbox(rtk_widget *w)
 	rtk_textbox *tb = (rtk_textbox*)w;
 	int curx = 0;
 
-	widget_rect(w, &rect);
-	rtk_abs_pos(w, &rect.x, &rect.y);
+	abs_widget_rect(w, &rect);
 
 	uicolor(COL_TBOX, COL_LBEV, COL_SBEV);
 
@@ -519,7 +532,9 @@ static void draw_textbox(rtk_widget *w)
 
 	/* cursor */
 	if(w->flags & FOCUS) {
-		vline(rect.x + PAD + curx, rect.y + rect.height - PAD - fontheight, fontheight, 0xff000000);
+		int x = rect.x + PAD + curx - 1;
+		int y = rect.y + rect.height - PAD - fontheight;
+		vline(x, y, fontheight, 0xff000000);
 	}
 
 	rtk_invalfb(w);
@@ -538,8 +553,7 @@ static void draw_separator(rtk_widget *w)
 
 	uicolor(COL_BG, COL_LBEV, COL_SBEV);
 
-	widget_rect(w, &rect);
-	rtk_abs_pos(w, &rect.x, &rect.y);
+	abs_widget_rect(w, &rect);
 
 	switch(win->layout) {
 	case RTK_VBOX:
@@ -559,3 +573,14 @@ static void draw_separator(rtk_widget *w)
 	draw_frame(&rect, FRM_INSET, 1);
 }
 
+static void draw_drawbox(rtk_widget *w)
+{
+	if(!w->cbfunc) {
+		rtk_rect r;
+		abs_widget_rect(w, &r);
+		gfx.fill(&r, 0);
+		return;
+	}
+
+	w->cbfunc(w, w->cbcls);
+}

@@ -21,6 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "sizeint.h"
 #include "logger.h"
 #include "scene.h"
+#include "rtk.h"
 
 #define CFGFILE	"retroray.cfg"
 
@@ -117,5 +118,11 @@ void app_rband(int x, int y, int w, int h);
 
 /* defined in scr_mod.c for convenience */
 void primray(cgm_ray *ray, int x, int y);
+
+void gui_fill(rtk_rect *rect, uint32_t color);
+void gui_blit(int x, int y, rtk_icon *icon);
+void gui_drawtext(int x, int y, const char *str);
+void gui_textrect(const char *str, rtk_rect *rect);
+
 
 #endif	/* APP_H_ */

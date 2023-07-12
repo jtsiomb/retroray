@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "modui.h"
 #include "app.h"
 #include "rtk.h"
+#include "gfxutil.h"
 
 static const char *tbn_icon_name[] = {
 	"new", "open", "save", 0,
@@ -51,6 +52,12 @@ rtk_widget *tools[NUM_TOOLS];
 
 static int create_toolbar(void);
 static int create_mtlwin(void);
+static void mtlpreview_draw(rtk_widget *w, void *cls);
+
+static struct material *curmtl;
+#define MTL_PREVIEW_SZ 128
+static cgm_vec2 mtlsph_uv[MTL_PREVIEW_SZ][MTL_PREVIEW_SZ];
+static cgm_vec3 mtlsph_norm[MTL_PREVIEW_SZ][MTL_PREVIEW_SZ];
 
 int modui_init(void)
 {
@@ -121,7 +128,7 @@ static int create_toolbar(void)
 
 static int create_mtlwin(void)
 {
-	rtk_widget *w;
+	int i, j;
 
 	if(!(mtlwin = rtk_create_window(0, "Materials", win_width / 2, 64, 256, 380,
 					RTK_WIN_FRAME | RTK_WIN_MOVABLE | RTK_WIN_RESIZABLE))) {
@@ -129,8 +136,33 @@ static int create_mtlwin(void)
 	}
 	rtk_add_window(modui, mtlwin);
 
+	/*
 	rtk_create_label(mtlwin, "Name:");
 	rtk_create_textbox(mtlwin, 0, 0);
+	*/
+	rtk_create_drawbox(mtlwin, MTL_PREVIEW_SZ, MTL_PREVIEW_SZ, mtlpreview_draw);
+	rtk_create_field(mtlwin, "Name:", 0);
+
+	if(!curmtl) {
+		curmtl = scn->mtl[0];
+	}
+
+	/* pre-generate preview sphere */
+	for(i=0; i<MTL_PREVIEW_SZ; i++) {
+		float y = (float)i * 2.0f / (float)MTL_PREVIEW_SZ - 1.0f;
+		for(j=0; j<MTL_PREVIEW_SZ; j++) {
+			float x = (float)j * 2.0f / (float)MTL_PREVIEW_SZ - 1.0f;
+			float r = sqrt(x * x + y * y);
+
+			if(r < 1.0f) {
+				float z = sqrt(1.0f - x * x - y * y);
+				cgm_vcons(&mtlsph_norm[j][i], x, y, z);
+			} else {
+				cgm_vcons(&mtlsph_norm[j][i], 0, 0, 0);
+				mtlsph_uv[j][i].x = mtlsph_uv[j][i].y = 0.0f;
+			}
+		}
+	}
 
 	return 0;
 }
@@ -139,4 +171,31 @@ void modui_cleanup(void)
 {
 	rtk_free_iconsheet(icons);
 	rtk_free_screen(modui);
+}
+
+static void mtlpreview_draw(rtk_widget *w, void *cls)
+{
+	int i, j, r, g, b;
+	rtk_rect rect;
+	uint32_t *pix;
+	cgm_vec3 norm;
+
+	rtk_get_absrect(w, &rect);
+
+	assert(rect.width == MTL_PREVIEW_SZ);
+	assert(rect.height == MTL_PREVIEW_SZ);
+
+	pix = framebuf + rect.y * win_width + rect.x;
+	for(i=0; i<MTL_PREVIEW_SZ; i++) {
+		for(j=0; j<MTL_PREVIEW_SZ; j++) {
+			norm = mtlsph_norm[j][i];
+
+			r = (norm.x * 0.5f + 0.5f) * 255.0f;
+			g = (norm.y * 0.5f + 0.5f) * 255.0f;
+			b = (norm.z * 0.5f + 0.5f) * 255.0f;
+
+			pix[j] = PACK_RGB32(r, g, b);
+		}
+		pix += win_width;
+	}
 }
