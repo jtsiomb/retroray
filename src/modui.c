@@ -20,6 +20,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "app.h"
 #include "rtk.h"
 #include "gfxutil.h"
+#include "rend.h"
+#include "cgmath/cgmath.h"
 
 static const char *tbn_icon_name[] = {
 	"new", "open", "save", 0,
@@ -55,6 +57,7 @@ static int create_mtlwin(void);
 static void mtlpreview_draw(rtk_widget *w, void *cls);
 
 static struct material *curmtl;
+static int curmtl_idx;
 #define MTL_PREVIEW_SZ 128
 static cgm_vec2 mtlsph_uv[MTL_PREVIEW_SZ][MTL_PREVIEW_SZ];
 static cgm_vec3 mtlsph_norm[MTL_PREVIEW_SZ][MTL_PREVIEW_SZ];
@@ -129,7 +132,8 @@ static int create_toolbar(void)
 static int create_mtlwin(void)
 {
 	int i, j;
-	rtk_widget *w;
+	rtk_widget *w, *box;
+	rtk_icon *icon;
 
 	if(!(mtlwin = rtk_create_window(0, "Materials", win_width / 2, 64, 256, 380,
 					RTK_WIN_FRAME | RTK_WIN_MOVABLE | RTK_WIN_RESIZABLE))) {
@@ -137,13 +141,24 @@ static int create_mtlwin(void)
 	}
 	rtk_add_window(modui, mtlwin);
 
+	box = rtk_create_window(mtlwin, "mtlselbox", 0, 0, 192, 64, 0);
+	rtk_win_layout(box, RTK_HBOX);
+
+	icon = rtk_define_icon(icons, "leftarrow", xpos, ypos, 16, 16);
+	w = rtk_create_iconbutton(box, icon, 0);
+	w = rtk_create_textbox(box, "", 0);
+	icon = rtk_define_icon(icons, "rightarrow", xpos, ypos, 16, 16);
+	w = rtk_create_iconbutton(box, icon, 0);
+	rtk_create_separator(box);
+	w = rtk_create_iconbutton(box, tbn_icons[TBN_ADD], 0);
+
+
 	rtk_create_drawbox(mtlwin, MTL_PREVIEW_SZ, MTL_PREVIEW_SZ, mtlpreview_draw);
 	w = rtk_create_field(mtlwin, "Name:", 0);
 	rtk_resize(w, 40, rtk_get_height(w));
 
-	if(!curmtl) {
-		curmtl = scn->mtl[0];
-	}
+	curmtl = 0;
+	curmtl_idx = -1;
 
 	/* pre-generate preview sphere */
 	for(i=0; i<MTL_PREVIEW_SZ; i++) {
@@ -176,21 +191,41 @@ static void mtlpreview_draw(rtk_widget *w, void *cls)
 	int i, j, r, g, b;
 	rtk_rect rect;
 	uint32_t *pix;
-	cgm_vec3 norm;
+	cgm_vec3 col, norm;
+	cgm_ray ray;
+	struct rayhit hit;
+	struct object obj;
 
 	rtk_get_absrect(w, &rect);
 
 	assert(rect.width == MTL_PREVIEW_SZ);
 	assert(rect.height == MTL_PREVIEW_SZ);
 
+	if(!curmtl) {
+		gui_fill(&rect, 0xff000000);
+		return;
+	}
+
+	cgm_vcons(&ray.origin, 0, 0, -10);
+	obj.mtl = curmtl;
+
 	pix = framebuf + rect.y * win_width + rect.x;
 	for(i=0; i<MTL_PREVIEW_SZ; i++) {
 		for(j=0; j<MTL_PREVIEW_SZ; j++) {
 			norm = mtlsph_norm[j][i];
 
-			r = (norm.x * 0.5f + 0.5f) * 255.0f;
-			g = (norm.y * 0.5f + 0.5f) * 255.0f;
-			b = (norm.z * 0.5f + 0.5f) * 255.0f;
+			ray.dir = norm;
+			cgm_vsub(&ray.dir, &ray.origin);
+
+			hit.pos = norm;
+			hit.norm = norm;
+			hit.uv = mtlsph_uv[j][i];
+			hit.obj = &obj;
+
+			col = shade(&ray, &hit, 0);
+			r = col.x / 255.0f;
+			g = col.y / 255.0f;
+			b = col.z / 255.0f;
 
 			pix[j] = PACK_RGB32(r, g, b);
 		}

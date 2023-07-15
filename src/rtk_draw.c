@@ -578,7 +578,7 @@ static void draw_drawbox(rtk_widget *w)
 	if(!w->cbfunc) {
 		rtk_rect r;
 		abs_widget_rect(w, &r);
-		gfx.fill(&r, 0);
+		gfx.fill(&r, 0xff000000);
 		return;
 	}
 
