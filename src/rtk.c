@@ -130,6 +130,16 @@ void rtk_size(rtk_widget *w, int *xptr, int *yptr)
 	*yptr = w->height;
 }
 
+int rtk_get_width(rtk_widget *w)
+{
+	return w->width;
+}
+
+int rtk_get_height(rtk_widget *w)
+{
+	return w->height;
+}
+
 void rtk_get_rect(rtk_widget *w, rtk_rect *r)
 {
 	r->x = w->x;
@@ -144,6 +154,10 @@ void rtk_get_absrect(rtk_widget *w, rtk_rect *r)
 	r->y = w->absy;
 	r->width = w->width;
 	r->height = w->height;
+}
+
+void rtk_autosize(rtk_widget *w, unsigned int szopt)
+{
 }
 
 int rtk_set_text(rtk_widget *w, const char *str)

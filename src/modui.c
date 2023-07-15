@@ -129,6 +129,7 @@ static int create_toolbar(void)
 static int create_mtlwin(void)
 {
 	int i, j;
+	rtk_widget *w;
 
 	if(!(mtlwin = rtk_create_window(0, "Materials", win_width / 2, 64, 256, 380,
 					RTK_WIN_FRAME | RTK_WIN_MOVABLE | RTK_WIN_RESIZABLE))) {
@@ -136,12 +137,9 @@ static int create_mtlwin(void)
 	}
 	rtk_add_window(modui, mtlwin);
 
-	/*
-	rtk_create_label(mtlwin, "Name:");
-	rtk_create_textbox(mtlwin, 0, 0);
-	*/
 	rtk_create_drawbox(mtlwin, MTL_PREVIEW_SZ, MTL_PREVIEW_SZ, mtlpreview_draw);
-	rtk_create_field(mtlwin, "Name:", 0);
+	w = rtk_create_field(mtlwin, "Name:", 0);
+	rtk_resize(w, 40, rtk_get_height(w));
 
 	if(!curmtl) {
 		curmtl = scn->mtl[0];

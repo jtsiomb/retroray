@@ -6,14 +6,16 @@
 #include "rtk.h"
 
 enum {
-	VISIBLE		= 0x001,
-	ENABLED		= 0x002,
-	HOVER		= 0x010,
-	PRESS		= 0x020,
-	FOCUS		= 0x040,
-	GEOMCHG		= 0x100,
-	DIRTY		= 0x200,
-	CANFOCUS	= 0x400,
+	VISIBLE		= 0x0001,
+	ENABLED		= 0x0002,
+	HOVER		= 0x0010,
+	PRESS		= 0x0020,
+	FOCUS		= 0x0040,
+	GEOMCHG		= 0x0100,
+	DIRTY		= 0x0200,
+	CANFOCUS	= 0x0400,
+	AUTOWIDTH	= 0x1000,
+	AUTOHEIGHT	= 0x2000,
 
 	/* window flags */
 	FRAME		= RTK_WIN_FRAME << 16,

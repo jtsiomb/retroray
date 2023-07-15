@@ -15,6 +15,13 @@ enum {
 	RTK_SEP,
 	RTK_DRAWBOX
 };
+/* widget sizing policy */
+enum {
+	RTK_AUTOSZ_NONE		= 0,
+	RTK_AUTOSZ_WIDTH	= 1,
+	RTK_AUTOSZ_HEIGHT	= 2,
+	RTK_AUTOSZ_SIZE		= RTK_AUTOSZ_WIDTH | RTK_AUTOSZ_HEIGHT
+};
 /* window layout */
 enum { RTK_NONE, RTK_VBOX, RTK_HBOX };
 /* window flags */
@@ -68,8 +75,12 @@ void rtk_pos(rtk_widget *w, int *xptr, int *yptr);
 void rtk_abspos(rtk_widget *w, int *xptr, int *yptr);
 void rtk_resize(rtk_widget *w, int xsz, int ysz);
 void rtk_size(rtk_widget *w, int *xptr, int *yptr);
+int rtk_get_width(rtk_widget *w);
+int rtk_get_height(rtk_widget *w);
 void rtk_get_rect(rtk_widget *w, rtk_rect *r);
 void rtk_get_absrect(rtk_widget *w, rtk_rect *r);
+
+void rtk_autosize(rtk_widget *w, unsigned int szopt);
 
 int rtk_set_text(rtk_widget *w, const char *str);
 const char *rtk_get_text(rtk_widget *w);
