@@ -151,7 +151,12 @@ int rtk_input_mbutton(rtk_screen *scr, int bn, int press, int x, int y);
 int rtk_input_mmotion(rtk_screen *scr, int x, int y);
 
 /* misc */
+void rtk_null_rect(rtk_rect *r);
 void rtk_fix_rect(rtk_rect *r);
 void rtk_rect_union(rtk_rect *a, const rtk_rect *b);
+
+void rtk_calc_widget_rect(rtk_widget *w, rtk_rect *r);
+
+void rtk_dbg_showrect(rtk_widget *w, int show);
 
 #endif	/* RTK_H_ */

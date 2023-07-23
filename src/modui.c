@@ -141,21 +141,19 @@ static int create_mtlwin(void)
 	}
 	rtk_add_window(modui, mtlwin);
 
-	box = rtk_create_window(mtlwin, "mtlselbox", 0, 0, 192, 64, 0);
+	box = rtk_create_window(mtlwin, "mtlselbox", 0, 0, 192, 8, 0);
+	rtk_autosize(box, RTK_AUTOSZ_SIZE);
 	rtk_win_layout(box, RTK_HBOX);
 
-	icon = rtk_define_icon(icons, "leftarrow", xpos, ypos, 16, 16);
+	icon = rtk_define_icon(icons, "leftarrow", 0, 32, 16, 16);
 	w = rtk_create_iconbutton(box, icon, 0);
 	w = rtk_create_textbox(box, "", 0);
-	icon = rtk_define_icon(icons, "rightarrow", xpos, ypos, 16, 16);
+	icon = rtk_define_icon(icons, "rightarrow", 16, 32, 16, 16);
 	w = rtk_create_iconbutton(box, icon, 0);
 	rtk_create_separator(box);
 	w = rtk_create_iconbutton(box, tbn_icons[TBN_ADD], 0);
 
-
-	rtk_create_drawbox(mtlwin, MTL_PREVIEW_SZ, MTL_PREVIEW_SZ, mtlpreview_draw);
-	w = rtk_create_field(mtlwin, "Name:", 0);
-	rtk_resize(w, 40, rtk_get_height(w));
+	w = rtk_create_drawbox(mtlwin, MTL_PREVIEW_SZ, MTL_PREVIEW_SZ, mtlpreview_draw);
 
 	curmtl = 0;
 	curmtl_idx = -1;

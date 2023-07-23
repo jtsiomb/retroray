@@ -8,6 +8,18 @@ rtk_draw_ops rtk_gfx;
 
 static int fontheight;
 
+enum {
+	FRM_SOLID,
+	FRM_OUTSET,
+	FRM_INSET,
+	FRM_FILLBG = 0x100
+};
+
+static void widget_rect(rtk_widget *w, rtk_rect *rect);
+static void abs_widget_rect(rtk_widget *w, rtk_rect *rect);
+static void uicolor(uint32_t col, uint32_t lcol, uint32_t scol);
+static void draw_frame(rtk_rect *rect, int type, int sz);
+
 static void draw_window(rtk_widget *w);
 static void draw_label(rtk_widget *w);
 static void draw_button(rtk_widget *w);
@@ -38,11 +50,20 @@ void rtk_init_drawing(void)
 
 void rtk_calc_widget_rect(rtk_widget *w, rtk_rect *rect)
 {
+	rtk_widget *child;
 	rtk_button *bn;
 	rtk_rect txrect = {0};
 
 	rect->x = w->x;
 	rect->y = w->y;
+	rect->width = w->width;
+	rect->height = w->height;
+
+	rtk_abs_pos(w, &w->absx, &w->absy);
+
+	if((w->flags & (AUTOWIDTH | AUTOHEIGHT)) == 0) {
+		return;
+	}
 
 	if(w->text) {
 		gfx.textrect(w->text, &txrect);
@@ -50,55 +71,113 @@ void rtk_calc_widget_rect(rtk_widget *w, rtk_rect *rect)
 
 	switch(w->type) {
 	case RTK_WIN:
+		if((w->flags & (AUTOWIDTH | AUTOHEIGHT))) {
+			rtk_rect subrect;
+			rtk_window *win = (rtk_window*)w;
+			rtk_null_rect(&subrect);
+			child = win->clist;
+			while(child) {
+				rtk_rect crect;
+				widget_rect(child, &crect);
+				rtk_rect_union(&subrect, &crect);
+				child = child->next;
+			}
+			if(w->flags & AUTOWIDTH) {
+				rect->width = subrect.width + PAD * 2;
+			}
+			if(w->flags & AUTOHEIGHT) {
+				rect->height = subrect.height + PAD * 2;
+			}
+		}
+		break;
+
 	case RTK_DRAWBOX:
-		rect->width = w->width;
-		rect->height = w->height;
+		if(w->flags & AUTOWIDTH) {
+			rect->width = w->width;
+		}
+		if(w->flags & AUTOHEIGHT) {
+			rect->height = w->height;
+		}
 		break;
 
 	case RTK_BUTTON:
 		bn = (rtk_button*)w;
 		if(bn->icon) {
-			rect->width = bn->icon->width + OFFS * 2;
-			rect->height = bn->icon->height + OFFS * 2;
+			if(w->flags & AUTOWIDTH) {
+				rect->width = bn->icon->width + OFFS * 2;
+			}
+			if(w->flags & AUTOHEIGHT) {
+				rect->height = bn->icon->height + OFFS * 2;
+			}
 		} else {
-			rect->width = txrect.width + OFFS * 2;
-			rect->height = txrect.height + OFFS * 2;
+			if(w->flags & AUTOWIDTH) {
+				rect->width = txrect.width + OFFS * 2;
+			}
+			if(w->flags & AUTOHEIGHT) {
+				rect->height = txrect.height + OFFS * 2;
+			}
 		}
 		break;
 
 	case RTK_CHECKBOX:
-		rect->width = txrect.width + CHKBOXSZ + OFFS * 2 + PAD;
-		rect->height = txrect.height + OFFS * 2;
+		if(w->flags & AUTOWIDTH) {
+			rect->width = txrect.width + CHKBOXSZ + OFFS * 2 + PAD;
+		}
+		if(w->flags & AUTOHEIGHT) {
+			rect->height = txrect.height + OFFS * 2;
+		}
 		break;
 
 	case RTK_LABEL:
-		rect->width = txrect.width + PAD * 2;
-		rect->height = txrect.height + PAD * 2;
+		if(w->flags & AUTOWIDTH) {
+			rect->width = txrect.width + PAD * 2;
+		}
+		if(w->flags & AUTOHEIGHT) {
+			rect->height = txrect.height + PAD * 2;
+		}
 		break;
 
 	case RTK_TEXTBOX:
-		if(rect->height < fontheight + OFFS * 2) {
-			rect->height = fontheight + OFFS * 2;
+		if(w->flags & AUTOHEIGHT) {
+			if(rect->height < fontheight + OFFS * 2) {
+				rect->height = fontheight + OFFS * 2;
+			}
 		}
 		break;
 
 	case RTK_SEP:
 		if(w->par->layout == RTK_VBOX) {
-			rect->width = w->par->width - PAD * 2;
-			rect->height = PAD * 4 + BEVELSZ * 2;
+			if(w->flags & AUTOWIDTH) {
+				rect->width = w->par->width - PAD * 2;
+			}
+			if(w->flags & AUTOHEIGHT) {
+				rect->height = PAD * 4 + BEVELSZ * 2;
+			}
 		} else if(w->par->layout == RTK_HBOX) {
-			rect->width = PAD * 4 + BEVELSZ * 2;
-			rect->height = w->par->height - PAD * 2;
+			if(w->flags & AUTOWIDTH) {
+				rect->width = PAD * 4 + BEVELSZ * 2;
+			}
+			if(w->flags & AUTOHEIGHT) {
+				rect->height = w->par->height - PAD * 2;
+			}
 		} else {
-			rect->width = rect->height = 0;
+			if(w->flags & AUTOWIDTH) {
+				rect->width = 0;
+			}
+			if(w->flags & AUTOHEIGHT) {
+				rect->height = 0;
+			}
 		}
 		break;
 
 	default:
-		rect->width = rect->height = 0;
+		if(w->flags & AUTOWIDTH) {
+			rect->width = 0;
+		}
+		if(w->flags & AUTOHEIGHT) {
+			rect->height = 0;
+		}
 	}
-
-	rtk_abs_pos(w, &w->absx, &w->absy);
 }
 
 void rtk_abs_pos(rtk_widget *w, int *xpos, int *ypos)
@@ -182,7 +261,7 @@ static int need_relayout(rtk_widget *w)
 
 static void calc_layout(rtk_widget *w)
 {
-	int x, y;
+	int x, y, dx, dy;
 	rtk_widget *c;
 	rtk_window *win = (rtk_window*)w;
 	rtk_rect rect;
@@ -206,10 +285,14 @@ static void calc_layout(rtk_widget *w)
 	}
 
 	rtk_calc_widget_rect(w, &rect);
+	dx = rect.width - w->width;
+	dy = rect.height - w->height;
 	w->width = rect.width;
 	w->height = rect.height;
 
-	w->flags &= ~GEOMCHG;
+	if((dx | dy) == 0) {
+		w->flags &= ~GEOMCHG;
+	}
 	rtk_invalidate(w);
 }
 
@@ -290,6 +373,13 @@ void rtk_draw_widget(rtk_widget *w)
 		break;
 	}
 
+	if(w->flags & DBGRECT) {
+		rtk_rect r;
+		abs_widget_rect(w, &r);
+		uicolor(0xffff0000, 0xffff0000, 0xffff0000);
+		draw_frame(&r, FRM_SOLID, 1);
+	}
+
 	if(dirty) {
 		rtk_validate(w);
 		rtk_invalfb(w);
@@ -345,13 +435,6 @@ static void vline(int x, int y, int sz, uint32_t col)
 	gfx.fill(&rect, col);
 }
 
-enum {
-	FRM_SOLID,
-	FRM_OUTSET,
-	FRM_INSET,
-	FRM_FILLBG = 0x100
-};
-
 enum {UICOL_BG, UICOL_LBEV, UICOL_SBEV};
 static uint32_t uicol[3];
 
@@ -381,13 +464,11 @@ static void draw_frame(rtk_rect *rect, int type, int sz)
 		break;
 	case FRM_SOLID:
 	default:
-		tlcol = brcol = 0xff000000;
-		break;
-		break;
+		tlcol = brcol = uicol[UICOL_BG];
 	}
 
 	for(i=0; i<sz; i++) {
-		if(r.width <= 2 || r.height <= 2) break;
+		if(r.width < 2 || r.height < 2) break;
 
 		hline(r.x, r.y, r.width, tlcol);
 		vline(r.x, r.y + 1, r.height - 2, tlcol);
@@ -413,7 +494,7 @@ static void draw_window(rtk_widget *w)
 	int win_dirty = w->flags & DIRTY;
 
 	if(win_dirty) {
-		widget_rect(w, &rect);
+		abs_widget_rect(w, &rect);
 
 		if(w->flags & FRAME) {
 			if(w->flags & FOCUS) {

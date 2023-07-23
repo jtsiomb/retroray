@@ -305,13 +305,9 @@ static void mdl_mouse(int bn, int press, int x, int y)
 		vpdrag |= (1 << bn);
 		if(modkeys) {
 			vpnav |= (1 << bn);
-			dbgmsg("vpnav on\n");
 		}
 	} else {
 		vpnav &= ~(1 << bn);
-		if(!vpnav) {
-			dbgmsg("vpnav off\n");
-		}
 		vpdrag &= ~(1 << bn);
 
 		if(rband_valid) {
@@ -365,7 +361,6 @@ static void mdl_motion(int x, int y)
 	dy = y - mouse_y;
 
 	if(vpnav) {
-		dbgmsg("vpnav %d,%d\n", dx, dy);
 		/* navigation */
 		if(mouse_state[0]) {
 			cam_theta += dx * 0.5f;

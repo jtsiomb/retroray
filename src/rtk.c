@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <limits.h>
 #include "imago2.h"
 #include "app.h"
 #include "rtk.h"
@@ -158,6 +159,12 @@ void rtk_get_absrect(rtk_widget *w, rtk_rect *r)
 
 void rtk_autosize(rtk_widget *w, unsigned int szopt)
 {
+	if(szopt & RTK_AUTOSZ_WIDTH) {
+		w->flags |= AUTOWIDTH;
+	}
+	if(szopt & RTK_AUTOSZ_HEIGHT) {
+		w->flags |= AUTOHEIGHT;
+	}
 }
 
 int rtk_set_text(rtk_widget *w, const char *str)
@@ -402,6 +409,7 @@ rtk_widget *rtk_create_button(rtk_widget *par, const char *str, rtk_callback cbf
 		return 0;
 	}
 	if(par) rtk_win_add(par, w);
+	rtk_autosize(w, RTK_AUTOSZ_SIZE);
 	w->on_click = on_button_click;
 	rtk_set_text(w, str);
 	rtk_set_callback(w, cbfunc, 0);
@@ -416,6 +424,7 @@ rtk_widget *rtk_create_iconbutton(rtk_widget *par, rtk_icon *icon, rtk_callback 
 		return 0;
 	}
 	if(par) rtk_win_add(par, w);
+	rtk_autosize(w, RTK_AUTOSZ_SIZE);
 	w->on_click = on_button_click;
 	rtk_bn_set_icon(w, icon);
 	rtk_set_callback(w, cbfunc, 0);
@@ -430,6 +439,7 @@ rtk_widget *rtk_create_label(rtk_widget *par, const char *text)
 		return 0;
 	}
 	if(par) rtk_win_add(par, w);
+	rtk_autosize(w, RTK_AUTOSZ_SIZE);
 	rtk_set_text(w, text);
 	return w;
 }
@@ -442,6 +452,7 @@ rtk_widget *rtk_create_checkbox(rtk_widget *par, const char *text, int chk, rtk_
 		return 0;
 	}
 	if(par) rtk_win_add(par, w);
+	rtk_autosize(w, RTK_AUTOSZ_SIZE);
 	rtk_set_text(w, text);
 	rtk_set_value(w, chk ? 1 : 0);
 	rtk_set_callback(w, cbfunc, 0);
@@ -456,6 +467,7 @@ rtk_widget *rtk_create_textbox(rtk_widget *par, const char *text, rtk_callback c
 		return 0;
 	}
 	if(par) rtk_win_add(par, w);
+	rtk_autosize(w, RTK_AUTOSZ_HEIGHT);
 	w->on_key = on_textbox_key;
 	if(text) {
 		rtk_set_text(w, text);
@@ -475,6 +487,7 @@ rtk_widget *rtk_create_slider(rtk_widget *par, int vmin, int vmax, int val, rtk_
 		return 0;
 	}
 	if(par) rtk_win_add(par, w);
+	rtk_autosize(w, RTK_AUTOSZ_HEIGHT);
 	rtk_set_callback(w, cbfunc, 0);
 	rtk_slider_set_range(w, vmin, vmax);
 	rtk_set_value(w, val);
@@ -489,6 +502,7 @@ rtk_widget *rtk_create_separator(rtk_widget *par)
 		return 0;
 	}
 	if(par) rtk_win_add(par, w);
+	rtk_autosize(w, RTK_AUTOSZ_SIZE);
 	return w;
 }
 
@@ -783,6 +797,11 @@ int rtk_input_mmotion(rtk_screen *scr, int x, int y)
 
 
 /* --- misc functions --- */
+void rtk_null_rect(rtk_rect *rect)
+{
+	rect->x = rect->y = INT_MAX / 2;
+	rect->width = rect->height = INT_MIN;
+}
 
 void rtk_fix_rect(rtk_rect *rect)
 {
@@ -939,4 +958,13 @@ static void on_textbox_key(rtk_widget *w, int key, int press)
 	}
 
 	rtk_invalidate(w);
+}
+
+void rtk_dbg_showrect(rtk_widget *w, int show)
+{
+	if(show) {
+		w->flags |= DBGRECT;
+	} else {
+		w->flags &= ~DBGRECT;
+	}
 }
