@@ -55,12 +55,25 @@ rtk_widget *tools[NUM_TOOLS];
 static int create_toolbar(void);
 static int create_mtlwin(void);
 static void mtlpreview_draw(rtk_widget *w, void *cls);
+static void mbn_callback(rtk_widget *w, void *cls);
+static void select_material(int midx);
 
 static struct material *curmtl;
 static int curmtl_idx;
 #define MTL_PREVIEW_SZ 128
 static cgm_vec2 mtlsph_uv[MTL_PREVIEW_SZ][MTL_PREVIEW_SZ];
 static cgm_vec3 mtlsph_norm[MTL_PREVIEW_SZ][MTL_PREVIEW_SZ];
+
+struct mtlw {
+	rtk_widget *lb_mtlidx;
+	rtk_widget *tx_mtlname;
+	rtk_widget *bn_prev, *bn_next, *bn_add, *bn_del;
+	rtk_widget *bn_kd, *bn_ks;
+	rtk_widget *slider_shin;
+	rtk_widget *preview;
+};
+static struct mtlw mtlw;
+
 
 int modui_init(void)
 {
@@ -146,23 +159,33 @@ static int create_mtlwin(void)
 	rtk_win_layout(box, RTK_HBOX);
 
 	icon = rtk_define_icon(icons, "leftarrow", 0, 32, 16, 16);
-	w = rtk_create_iconbutton(box, icon, 0);
+	mtlw.bn_prev = rtk_create_iconbutton(box, icon, mbn_callback);
+	mtlw.lb_mtlidx = rtk_create_label(box, "0/0");
 	w = rtk_create_textbox(box, "", 0);
+	rtk_resize(w, 92, 1);
+	mtlw.tx_mtlname = w;
 	icon = rtk_define_icon(icons, "rightarrow", 16, 32, 16, 16);
-	w = rtk_create_iconbutton(box, icon, 0);
+	mtlw.bn_next = rtk_create_iconbutton(box, icon, mbn_callback);
 	rtk_create_separator(box);
-	w = rtk_create_iconbutton(box, tbn_icons[TBN_ADD], 0);
+	mtlw.bn_add = rtk_create_iconbutton(box, tbn_icons[TBN_ADD], mbn_callback);
+	mtlw.bn_del = rtk_create_iconbutton(box, tbn_icons[TBN_RM], mbn_callback);
 
 	w = rtk_create_drawbox(mtlwin, MTL_PREVIEW_SZ, MTL_PREVIEW_SZ, mtlpreview_draw);
+	mtlw.preview = w;
+
+	rtk_create_separator(mtlwin);
+
+	mtlw.bn_kd = rtk_create_button(mtlwin, "diffuse", mbn_callback);
+	mtlw.bn_ks = rtk_create_button(mtlwin, "specular", mbn_callback);
 
 	curmtl = 0;
 	curmtl_idx = -1;
 
 	/* pre-generate preview sphere */
 	for(i=0; i<MTL_PREVIEW_SZ; i++) {
-		float y = (float)i * 2.0f / (float)MTL_PREVIEW_SZ - 1.0f;
+		float y = (1.0f - (float)i * 2.0f / (float)MTL_PREVIEW_SZ) * 1.1f;
 		for(j=0; j<MTL_PREVIEW_SZ; j++) {
-			float x = (float)j * 2.0f / (float)MTL_PREVIEW_SZ - 1.0f;
+			float x = ((float)j * 2.0f / (float)MTL_PREVIEW_SZ - 1.0f) * 1.1f;
 			float r = sqrt(x * x + y * y);
 
 			if(r < 1.0f) {
@@ -189,10 +212,10 @@ static void mtlpreview_draw(rtk_widget *w, void *cls)
 	int i, j, r, g, b;
 	rtk_rect rect;
 	uint32_t *pix;
-	cgm_vec3 col, norm;
-	cgm_ray ray;
+	cgm_vec3 dcol, scol, norm, vdir = {0, 0, 1};
 	struct rayhit hit;
 	struct object obj;
+	struct light lt;
 
 	rtk_get_absrect(w, &rect);
 
@@ -204,7 +227,10 @@ static void mtlpreview_draw(rtk_widget *w, void *cls)
 		return;
 	}
 
-	cgm_vcons(&ray.origin, 0, 0, -10);
+	cgm_vcons(&lt.color, 1, 1, 1);
+	lt.energy = 1;
+	cgm_vcons(&lt.pos, -5, 5, 5);
+
 	obj.mtl = curmtl;
 
 	pix = framebuf + rect.y * win_width + rect.x;
@@ -212,21 +238,71 @@ static void mtlpreview_draw(rtk_widget *w, void *cls)
 		for(j=0; j<MTL_PREVIEW_SZ; j++) {
 			norm = mtlsph_norm[j][i];
 
-			ray.dir = norm;
-			cgm_vsub(&ray.dir, &ray.origin);
-
 			hit.pos = norm;
 			hit.norm = norm;
 			hit.uv = mtlsph_uv[j][i];
 			hit.obj = &obj;
 
-			col = shade(&ray, &hit, 0);
-			r = col.x / 255.0f;
-			g = col.y / 255.0f;
-			b = col.z / 255.0f;
+			dcol = curmtl->kd;
+			cgm_vscale(&dcol, 0.05);
+			scol.x = scol.y = scol.z = 0.0f;
+			calc_light(&hit, &lt, &vdir, &dcol, &scol);
+			r = (dcol.x + scol.x) * 255.0f;
+			g = (dcol.y + scol.y) * 255.0f;
+			b = (dcol.z + scol.z) * 255.0f;
+
+			if(r > 255) r = 255;
+			if(g > 255) g = 255;
+			if(b > 255) b = 255;
 
 			pix[j] = PACK_RGB32(r, g, b);
 		}
 		pix += win_width;
 	}
+}
+
+static void mbn_callback(rtk_widget *w, void *cls)
+{
+	int num;
+	struct material *mtl;
+
+	if(w == mtlw.bn_prev) {
+		if(!(num = scn_num_materials(scn))) {
+			return;
+		}
+		select_material((curmtl_idx + num - 1) % num);
+
+	} else if(w == mtlw.bn_next) {
+		if(!(num = scn_num_materials(scn))) {
+			return;
+		}
+		select_material((curmtl_idx + 1) % num);
+
+	} else if(w == mtlw.bn_add) {
+		if(!(mtl = malloc(sizeof *mtl))) {
+			errormsg("failed to allocate new material!\n");
+			return;
+		}
+		mtl_init(mtl);
+		scn_add_material(scn, mtl);
+		select_material(scn_num_materials(scn) - 1);
+	}
+}
+
+static void select_material(int midx)
+{
+	char buf[64];
+	int num_mtl = scn_num_materials(scn);
+
+	if(midx < 0 || midx >= num_mtl) {
+		return;
+	}
+	curmtl_idx = midx;
+	curmtl = scn->mtl[midx];
+
+	sprintf(buf, "%d/%d", midx + 1, num_mtl);
+	rtk_set_text(mtlw.lb_mtlidx, buf);
+	rtk_set_text(mtlw.tx_mtlname, curmtl->name);
+
+	rtk_invalidate(mtlwin);
 }

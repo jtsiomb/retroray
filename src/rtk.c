@@ -631,14 +631,16 @@ static void setfocus(rtk_screen *scr, rtk_widget *w)
 		scr->focus->flags &= ~FOCUS;
 	}
 
-	if(w->flags & CANFOCUS) {
-		w->flags |= FOCUS;
-		scr->focus = w;
-	}
-
 	if(scr->focuswin) {
 		scr->focuswin->flags &= ~FOCUS;
 		rtk_invalidate((rtk_widget*)scr->focuswin);
+	}
+
+	if(!w) return;
+
+	if(w->flags & CANFOCUS) {
+		w->flags |= FOCUS;
+		scr->focus = w;
 	}
 
 	win = (rtk_window*)w;

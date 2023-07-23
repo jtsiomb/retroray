@@ -23,6 +23,8 @@ void mtl_init(struct material *mtl)
 	static int mtlidx;
 	char namebuf[64];
 
+	memset(mtl, 0, sizeof *mtl);
+
 	cgm_vcons(&mtl->kd, 0.7, 0.7, 0.7);
 	cgm_vcons(&mtl->ks, 0.5, 0.5, 0.5);
 	cgm_vcons(&mtl->ke, 0, 0, 0);

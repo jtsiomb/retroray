@@ -22,9 +22,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "gfxutil.h"
 #include "scene.h"
 
-static int calc_light(const struct rayhit *hit, const struct light *lt,
-		const cgm_vec3 *vdir, cgm_vec3 *dcol, cgm_vec3 *scol);
-
 struct img_pixmap renderbuf;
 
 int max_ray_depth;
@@ -35,7 +32,7 @@ static int roffs;
 static int xstep, ystep;
 static int pan_x, pan_y;
 
-static struct light def_light = {0, {0, 0, 0}, {1, 1, 1}};
+static struct light def_light = {0, {0, 0, 0}, {1, 1, 1}, {1, 1, 1}, 1, 1};
 
 
 int rend_init(void)
@@ -127,6 +124,8 @@ int render(uint32_t *fb)
 	if(scn_num_lights(scn) == 0) {
 		primray(&ray, renderbuf.width / 2, renderbuf.height / 2);
 		def_light.pos = ray.origin;
+		def_light.pos.x -= 10;
+		def_light.pos.y += 10;
 	}
 
 	for(i=0; i<rheight; i+=ystep) {
@@ -218,7 +217,7 @@ cgm_vec3 shade(const cgm_ray *ray, const struct rayhit *hit, int maxiter)
 	return color;
 }
 
-static int calc_light(const struct rayhit *hit, const struct light *lt,
+int calc_light(const struct rayhit *hit, const struct light *lt,
 		const cgm_vec3 *vdir, cgm_vec3 *dcol, cgm_vec3 *scol)
 {
 	float ndotl, ndoth, spec;
@@ -232,7 +231,7 @@ static int calc_light(const struct rayhit *hit, const struct light *lt,
 	ray.origin = hit->pos;
 	ray.dir = ldir;
 
-	if(scn_intersect(scn, &ray, 0)) {
+	if(lt->shadows && scn_intersect(scn, &ray, 0)) {
 		return 0;	/* in shadow */
 	}
 

@@ -56,6 +56,7 @@ struct light {
 	cgm_vec3 pos;
 	cgm_vec3 color, orig_color;
 	float energy;
+	int shadows;
 };
 
 struct scene {

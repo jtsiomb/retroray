@@ -357,6 +357,7 @@ struct light *create_light(void)
 	sprintf(buf, "light%03d", ltidx++);
 	set_light_name(lt, buf);
 
+	lt->shadows = 1;
 	return lt;
 }
 

@@ -202,6 +202,10 @@ int rtk_hittest(rtk_widget *w, int x, int y)
 {
 	int x0, y0, x1, y1;
 
+	if(!(w->flags & VISIBLE)) {
+		return 0;
+	}
+
 	x0 = w->absx;
 	y0 = w->absy;
 	x1 = x0 + w->width;

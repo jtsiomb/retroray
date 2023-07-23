@@ -40,5 +40,9 @@ int ray_trace(const cgm_ray *ray, int maxiter, cgm_vec3 *res);
 cgm_vec3 bgcolor(const cgm_ray *ray);
 cgm_vec3 shade(const cgm_ray *ray, const struct rayhit *hit, int maxiter);
 
+int calc_light(const struct rayhit *hit, const struct light *lt,
+		const cgm_vec3 *vdir, cgm_vec3 *dcol, cgm_vec3 *scol);
+
+
 
 #endif	/* REND_H_ */
