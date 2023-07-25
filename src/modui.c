@@ -67,7 +67,7 @@ static cgm_vec3 mtlsph_norm[MTL_PREVIEW_SZ][MTL_PREVIEW_SZ];
 struct mtlw {
 	rtk_widget *lb_mtlidx;
 	rtk_widget *tx_mtlname;
-	rtk_widget *bn_prev, *bn_next, *bn_add, *bn_del;
+	rtk_widget *bn_prev, *bn_next, *bn_add, *bn_del, *bn_dup, *bn_assign;
 	rtk_widget *bn_kd, *bn_ks;
 	rtk_widget *slider_shin;
 	rtk_widget *preview;
@@ -145,7 +145,7 @@ static int create_toolbar(void)
 static int create_mtlwin(void)
 {
 	int i, j;
-	rtk_widget *w, *box;
+	rtk_widget *w, *box, *vbox;
 	rtk_icon *icon;
 
 	if(!(mtlwin = rtk_create_window(0, "Materials", win_width / 2, 64, 256, 380,
@@ -154,9 +154,7 @@ static int create_mtlwin(void)
 	}
 	rtk_add_window(modui, mtlwin);
 
-	box = rtk_create_window(mtlwin, "mtlselbox", 0, 0, 192, 8, 0);
-	rtk_autosize(box, RTK_AUTOSZ_SIZE);
-	rtk_win_layout(box, RTK_HBOX);
+	box = rtk_create_hbox(mtlwin);
 
 	icon = rtk_define_icon(icons, "leftarrow", 0, 32, 16, 16);
 	mtlw.bn_prev = rtk_create_iconbutton(box, icon, mbn_callback);
@@ -166,12 +164,16 @@ static int create_mtlwin(void)
 	mtlw.tx_mtlname = w;
 	icon = rtk_define_icon(icons, "rightarrow", 16, 32, 16, 16);
 	mtlw.bn_next = rtk_create_iconbutton(box, icon, mbn_callback);
-	rtk_create_separator(box);
-	mtlw.bn_add = rtk_create_iconbutton(box, tbn_icons[TBN_ADD], mbn_callback);
-	mtlw.bn_del = rtk_create_iconbutton(box, tbn_icons[TBN_RM], mbn_callback);
 
-	w = rtk_create_drawbox(mtlwin, MTL_PREVIEW_SZ, MTL_PREVIEW_SZ, mtlpreview_draw);
-	mtlw.preview = w;
+	box = rtk_create_hbox(mtlwin);
+	mtlw.preview = rtk_create_drawbox(box, MTL_PREVIEW_SZ, MTL_PREVIEW_SZ, mtlpreview_draw);
+
+	vbox = rtk_create_vbox(box);
+	mtlw.bn_add = rtk_create_iconbutton(vbox, tbn_icons[TBN_ADD], mbn_callback);
+	mtlw.bn_del = rtk_create_iconbutton(vbox, tbn_icons[TBN_RM], mbn_callback);
+	mtlw.bn_dup = rtk_create_iconbutton(vbox, icon, mbn_callback);
+	mtlw.bn_assign = rtk_create_iconbutton(vbox, icon, mbn_callback);
+
 
 	rtk_create_separator(mtlwin);
 

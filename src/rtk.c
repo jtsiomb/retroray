@@ -520,6 +520,22 @@ rtk_widget *rtk_create_drawbox(rtk_widget *par, int width, int height, rtk_callb
 }
 
 /* --- compound widgets --- */
+rtk_widget *rtk_create_hbox(rtk_widget *par)
+{
+	rtk_widget *box = rtk_create_window(par, "hbox", 0, 0, 0, 0, 0);
+	rtk_autosize(box, RTK_AUTOSZ_SIZE);
+	rtk_win_layout(box, RTK_HBOX);
+	return box;
+}
+
+rtk_widget *rtk_create_vbox(rtk_widget *par)
+{
+	rtk_widget *box = rtk_create_window(par, "vbox", 0, 0, 0, 0, 0);
+	rtk_autosize(box, RTK_AUTOSZ_SIZE);
+	rtk_win_layout(box, RTK_VBOX);
+	return box;
+}
+
 rtk_widget *rtk_create_field(rtk_widget *par, const char *lbtext, rtk_callback cbfunc)
 {
 	rtk_widget *hbox;

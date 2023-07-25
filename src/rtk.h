@@ -126,6 +126,8 @@ rtk_widget *rtk_create_separator(rtk_widget *par);
 rtk_widget *rtk_create_drawbox(rtk_widget *par, int width, int height, rtk_callback cbfunc);
 
 /* compound widgets */
+rtk_widget *rtk_create_hbox(rtk_widget *par);
+rtk_widget *rtk_create_vbox(rtk_widget *par);
 rtk_widget *rtk_create_field(rtk_widget *par, const char *lbtext, rtk_callback cbfunc);
 
 /* icon functions */
