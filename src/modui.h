@@ -27,9 +27,13 @@ extern rtk_screen *modui;
 extern rtk_widget *toolbar, *mtlwin;
 extern rtk_widget *tools[NUM_TOOLS];
 
+extern int selobj;
+
 int modui_init(void);
 void modui_cleanup(void);
 
 void tbn_callback(rtk_widget *w, void *cls);
+
+void inval_vport(void);	/* scr_mod.c */
 
 #endif	/* MODUI_H_ */

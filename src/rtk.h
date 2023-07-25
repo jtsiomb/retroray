@@ -89,6 +89,7 @@ void rtk_set_value(rtk_widget *w, int val);
 int rtk_get_value(rtk_widget *w);
 
 void rtk_set_callback(rtk_widget *w, rtk_callback cbfunc, void *cls);
+void rtk_set_drawfunc(rtk_widget *w, rtk_callback drawfunc, void *cls);
 
 void rtk_show(rtk_widget *w);
 void rtk_hide(rtk_widget *w);

@@ -71,7 +71,6 @@ static int viewport[4];
 static cgm_ray pickray;
 
 static int cur_tool, prev_tool = -1;
-static int selobj = -1;
 
 static rtk_rect rband;
 static int rband_valid;
@@ -93,6 +92,7 @@ static int mdl_init(void)
 	}
 	gen_sphere(mesh_sph, 1.0f, 16, 8, 1.0f, 1.0f);
 
+	selobj = -1;
 	vpdirty = 1;
 	return 0;
 }

@@ -43,6 +43,16 @@ void mtl_destroy(struct material *mtl)
 	free(mtl->name);
 }
 
+void mtl_clone(struct material *dest, const struct material *src)
+{
+	char *name;
+
+	mtl_init(dest);
+	name = dest->name;
+	*dest = *src;
+	dest->name = name;
+}
+
 void mtl_set_name(struct material *mtl, const char *name)
 {
 	char *tmp = strdup(name);

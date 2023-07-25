@@ -161,9 +161,14 @@ void rtk_autosize(rtk_widget *w, unsigned int szopt)
 {
 	if(szopt & RTK_AUTOSZ_WIDTH) {
 		w->flags |= AUTOWIDTH;
+	} else {
+		w->flags &= ~AUTOWIDTH;
 	}
+
 	if(szopt & RTK_AUTOSZ_HEIGHT) {
 		w->flags |= AUTOHEIGHT;
+	} else {
+		w->flags &= ~AUTOHEIGHT;
 	}
 }
 
@@ -208,6 +213,12 @@ void rtk_set_callback(rtk_widget *w, rtk_callback cbfunc, void *cls)
 {
 	w->cbfunc = cbfunc;
 	w->cbcls = cls;
+}
+
+void rtk_set_drawfunc(rtk_widget *w, rtk_callback drawfunc, void *cls)
+{
+	w->drawcb = drawfunc;
+	w->drawcls = cls;
 }
 
 void rtk_show(rtk_widget *w)
@@ -515,7 +526,7 @@ rtk_widget *rtk_create_drawbox(rtk_widget *par, int width, int height, rtk_callb
 	}
 	if(par) rtk_win_add(par, w);
 	rtk_resize(w, width, height);
-	rtk_set_callback(w, cbfunc, 0);
+	rtk_set_drawfunc(w, cbfunc, 0);
 	return w;
 }
 

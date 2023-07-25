@@ -15,6 +15,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+#include <stddef.h>
 #include <assert.h>
 #include "modui.h"
 #include "app.h"
@@ -52,9 +53,12 @@ rtk_screen *modui;
 rtk_widget *toolbar, *mtlwin;
 rtk_widget *tools[NUM_TOOLS];
 
+int selobj;
+
 static int create_toolbar(void);
 static int create_mtlwin(void);
 static void mtlpreview_draw(rtk_widget *w, void *cls);
+static void draw_colorbn(rtk_widget *w, void *cls);
 static void mbn_callback(rtk_widget *w, void *cls);
 static void select_material(int midx);
 
@@ -68,7 +72,7 @@ struct mtlw {
 	rtk_widget *lb_mtlidx;
 	rtk_widget *tx_mtlname;
 	rtk_widget *bn_prev, *bn_next, *bn_add, *bn_del, *bn_dup, *bn_assign;
-	rtk_widget *bn_kd, *bn_ks;
+	rtk_widget *bn_kd, *bn_ks, *bn_ke;
 	rtk_widget *slider_shin;
 	rtk_widget *preview;
 };
@@ -145,10 +149,10 @@ static int create_toolbar(void)
 static int create_mtlwin(void)
 {
 	int i, j;
-	rtk_widget *w, *box, *vbox;
+	rtk_widget *w, *box, *vbox, *hbox;
 	rtk_icon *icon;
 
-	if(!(mtlwin = rtk_create_window(0, "Materials", win_width / 2, 64, 256, 380,
+	if(!(mtlwin = rtk_create_window(0, "Materials", win_width - 200, 50, 180, 420,
 					RTK_WIN_FRAME | RTK_WIN_MOVABLE | RTK_WIN_RESIZABLE))) {
 		return -1;
 	}
@@ -160,7 +164,7 @@ static int create_mtlwin(void)
 	mtlw.bn_prev = rtk_create_iconbutton(box, icon, mbn_callback);
 	mtlw.lb_mtlidx = rtk_create_label(box, "0/0");
 	w = rtk_create_textbox(box, "", 0);
-	rtk_resize(w, 92, 1);
+	rtk_resize(w, 88, 1);
 	mtlw.tx_mtlname = w;
 	icon = rtk_define_icon(icons, "rightarrow", 16, 32, 16, 16);
 	mtlw.bn_next = rtk_create_iconbutton(box, icon, mbn_callback);
@@ -171,14 +175,35 @@ static int create_mtlwin(void)
 	vbox = rtk_create_vbox(box);
 	mtlw.bn_add = rtk_create_iconbutton(vbox, tbn_icons[TBN_ADD], mbn_callback);
 	mtlw.bn_del = rtk_create_iconbutton(vbox, tbn_icons[TBN_RM], mbn_callback);
+	icon = rtk_define_icon(icons, "duplicate", 96, 32, 16, 16);
 	mtlw.bn_dup = rtk_create_iconbutton(vbox, icon, mbn_callback);
+	icon = rtk_define_icon(icons, "apply", 112, 32, 16, 16);
 	mtlw.bn_assign = rtk_create_iconbutton(vbox, icon, mbn_callback);
 
 
 	rtk_create_separator(mtlwin);
 
-	mtlw.bn_kd = rtk_create_button(mtlwin, "diffuse", mbn_callback);
-	mtlw.bn_ks = rtk_create_button(mtlwin, "specular", mbn_callback);
+	/* diffuse color */
+	hbox = rtk_create_hbox(mtlwin);
+	rtk_create_label(hbox, "diffuse ......");
+	mtlw.bn_kd = rtk_create_iconbutton(hbox, 0, mbn_callback);
+	rtk_set_drawfunc(mtlw.bn_kd, draw_colorbn, (void*)offsetof(struct material, kd));
+	rtk_autosize(mtlw.bn_kd, RTK_AUTOSZ_NONE);
+	rtk_resize(mtlw.bn_kd, 18, 18);
+	/* specular color */
+	hbox = rtk_create_hbox(mtlwin);
+	rtk_create_label(hbox, "specular ...");
+	mtlw.bn_ks = rtk_create_iconbutton(hbox, 0, mbn_callback);
+	rtk_set_drawfunc(mtlw.bn_ks, draw_colorbn, (void*)offsetof(struct material, ks));
+	rtk_autosize(mtlw.bn_ks, RTK_AUTOSZ_NONE);
+	rtk_resize(mtlw.bn_ks, 18, 18);
+	/* emissive color */
+	hbox = rtk_create_hbox(mtlwin);
+	rtk_create_label(hbox, "emissive ...");
+	mtlw.bn_ke = rtk_create_iconbutton(hbox, 0, mbn_callback);
+	rtk_set_drawfunc(mtlw.bn_ke, draw_colorbn, (void*)offsetof(struct material, ke));
+	rtk_autosize(mtlw.bn_ke, RTK_AUTOSZ_NONE);
+	rtk_resize(mtlw.bn_ke, 18, 18);
 
 	curmtl = 0;
 	curmtl_idx = -1;
@@ -263,6 +288,31 @@ static void mtlpreview_draw(rtk_widget *w, void *cls)
 	}
 }
 
+static void draw_colorbn(rtk_widget *w, void *cls)
+{
+	int offs = (intptr_t)cls;
+	rtk_rect rect;
+	cgm_vec3 *color;
+	int r, g, b;
+
+	if(!curmtl) {
+		return;
+	}
+
+	color = (cgm_vec3*)((char*)curmtl + offs);
+	r = color->x * 255.0f;
+	g = color->y * 255.0f;
+	b = color->z * 255.0f;
+
+	rtk_get_absrect(w, &rect);
+	rect.x += 3;
+	rect.y += 3;
+	rect.width -= 6;
+	rect.height -= 6;
+
+	gui_fill(&rect, PACK_RGB32(r, g, b));
+}
+
 static void mbn_callback(rtk_widget *w, void *cls)
 {
 	int num;
@@ -288,6 +338,28 @@ static void mbn_callback(rtk_widget *w, void *cls)
 		mtl_init(mtl);
 		scn_add_material(scn, mtl);
 		select_material(scn_num_materials(scn) - 1);
+
+	} else if(w == mtlw.bn_dup) {
+		if(!curmtl) return;
+		if(!(mtl = malloc(sizeof *mtl))) {
+			errormsg("failed to allocate new material!\n");
+			return;
+		}
+		mtl_clone(mtl, curmtl);
+		scn_add_material(scn, mtl);
+		select_material(scn_num_materials(scn) - 1);
+
+	} else if(w == mtlw.bn_assign) {
+		if(!curmtl || selobj < 0) return;
+
+		scn->objects[selobj]->mtl = curmtl;
+		inval_vport();
+
+	} else if(w == mtlw.bn_kd) {
+		if(!curmtl) return;
+
+		cgm_vcons(&curmtl->kd, 1, 0, 0);
+		inval_vport();
 	}
 }
 

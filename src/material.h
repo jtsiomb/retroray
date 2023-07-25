@@ -32,6 +32,7 @@ struct material {
 
 void mtl_init(struct material *mtl);
 void mtl_destroy(struct material *mtl);
+void mtl_clone(struct material *dest, const struct material *src);
 
 void mtl_set_name(struct material *mtl, const char *name);
 

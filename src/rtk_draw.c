@@ -377,6 +377,10 @@ void rtk_draw_widget(rtk_widget *w)
 		break;
 	}
 
+	if(w->drawcb) {
+		w->drawcb(w, w->drawcls);
+	}
+
 	if(w->flags & DBGRECT) {
 		rtk_rect r;
 		abs_widget_rect(w, &r);
