@@ -50,15 +50,18 @@ static rtk_widget *tbn_buttons[NUM_TOOL_BUTTONS];
 static rtk_iconsheet *icons;
 
 rtk_screen *modui;
-rtk_widget *toolbar, *mtlwin;
+rtk_widget *toolbar, *mtlwin, *colordlg;
 rtk_widget *tools[NUM_TOOLS];
 
 int selobj;
 
 static int create_toolbar(void);
 static int create_mtlwin(void);
+static int create_colordlg(void);
 static void mtlpreview_draw(rtk_widget *w, void *cls);
 static void draw_colorbn(rtk_widget *w, void *cls);
+static void draw_huebox(rtk_widget *w, void *cls);
+static void draw_huebar(rtk_widget *w, void *cls);
 static void mbn_callback(rtk_widget *w, void *cls);
 static void select_material(int midx);
 
@@ -78,6 +81,14 @@ struct mtlw {
 };
 static struct mtlw mtlw;
 
+#define HUEBOX_SZ		128
+#define HUEBAR_HEIGHT	32
+struct colw {
+	rtk_widget *huebox, *huebar;
+	int rgb[3], hsv[3];
+};
+static struct colw colw;
+
 
 int modui_init(void)
 {
@@ -94,6 +105,9 @@ int modui_init(void)
 		return -1;
 	}
 	if(create_mtlwin() == -1) {
+		return -1;
+	}
+	if(create_colordlg() == -1) {
 		return -1;
 	}
 	return 0;
@@ -228,6 +242,22 @@ static int create_mtlwin(void)
 	return 0;
 }
 
+static int create_colordlg(void)
+{
+	if(!(colordlg = rtk_create_window(0, "Color selector", 100, 100, 200, 200,
+					RTK_WIN_FRAME | RTK_WIN_MOVABLE))) {
+		return -1;
+	}
+	rtk_add_window(modui, colordlg);
+
+	colw.huebox = rtk_create_drawbox(colordlg, HUEBOX_SZ, HUEBOX_SZ, draw_huebox);
+	rtk_move(colw.huebox, 10, 10);
+	colw.huebar = rtk_create_drawbox(colordlg, HUEBOX_SZ, HUEBAR_HEIGHT, draw_huebar);
+	rtk_move(colw.huebar, 10, HUEBOX_SZ + 15);
+
+	return 0;
+}
+
 void modui_cleanup(void)
 {
 	rtk_free_iconsheet(icons);
@@ -311,6 +341,103 @@ static void draw_colorbn(rtk_widget *w, void *cls)
 	rect.height -= 6;
 
 	gui_fill(&rect, PACK_RGB32(r, g, b));
+}
+
+static void hsv_to_rgb(int h, int s, int v, int *rptr, int *gptr, int *bptr)
+{
+	int r, g, b, c, x, hp, m, frac;
+
+	c = (v * s) >> 8;
+	hp = h * 256 / 60;
+	frac = hp & 0x1ff;
+	x = (c * (256 - abs(frac - 256))) >> 8;
+
+	switch(hp >> 8) {
+	case 0:
+		r = c; g = x; b = 0;
+		break;
+	case 1:
+		r = x; g = c; b = 0;
+		break;
+	case 2:
+		r = 0; g = c; b = x;
+		break;
+	case 3:
+		r = 0; g = x; b = c;
+		break;
+	case 4:
+		r = x; g = 0; b = c;
+		break;
+	case 5:
+	default:
+		r = c; g = 0; b = x;
+	}
+
+	m = v - c;
+	r += m;
+	g += m;
+	b += m;
+
+	*rptr = r > 255 ? 255 : r;
+	*gptr = g > 255 ? 255 : g;
+	*bptr = b > 255 ? 255 : b;
+}
+
+static void draw_huebox(rtk_widget *w, void *cls)
+{
+	int i, j, hue, sat, val, r, g, b;
+	rtk_rect rect;
+	uint32_t *pptr;
+
+	rtk_get_absrect(w, &rect);
+	pptr = framebuf + rect.y * win_width + rect.x;
+
+	hue = colw.hsv[0];
+
+	for(i=0; i<HUEBOX_SZ; i++) {
+		val = (HUEBOX_SZ - 1 - i) * 256 / HUEBOX_SZ;
+		for(j=0; j<HUEBOX_SZ; j++) {
+			sat = j * 256 / HUEBOX_SZ;
+
+			hsv_to_rgb(hue, sat, val, &r, &g, &b);
+			if(val == colw.hsv[2] || sat == colw.hsv[1]) {
+				r = ~r;
+				g = ~g;
+				b = ~b;
+			}
+			pptr[j] = PACK_RGB32(r, g, b);
+		}
+		pptr += win_width;
+	}
+}
+
+static void draw_huebar(rtk_widget *w, void *cls)
+{
+	int i, j, hue, r, g, b;
+	rtk_rect rect;
+	uint32_t *fbptr, *pptr, col;
+
+	rtk_get_absrect(w, &rect);
+	fbptr = framebuf + rect.y * win_width + rect.x;
+
+	for(i=0; i<HUEBOX_SZ; i++) {
+		hue = i * 360 / HUEBOX_SZ;
+		hsv_to_rgb(hue, 255, 255, &r, &g, &b);
+		if(hue == colw.hsv[0]) {
+			r = ~r;
+			g = ~g;
+			b = ~b;
+		}
+		col = PACK_RGB32(r, g, b);
+
+		pptr = fbptr++;
+		for(j=0; j<HUEBAR_HEIGHT / 4; j++) {
+			*pptr = col; pptr += win_width;
+			*pptr = col; pptr += win_width;
+			*pptr = col; pptr += win_width;
+			*pptr = col; pptr += win_width;
+		}
+	}
 }
 
 static void mbn_callback(rtk_widget *w, void *cls)

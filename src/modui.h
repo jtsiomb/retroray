@@ -24,7 +24,7 @@ enum {
 };
 
 extern rtk_screen *modui;
-extern rtk_widget *toolbar, *mtlwin;
+extern rtk_widget *toolbar, *mtlwin, *colordlg;
 extern rtk_widget *tools[NUM_TOOLS];
 
 extern int selobj;

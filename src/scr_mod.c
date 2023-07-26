@@ -165,6 +165,7 @@ static void mdl_display(void)
 		/* dirty all GUI windows */
 		rtk_invalidate(toolbar);
 		rtk_invalidate(mtlwin);
+		rtk_invalidate(colordlg);
 	}
 
 	/* render layer */
@@ -178,6 +179,7 @@ static void mdl_display(void)
 	/* GUI */
 	rtk_draw_widget(toolbar);
 	rtk_draw_widget(mtlwin);
+	rtk_draw_widget(colordlg);
 }
 
 static void draw_object(struct object *obj)
