@@ -64,6 +64,7 @@ static void draw_huebox(rtk_widget *w, void *cls);
 static void draw_huebar(rtk_widget *w, void *cls);
 static void mbn_callback(rtk_widget *w, void *cls);
 static void select_material(int midx);
+static void colbn_handler(rtk_widget *w, void *cls);
 
 static struct material *curmtl;
 static int curmtl_idx;
@@ -82,7 +83,7 @@ struct mtlw {
 static struct mtlw mtlw;
 
 #define HUEBOX_SZ		128
-#define HUEBAR_HEIGHT	32
+#define HUEBAR_HEIGHT	20
 struct colw {
 	rtk_widget *huebox, *huebar;
 	int rgb[3], hsv[3];
@@ -244,16 +245,30 @@ static int create_mtlwin(void)
 
 static int create_colordlg(void)
 {
+	rtk_widget *w;
+
 	if(!(colordlg = rtk_create_window(0, "Color selector", 100, 100, 200, 200,
 					RTK_WIN_FRAME | RTK_WIN_MOVABLE))) {
 		return -1;
 	}
+	rtk_win_layout(colordlg, RTK_NONE);
 	rtk_add_window(modui, colordlg);
 
 	colw.huebox = rtk_create_drawbox(colordlg, HUEBOX_SZ, HUEBOX_SZ, draw_huebox);
-	rtk_move(colw.huebox, 10, 10);
+	rtk_move(colw.huebox, 5, 5);
 	colw.huebar = rtk_create_drawbox(colordlg, HUEBOX_SZ, HUEBAR_HEIGHT, draw_huebar);
-	rtk_move(colw.huebar, 10, HUEBOX_SZ + 15);
+	rtk_move(colw.huebar, 5, HUEBOX_SZ + 10);
+
+	w = rtk_create_button(colordlg, "Cancel", 0);
+	rtk_set_callback(w, colbn_handler, 0);
+	rtk_autosize(w, RTK_AUTOSZ_NONE);
+	rtk_resize(w, 50, 20);
+	rtk_move(w, 30, HUEBOX_SZ + HUEBAR_HEIGHT + 20);
+	w = rtk_create_button(colordlg, "Ok", 0);
+	rtk_set_callback(w, colbn_handler, (void*)1);
+	rtk_autosize(w, RTK_AUTOSZ_NONE);
+	rtk_resize(w, 50, 20);
+	rtk_move(w, 90, HUEBOX_SZ + HUEBAR_HEIGHT + 20);
 
 	return 0;
 }
@@ -506,4 +521,9 @@ static void select_material(int midx)
 	rtk_set_text(mtlw.tx_mtlname, curmtl->name);
 
 	rtk_invalidate(mtlwin);
+}
+
+static void colbn_handler(rtk_widget *w, void *cls)
+{
+	rtk_hide(colordlg);
 }

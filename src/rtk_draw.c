@@ -233,6 +233,8 @@ void rtk_invalfb(rtk_widget *w)
 	rect.width = w->width;
 	rect.height = w->height;
 
+	rtk_abs_pos(w, &rect.x, &rect.y);
+
 	if(w->type == RTK_WIN && (w->flags & FRAME)) {
 		rect.x -= WINFRM_SZ;
 		rect.y -= WINFRM_SZ + WINFRM_TBAR;

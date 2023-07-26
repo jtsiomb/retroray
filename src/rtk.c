@@ -231,6 +231,7 @@ void rtk_hide(rtk_widget *w)
 {
 	w->flags &= ~VISIBLE;
 	rtk_invalfb(w);
+	inval_vport();
 }
 
 int rtk_visible(const rtk_widget *w)
