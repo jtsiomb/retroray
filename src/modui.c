@@ -66,6 +66,8 @@ static void draw_huebar(rtk_widget *w, void *cls);
 static void mbn_callback(rtk_widget *w, void *cls);
 static void select_material(int midx);
 static void colbn_handler(rtk_widget *w, void *cls);
+static void colbox_mbutton(rtk_widget *w, int bn, int press, int x, int y);
+static void colbox_drag(rtk_widget *w, int dx, int dy, int total_dx, int total_dy);
 
 static struct material *curmtl;
 static int curmtl_idx;
@@ -88,6 +90,8 @@ static struct mtlw mtlw;
 struct colw {
 	rtk_widget *huebox, *huebar;
 	int rgb[3], hsv[3];
+	cgm_vec3 *destcol;	/* where to put selected color */
+	rtk_widget *updw;	/* which widget to invalidate on color change */
 };
 static struct colw colw;
 
@@ -256,8 +260,12 @@ static int create_colordlg(void)
 	rtk_add_window(modui, colordlg);
 
 	colw.huebox = rtk_create_drawbox(colordlg, HUEBOX_SZ, HUEBOX_SZ, draw_huebox);
+	rtk_set_mbutton_handler(colw.huebox, colbox_mbutton);
+	rtk_set_drag_handler(colw.huebox, colbox_drag);
 	rtk_move(colw.huebox, 5, 5);
 	colw.huebar = rtk_create_drawbox(colordlg, HUEBOX_SZ, HUEBAR_HEIGHT, draw_huebar);
+	rtk_set_mbutton_handler(colw.huebar, colbox_mbutton);
+	rtk_set_drag_handler(colw.huebar, colbox_drag);
 	rtk_move(colw.huebar, 5, HUEBOX_SZ + 10);
 
 	w = rtk_create_button(colordlg, "Cancel", 0);
@@ -441,6 +449,9 @@ static void rgb_to_hsv(int r, int g, int b, int *hptr, int *sptr, int *vptr)
 	*vptr = v;
 }
 
+#define SVEQ(a, b)	(abs((a) - (b)) < 256 / HUEBOX_SZ)
+#define HEQ(a, b)	(abs((a) - (b)) < 360 / HUEBOX_SZ)
+
 static void draw_huebox(rtk_widget *w, void *cls)
 {
 	int i, j, hue, sat, val, r, g, b;
@@ -458,7 +469,7 @@ static void draw_huebox(rtk_widget *w, void *cls)
 			sat = j * 256 / HUEBOX_SZ;
 
 			hsv_to_rgb(hue, sat, val, &r, &g, &b);
-			if(val == colw.hsv[2] || sat == colw.hsv[1]) {
+			if(SVEQ(val, colw.hsv[2]) || SVEQ(sat, colw.hsv[1])) {
 				r = ~r;
 				g = ~g;
 				b = ~b;
@@ -481,7 +492,7 @@ static void draw_huebar(rtk_widget *w, void *cls)
 	for(i=0; i<HUEBOX_SZ; i++) {
 		hue = i * 360 / HUEBOX_SZ;
 		hsv_to_rgb(hue, 255, 255, &r, &g, &b);
-		if(hue == colw.hsv[0]) {
+		if(HEQ(hue, colw.hsv[0])) {
 			r = ~r;
 			g = ~g;
 			b = ~b;
@@ -543,6 +554,8 @@ static void mbn_callback(rtk_widget *w, void *cls)
 	} else if(w == mtlw.bn_kd) {
 		if(!curmtl) return;
 
+		colw.destcol = &curmtl->kd;
+		colw.updw = w;
 		colw.rgb[0] = curmtl->kd.x * 255.0f;
 		colw.rgb[1] = curmtl->kd.y * 255.0f;
 		colw.rgb[2] = curmtl->kd.z * 255.0f;
@@ -572,5 +585,51 @@ static void select_material(int midx)
 
 static void colbn_handler(rtk_widget *w, void *cls)
 {
+	if(cls) {
+		hsv_to_rgb(colw.hsv[0], colw.hsv[1], colw.hsv[2], colw.rgb, colw.rgb + 1, colw.rgb + 2);
+		colw.destcol->x = (float)colw.rgb[0] / 255.0f;
+		colw.destcol->y = (float)colw.rgb[1] / 255.0f;
+		colw.destcol->z = (float)colw.rgb[2] / 255.0f;
+		rtk_invalidate(colw.updw);
+	}
 	rtk_hide(colordlg);
+}
+
+static int colbox_pressx, colbox_pressy;
+
+static void colbox_mbutton(rtk_widget *w, int bn, int press, int x, int y)
+{
+	if(bn != 0 || !press) return;
+
+	if(w == colw.huebar) {
+		colw.hsv[0] = x * 360 / HUEBOX_SZ;
+	} else if(w == colw.huebox) {
+		colw.hsv[1] = x * 256 / HUEBOX_SZ;
+		colw.hsv[2] = 255 - y * 256 / HUEBOX_SZ;
+	}
+
+	colbox_pressx = x;
+	colbox_pressy = y;
+}
+
+static void colbox_drag(rtk_widget *w, int dx, int dy, int total_dx, int total_dy)
+{
+	int x = colbox_pressx + total_dx;
+	int y = colbox_pressy + total_dy;
+
+	if(x < 0 || y < 0 || x >= HUEBOX_SZ) return;
+
+	if(w == colw.huebar) {
+		if(y >= HUEBAR_HEIGHT) return;
+		colw.hsv[0] = x * 360 / HUEBOX_SZ;
+
+		rtk_invalidate(w);
+		rtk_invalidate(colw.huebox);
+
+	} else if(w == colw.huebox) {
+		colw.hsv[1] = x * 256 / HUEBOX_SZ;
+		colw.hsv[2] = 255 - y * 256 / HUEBOX_SZ;
+
+		rtk_invalidate(w);
+	}
 }

@@ -56,6 +56,7 @@ rtk_widget *rtk_create_widget(int type)
 	w->flags = VISIBLE | ENABLED | GEOMCHG | DIRTY;
 
 	w->on_key = on_any_nop;
+	w->on_mbutton = on_any_nop;
 	w->on_click = on_any_nop;
 	w->on_drag = on_any_nop;
 	w->on_drop = on_any_nop;
@@ -215,10 +216,50 @@ void rtk_set_callback(rtk_widget *w, rtk_callback cbfunc, void *cls)
 	w->cbcls = cls;
 }
 
+void rtk_set_callback_closure(rtk_widget *w, void *cls)
+{
+	w->cbcls = cls;
+}
+
+rtk_callback rtk_get_callback(const rtk_widget *w)
+{
+	return w->cbfunc;
+}
+
+void *rtk_get_callback_closure(const rtk_widget *w)
+{
+	return w->cbcls;
+}
+
 void rtk_set_drawfunc(rtk_widget *w, rtk_callback drawfunc, void *cls)
 {
 	w->drawcb = drawfunc;
 	w->drawcls = cls;
+}
+
+void rtk_set_key_handler(rtk_widget *w, rtk_key_callback func)
+{
+	w->on_key = func;
+}
+
+void rtk_set_mbutton_handler(rtk_widget *w, rtk_mbutton_callback func)
+{
+	w->on_mbutton = func;
+}
+
+void rtk_set_click_handler(rtk_widget *w, rtk_click_callback func)
+{
+	w->on_click = func;
+}
+
+void rtk_set_drag_handler(rtk_widget *w, rtk_drag_callback func)
+{
+	w->on_drag = func;
+}
+
+void rtk_set_drop_handler(rtk_widget *w, rtk_drop_callback func)
+{
+	w->on_drop = func;
 }
 
 void rtk_show(rtk_widget *w)
@@ -768,7 +809,12 @@ int rtk_input_mbutton(rtk_screen *scr, int bn, int press, int x, int y)
 	int handled = 0;
 	rtk_widget *w;
 
-	w = rtk_find_widget_at(scr, x, y, 0);
+	if((w = rtk_find_widget_at(scr, x, y, 0))) {
+		int relx = x - w->absx;
+		int rely = y - w->absy;
+		w->on_mbutton(w, bn, press, relx, rely);
+	}
+
 	if(press) {
 		scr->prev_mx = x;
 		scr->prev_my = y;

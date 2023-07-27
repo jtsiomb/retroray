@@ -272,18 +272,22 @@ static void calc_layout(rtk_widget *w)
 	rtk_window *win = (rtk_window*)w;
 	rtk_rect rect;
 
-	if(w->type == RTK_WIN && win->layout != RTK_NONE) {
+	if(w->type == RTK_WIN) {
 		x = y = PAD;
 
 		c = win->clist;
 		while(c) {
-			rtk_move(c, x, y);
-			calc_layout(c);
+			if(win->layout != RTK_NONE) {
+				rtk_move(c, x, y);
+				calc_layout(c);
 
-			if(win->layout == RTK_VBOX) {
-				y += c->height + PAD * 2;
+				if(win->layout == RTK_VBOX) {
+					y += c->height + PAD * 2;
+				} else if(win->layout == RTK_HBOX) {
+					x += c->width + PAD * 2;
+				}
 			} else {
-				x += c->width + PAD * 2;
+				calc_layout(c);
 			}
 
 			c = c->next;

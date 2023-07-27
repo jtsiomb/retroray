@@ -36,10 +36,12 @@ enum {
 	rtk_widget *next; \
 	rtk_callback cbfunc, drawcb; \
 	void *cbcls, *drawcls; \
-	void (*on_key)(rtk_widget *w, int key, int press); \
-	void (*on_click)(rtk_widget *w); \
-	void (*on_drag)(rtk_widget *w, int dx, int dy, int total_dx, int total_dy); \
-	void (*on_drop)(rtk_widget *w, rtk_widget *targ)
+	void *udata; \
+	rtk_key_callback on_key; \
+	rtk_mbutton_callback on_mbutton; \
+	rtk_click_callback on_click; \
+	rtk_drag_callback on_drag; \
+	rtk_drop_callback on_drop
 
 typedef struct rtk_widget {
 	WIDGET_COMMON;

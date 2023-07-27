@@ -59,6 +59,12 @@ typedef struct rtk_draw_ops {
 } rtk_draw_ops;
 
 typedef void (*rtk_callback)(rtk_widget*, void*);
+/* low level event handling override callbacks */
+typedef void (*rtk_key_callback)(rtk_widget *w, int key, int press);
+typedef void (*rtk_mbutton_callback)(rtk_widget *w, int bn, int press, int x, int y);
+typedef void (*rtk_click_callback)(rtk_widget *w);
+typedef void (*rtk_drag_callback)(rtk_widget *w, int dx, int dy, int total_dx, int total_dy);
+typedef void (*rtk_drop_callback)(rtk_widget *w, rtk_widget *targ);
 
 /* global state */
 void rtk_setup(rtk_draw_ops *drawop);
@@ -88,8 +94,20 @@ const char *rtk_get_text(rtk_widget *w);
 void rtk_set_value(rtk_widget *w, int val);
 int rtk_get_value(rtk_widget *w);
 
+void rtk_set_userdata(rtk_widget *w, void *udata);
+void *rtk_get_userdata(rtk_widget *w);
+
 void rtk_set_callback(rtk_widget *w, rtk_callback cbfunc, void *cls);
+void rtk_set_callback_closure(rtk_widget *w, void *cls);
+rtk_callback rtk_get_callback(const rtk_widget *w);
+void *rtk_get_callback_closure(const rtk_widget *w);
+
 void rtk_set_drawfunc(rtk_widget *w, rtk_callback drawfunc, void *cls);
+void rtk_set_key_handler(rtk_widget *w, rtk_key_callback func);
+void rtk_set_mbutton_handler(rtk_widget *w, rtk_mbutton_callback func);
+void rtk_set_click_handler(rtk_widget *w, rtk_click_callback func);
+void rtk_set_drag_handler(rtk_widget *w, rtk_drag_callback func);
+void rtk_set_drop_handler(rtk_widget *w, rtk_drop_callback func);
 
 void rtk_show(rtk_widget *w);
 void rtk_hide(rtk_widget *w);
