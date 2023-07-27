@@ -23,6 +23,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "gfxutil.h"
 #include "rend.h"
 #include "cgmath/cgmath.h"
+#include "util.h"
 
 static const char *tbn_icon_name[] = {
 	"new", "open", "save", 0,
@@ -270,6 +271,7 @@ static int create_colordlg(void)
 	rtk_resize(w, 50, 20);
 	rtk_move(w, 90, HUEBOX_SZ + HUEBAR_HEIGHT + 20);
 
+	rtk_hide(colordlg);
 	return 0;
 }
 
@@ -398,6 +400,47 @@ static void hsv_to_rgb(int h, int s, int v, int *rptr, int *gptr, int *bptr)
 	*bptr = b > 255 ? 255 : b;
 }
 
+static INLINE int min3(int a, int b, int c)
+{
+	if(a < b) {
+		return a < c ? a : c;
+	}
+	return b < c ? b : c;
+}
+static INLINE int max3(int a, int b, int c)
+{
+	if(a > b) {
+		return a > c ? a : c;
+	}
+	return b > c ? b : c;
+}
+
+static void rgb_to_hsv(int r, int g, int b, int *hptr, int *sptr, int *vptr)
+{
+	int h, s, v, xmax, xmin, c;
+
+	xmax = max3(r, g, b);
+	xmin = min3(r, g, b);
+	c = xmax - xmin;
+
+	v = xmax;
+	if(c == 0) {
+		h = 0;
+	} else if(v == r) {
+		h = (60 * ((((g - b) << 8) / c) % 6)) >> 8;
+	} else if(v == g) {
+		h = (60 * ((b - r) << 8) / c + 2) >> 8;
+	} else {	/* v == b */
+		h = (60 * (((r - g) << 8) / c + 4)) >> 8;
+	}
+
+	s = v == 0 ? 0 : (c << 8) / v;
+
+	*hptr = h;
+	*sptr = s;
+	*vptr = v;
+}
+
 static void draw_huebox(rtk_widget *w, void *cls)
 {
 	int i, j, hue, sat, val, r, g, b;
@@ -500,8 +543,12 @@ static void mbn_callback(rtk_widget *w, void *cls)
 	} else if(w == mtlw.bn_kd) {
 		if(!curmtl) return;
 
-		cgm_vcons(&curmtl->kd, 1, 0, 0);
-		inval_vport();
+		colw.rgb[0] = curmtl->kd.x * 255.0f;
+		colw.rgb[1] = curmtl->kd.y * 255.0f;
+		colw.rgb[2] = curmtl->kd.z * 255.0f;
+		rgb_to_hsv(colw.rgb[0], colw.rgb[1], colw.rgb[2], colw.hsv, colw.hsv + 1, colw.hsv + 2);
+
+		rtk_show(colordlg);
 	}
 }
 
