@@ -83,6 +83,9 @@ struct mtlw {
 	rtk_widget *bn_kd, *bn_ks, *bn_ke;
 	rtk_widget *slider_shin;
 	rtk_widget *preview;
+
+	uint32_t preview_pixels[MTL_PREVIEW_SZ * MTL_PREVIEW_SZ];
+	int preview_valid;
 };
 static struct mtlw mtlw;
 
@@ -245,6 +248,7 @@ static int create_mtlwin(void)
 			}
 		}
 	}
+	mtlw.preview_valid = 0;
 
 	return 0;
 }
@@ -294,7 +298,7 @@ static void mtlpreview_draw(rtk_widget *w, void *cls)
 {
 	int i, j, r, g, b;
 	rtk_rect rect;
-	uint32_t *pix;
+	uint32_t *pix, *savpix;
 	cgm_vec3 dcol, scol, norm, vdir = {0, 0, 1};
 	struct rayhit hit;
 	struct object obj;
@@ -307,40 +311,53 @@ static void mtlpreview_draw(rtk_widget *w, void *cls)
 
 	if(!curmtl) {
 		gui_fill(&rect, 0xff000000);
+		mtlw.preview_valid = 0;
 		return;
 	}
 
-	cgm_vcons(&lt.color, 1, 1, 1);
-	lt.energy = 1;
-	cgm_vcons(&lt.pos, -5, 5, 5);
-
-	obj.mtl = curmtl;
-
 	pix = framebuf + rect.y * win_width + rect.x;
-	for(i=0; i<MTL_PREVIEW_SZ; i++) {
-		for(j=0; j<MTL_PREVIEW_SZ; j++) {
-			norm = mtlsph_norm[j][i];
+	savpix = mtlw.preview_pixels;
 
-			hit.pos = norm;
-			hit.norm = norm;
-			hit.uv = mtlsph_uv[j][i];
-			hit.obj = &obj;
-
-			dcol = curmtl->kd;
-			cgm_vscale(&dcol, 0.05);
-			scol.x = scol.y = scol.z = 0.0f;
-			calc_light(&hit, &lt, &vdir, &dcol, &scol);
-			r = (dcol.x + scol.x) * 255.0f;
-			g = (dcol.y + scol.y) * 255.0f;
-			b = (dcol.z + scol.z) * 255.0f;
-
-			if(r > 255) r = 255;
-			if(g > 255) g = 255;
-			if(b > 255) b = 255;
-
-			pix[j] = PACK_RGB32(r, g, b);
+	if(mtlw.preview_valid) {
+		for(i=0; i<MTL_PREVIEW_SZ; i++) {
+			memcpy(pix, savpix, MTL_PREVIEW_SZ * 4);
+			pix += win_width;
+			savpix += MTL_PREVIEW_SZ;
 		}
-		pix += win_width;
+	} else {
+		cgm_vcons(&lt.color, 1, 1, 1);
+		lt.energy = 1;
+		cgm_vcons(&lt.pos, -5, 5, 5);
+		obj.mtl = curmtl;
+
+		for(i=0; i<MTL_PREVIEW_SZ; i++) {
+			for(j=0; j<MTL_PREVIEW_SZ; j++) {
+				norm = mtlsph_norm[j][i];
+
+				hit.pos = norm;
+				hit.norm = norm;
+				hit.uv = mtlsph_uv[j][i];
+				hit.obj = &obj;
+
+				dcol = curmtl->kd;
+				cgm_vscale(&dcol, 0.05);
+				scol.x = scol.y = scol.z = 0.0f;
+				calc_light(&hit, &lt, &vdir, &dcol, &scol);
+				r = (dcol.x + scol.x) * 255.0f;
+				g = (dcol.y + scol.y) * 255.0f;
+				b = (dcol.z + scol.z) * 255.0f;
+
+				if(r > 255) r = 255;
+				if(g > 255) g = 255;
+				if(b > 255) b = 255;
+
+				pix[j] = savpix[j] = PACK_RGB32(r, g, b);
+			}
+			pix += win_width;
+			savpix += MTL_PREVIEW_SZ;
+		}
+
+		mtlw.preview_valid = 1;
 	}
 }
 
@@ -587,6 +604,7 @@ static void select_material(int midx)
 	rtk_set_text(mtlw.tx_mtlname, curmtl->name);
 
 	rtk_invalidate(mtlwin);
+	mtlw.preview_valid = 0;
 }
 
 static void start_color_picker(cgm_vec3 *dest, rtk_widget *updw)
@@ -610,6 +628,7 @@ static void colbn_handler(rtk_widget *w, void *cls)
 		colw.destcol->y = (float)colw.rgb[1] / 255.0f;
 		colw.destcol->z = (float)colw.rgb[2] / 255.0f;
 		rtk_invalidate(colw.updw);
+		mtlw.preview_valid = 0;
 	}
 	rtk_hide(colordlg);
 }
