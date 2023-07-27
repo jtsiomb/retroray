@@ -724,6 +724,10 @@ static rtk_widget *find_widget_at(rtk_widget *w, int x, int y, unsigned int flag
 		return 0;
 	}
 
+	if(!(w->flags & VISIBLE)) {
+		return 0;
+	}
+
 	win = (rtk_window*)w;
 	c = win->clist;
 	while(c) {
@@ -797,6 +801,11 @@ int rtk_input_mbutton(rtk_screen *scr, int bn, int press, int x, int y)
 			}
 		}
 	}
+	if(handled) {
+		dbgmsg("button: handled (%p [%s])\n", w, w->text ? w->text : "");
+	} else {
+		dbgmsg("button: passthrough\n");
+	}
 	return handled;
 }
 
@@ -815,13 +824,16 @@ int rtk_input_mmotion(rtk_screen *scr, int x, int y)
 		if((dx | dy)) {
 			w->on_drag(w, dx, dy, x - scr->press_x, y - scr->press_y);
 		}
+		dbgmsg("motion: handled (press)\n");
 		return 1;
 	}
 
 	if(!(w = rtk_find_widget_at(scr, x, y, 0))) {
+		dbgmsg("motion: passthrough\n");
 		return 0;
 	}
 	sethover(scr, w);
+	dbgmsg("motion: handled (%p [%s])\n", w, w->text ? w->text : "");
 	return 1;
 }
 
