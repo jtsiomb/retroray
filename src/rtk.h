@@ -110,6 +110,7 @@ void rtk_set_drag_handler(rtk_widget *w, rtk_drag_callback func);
 void rtk_set_drop_handler(rtk_widget *w, rtk_drop_callback func);
 
 void rtk_show(rtk_widget *w);
+void rtk_show_modal(rtk_widget *w);
 void rtk_hide(rtk_widget *w);
 int rtk_visible(const rtk_widget *w);
 
@@ -164,7 +165,8 @@ rtk_screen *rtk_create_screen(void);
 void rtk_free_screen(rtk_screen *scr);
 
 int rtk_add_window(rtk_screen *scr, rtk_widget *win);
-rtk_widget *rtk_find_widget_at(rtk_screen *scr, int x, int y, unsigned int flags);
+/* if win is not null, search only for win descendants */
+rtk_widget *rtk_find_widget_at(rtk_screen *scr, rtk_widget *win, int x, int y, unsigned int flags);
 
 int rtk_input_resize(rtk_screen *scr, int x, int y);
 int rtk_input_key(rtk_screen *scr, int key, int press);

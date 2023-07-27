@@ -65,6 +65,7 @@ static void draw_huebox(rtk_widget *w, void *cls);
 static void draw_huebar(rtk_widget *w, void *cls);
 static void mbn_callback(rtk_widget *w, void *cls);
 static void select_material(int midx);
+static void start_color_picker(cgm_vec3 *dest, rtk_widget *updw);
 static void colbn_handler(rtk_widget *w, void *cls);
 static void colbox_mbutton(rtk_widget *w, int bn, int press, int x, int y);
 static void colbox_drag(rtk_widget *w, int dx, int dy, int total_dx, int total_dy);
@@ -435,11 +436,12 @@ static void rgb_to_hsv(int r, int g, int b, int *hptr, int *sptr, int *vptr)
 	if(c == 0) {
 		h = 0;
 	} else if(v == r) {
-		h = (60 * ((((g - b) << 8) / c) % 6)) >> 8;
+		h = (60 * (((g - b) << 8) / c + (6 << 8))) >> 8;
+		h %= 360;
 	} else if(v == g) {
-		h = (60 * ((b - r) << 8) / c + 2) >> 8;
+		h = (60 * (((b - r) << 8) / c + (2 << 8))) >> 8;
 	} else {	/* v == b */
-		h = (60 * (((r - g) << 8) / c + 4)) >> 8;
+		h = (60 * (((r - g) << 8) / c + (4 << 8))) >> 8;
 	}
 
 	s = v == 0 ? 0 : (c << 8) / v;
@@ -552,16 +554,20 @@ static void mbn_callback(rtk_widget *w, void *cls)
 		inval_vport();
 
 	} else if(w == mtlw.bn_kd) {
-		if(!curmtl) return;
+		if(curmtl) {
+			start_color_picker(&curmtl->kd, w);
+		}
 
-		colw.destcol = &curmtl->kd;
-		colw.updw = w;
-		colw.rgb[0] = curmtl->kd.x * 255.0f;
-		colw.rgb[1] = curmtl->kd.y * 255.0f;
-		colw.rgb[2] = curmtl->kd.z * 255.0f;
-		rgb_to_hsv(colw.rgb[0], colw.rgb[1], colw.rgb[2], colw.hsv, colw.hsv + 1, colw.hsv + 2);
+	} else if(w == mtlw.bn_ks) {
+		if(curmtl) {
+			start_color_picker(&curmtl->ks, w);
+		}
 
-		rtk_show(colordlg);
+	} else if(w == mtlw.bn_ke) {
+		if(curmtl) {
+			start_color_picker(&curmtl->ke, w);
+		}
+
 	}
 }
 
@@ -581,6 +587,19 @@ static void select_material(int midx)
 	rtk_set_text(mtlw.tx_mtlname, curmtl->name);
 
 	rtk_invalidate(mtlwin);
+}
+
+static void start_color_picker(cgm_vec3 *dest, rtk_widget *updw)
+{
+	colw.destcol = dest;
+	colw.updw = updw;
+
+	colw.rgb[0] = dest->x * 255.0f;
+	colw.rgb[1] = dest->y * 255.0f;
+	colw.rgb[2] = dest->z * 255.0f;
+	rgb_to_hsv(colw.rgb[0], colw.rgb[1], colw.rgb[2], colw.hsv, colw.hsv + 1, colw.hsv + 2);
+
+	rtk_show_modal(colordlg);
 }
 
 static void colbn_handler(rtk_widget *w, void *cls)

@@ -268,9 +268,20 @@ void rtk_show(rtk_widget *w)
 	rtk_invalidate(w);
 }
 
+void rtk_show_modal(rtk_widget *w)
+{
+	rtk_show(w);
+	if(w->scr) {
+		w->scr->modal = w;
+	}
+}
+
 void rtk_hide(rtk_widget *w)
 {
 	w->flags &= ~VISIBLE;
+	if(w->scr && w->scr->modal == w) {
+		w->scr->modal = 0;
+	}
 	rtk_invalfb(w);
 	inval_vport();
 }
@@ -381,6 +392,28 @@ int rtk_win_has(rtk_widget *par, rtk_widget *child)
 			return 1;
 		}
 		w = w->next;
+	}
+	return 0;
+}
+
+int rtk_win_descendant(const rtk_widget *par, const rtk_widget *w)
+{
+	rtk_widget *c;
+	rtk_window *parwin = (rtk_window*)par;
+
+	RTK_ASSERT_TYPE(par, RTK_WIN);
+
+	c = parwin->clist;
+	while(c) {
+		if(c == w) {
+			return 1;
+		}
+		if(c->type == RTK_WIN) {
+			if(rtk_win_descendant(c, w)) {
+				return 1;
+			}
+		}
+		c = c->next;
 	}
 	return 0;
 }
@@ -750,6 +783,7 @@ int rtk_add_window(rtk_screen *scr, rtk_widget *win)
 		return -1;
 	}
 	scr->winlist[scr->num_win++] = win;
+	win->scr = scr;
 	return 0;
 }
 
@@ -780,12 +814,17 @@ static rtk_widget *find_widget_at(rtk_widget *w, int x, int y, unsigned int flag
 	return rtk_hittest(w, x, y) ? w : 0;
 }
 
-rtk_widget *rtk_find_widget_at(rtk_screen *scr, int x, int y, unsigned int flags)
+rtk_widget *rtk_find_widget_at(rtk_screen *scr, rtk_widget *win, int x, int y, unsigned int flags)
 {
 	int i;
 	rtk_widget *w;
 
 	if(!flags) flags = ~0;
+
+	if(win) {
+		RTK_ASSERT_TYPE(win, RTK_WIN);
+		return find_widget_at(win, x, y, flags);
+	}
 
 	for(i=0; i<scr->num_win; i++) {
 		if((w = find_widget_at(scr->winlist[i], x, y, flags))) {
@@ -809,7 +848,7 @@ int rtk_input_mbutton(rtk_screen *scr, int bn, int press, int x, int y)
 	int handled = 0;
 	rtk_widget *w;
 
-	if((w = rtk_find_widget_at(scr, x, y, 0))) {
+	if((w = rtk_find_widget_at(scr, scr->modal, x, y, 0))) {
 		int relx = x - w->absx;
 		int rely = y - w->absy;
 		w->on_mbutton(w, bn, press, relx, rely);
@@ -831,7 +870,7 @@ int rtk_input_mbutton(rtk_screen *scr, int bn, int press, int x, int y)
 			rtk_widget *newfocus = 0;
 			if(w) {
 				if(scr->press == w) {
-					newfocus = rtk_find_widget_at(scr, x, y, 0);
+					newfocus = rtk_find_widget_at(scr, scr->modal, x, y, 0);
 					w->on_click(w);
 				} else {
 					w->on_drop(scr->press, w);
@@ -847,7 +886,7 @@ int rtk_input_mbutton(rtk_screen *scr, int bn, int press, int x, int y)
 			}
 		}
 	}
-	return handled;
+	return scr->modal ? 1 : handled;
 }
 
 int rtk_input_mmotion(rtk_screen *scr, int x, int y)
@@ -868,8 +907,8 @@ int rtk_input_mmotion(rtk_screen *scr, int x, int y)
 		return 1;
 	}
 
-	if(!(w = rtk_find_widget_at(scr, x, y, 0))) {
-		return 0;
+	if(!(w = rtk_find_widget_at(scr, scr->modal, x, y, 0))) {
+		return scr->modal ? 1 : 0;
 	}
 	sethover(scr, w);
 	return 1;

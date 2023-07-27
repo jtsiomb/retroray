@@ -41,7 +41,8 @@ enum {
 	rtk_mbutton_callback on_mbutton; \
 	rtk_click_callback on_click; \
 	rtk_drag_callback on_drag; \
-	rtk_drop_callback on_drop
+	rtk_drop_callback on_drop; \
+	rtk_screen *scr
 
 typedef struct rtk_widget {
 	WIDGET_COMMON;
@@ -88,6 +89,8 @@ typedef struct rtk_screen {
 
 	rtk_widget *press;					/* currently pressed widget */
 	int press_x, press_y;				/* position of last mouse press */
+
+	rtk_widget *modal;		/* which window is currently modal (null if none) */
 } rtk_screen;
 
 #define RTK_ASSERT_TYPE(w, t)	assert(w->type == t)

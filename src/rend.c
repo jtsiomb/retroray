@@ -124,8 +124,6 @@ int render(uint32_t *fb)
 	if(scn_num_lights(scn) == 0) {
 		primray(&ray, renderbuf.width / 2, renderbuf.height / 2);
 		def_light.pos = ray.origin;
-		def_light.pos.x -= 10;
-		def_light.pos.y += 10;
 	}
 
 	for(i=0; i<rheight; i+=ystep) {

@@ -929,7 +929,6 @@ static void shade(struct vertex *v)
 		color[1] += st.mtl.kd[1] * st.lt[i].g * ndotl;
 		color[2] += st.mtl.kd[2] * st.lt[i].b * ndotl;
 
-		/*
 		if(st.opt & (1 << GAW_SPECULAR)) {
 			float ndoth;
 			ldir[2] += 1.0f;
@@ -943,7 +942,6 @@ static void shade(struct vertex *v)
 			color[1] += st.mtl.ks[1] * st.lt[i].g * ndoth;
 			color[2] += st.mtl.ks[2] * st.lt[i].b * ndoth;
 		}
-		*/
 	}
 
 	r = cround64(color[0] * 255.0);

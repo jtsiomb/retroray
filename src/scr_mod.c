@@ -111,6 +111,7 @@ static int mdl_start(void)
 	gaw_enable(GAW_CULL_FACE);
 	gaw_enable(GAW_LIGHTING);
 	gaw_enable(GAW_LIGHT0);
+	gaw_enable(GAW_SPECULAR);
 
 	rend_pan(0, -TOOLBAR_HEIGHT);
 	return 0;
