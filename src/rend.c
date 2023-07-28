@@ -219,7 +219,7 @@ int calc_light(const struct rayhit *hit, const struct light *lt,
 		const cgm_vec3 *vdir, cgm_vec3 *dcol, cgm_vec3 *scol)
 {
 	float ndotl, ndoth, spec;
-	cgm_vec3 ldir, hdir;
+	cgm_vec3 norm, ldir, hdir;
 	cgm_ray ray;
 	struct material *mtl = hit->obj->mtl;
 
@@ -233,15 +233,18 @@ int calc_light(const struct rayhit *hit, const struct light *lt,
 		return 0;	/* in shadow */
 	}
 
+	norm = hit->norm;
+	cgm_vnormalize(&norm);
+
 	cgm_vnormalize(&ldir);
 
 	hdir = *vdir;
 	cgm_vadd(&hdir, &ldir);
 	cgm_vnormalize(&hdir);
 
-	ndotl = cgm_vdot(&hit->norm, &ldir);
+	ndotl = cgm_vdot(&norm, &ldir);
 	if(ndotl < 0.0f) ndotl = 0.0f;
-	ndoth = cgm_vdot(&hit->norm, &hdir);
+	ndoth = cgm_vdot(&norm, &hdir);
 	if(ndoth < 0.0f) ndoth = 0.0f;
 
 	spec = pow(ndoth, mtl->shin);

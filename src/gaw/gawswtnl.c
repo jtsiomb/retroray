@@ -902,6 +902,10 @@ static void shade(struct vertex *v)
 	color[1] = st.ambient[1] * st.mtl.kd[1];
 	color[2] = st.ambient[2] * st.mtl.kd[2];
 
+	if(st.opt & (1 << GAW_NORMALIZE)) {
+		NORMALIZE(&v->nx);
+	}
+
 	for(i=0; i<MAX_LIGHTS; i++) {
 		float ldir[3];
 		float ndotl;

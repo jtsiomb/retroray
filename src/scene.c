@@ -251,18 +251,22 @@ int scn_intersect(const struct scene *scn, const cgm_ray *ray, struct rayhit *hi
 struct object *create_object(int type)
 {
 	struct object *obj;
-	struct sphere *sph;
 	char buf[32];
 	static int objid;
 
 	switch(type) {
 	case OBJ_SPHERE:
-		if(!(obj = calloc(1, sizeof *sph))) {
+		if(!(obj = calloc(1, sizeof *obj))) {
 			goto err;
 		}
-		sph = (struct sphere*)obj;
-		sph->rad = 1.0f;
 		sprintf(buf, "sphere%03d", objid);
+		break;
+
+	case OBJ_BOX:
+		if(!(obj = calloc(1, sizeof *obj))) {
+			goto err;
+		}
+		sprintf(buf, "box%03d", objid);
 		break;
 
 	default:
@@ -346,7 +350,7 @@ struct light *create_light(void)
 	static int ltidx;
 	char buf[64];
 
-	if(!(lt = malloc(sizeof *lt))) {
+	if(!(lt = calloc(1, sizeof *lt))) {
 		return 0;
 	}
 	cgm_vcons(&lt->pos, 0, 0, 0);

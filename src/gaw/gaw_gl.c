@@ -178,6 +178,9 @@ void gaw_enable(int st)
 	case GAW_POLYGON_OFFSET:
 		glEnable(GL_POLYGON_OFFSET_FILL);
 		break;
+	case GAW_NORMALIZE:
+		glEnable(GL_NORMALIZE);
+		break;
 	default:
 		break;
 	}
@@ -227,6 +230,9 @@ void gaw_disable(int st)
 		break;
 	case GAW_POLYGON_OFFSET:
 		glDisable(GL_POLYGON_OFFSET_FILL);
+		break;
+	case GAW_NORMALIZE:
+		glDisable(GL_NORMALIZE);
 		break;
 	default:
 		break;

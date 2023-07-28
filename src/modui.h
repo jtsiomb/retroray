@@ -27,7 +27,7 @@ extern rtk_screen *modui;
 extern rtk_widget *toolbar, *objmenu, *mtlwin, *colordlg;
 extern rtk_widget *tools[NUM_TOOLS];
 
-extern int selobj;
+extern int selobj, sellight;
 
 int modui_init(void);
 void modui_cleanup(void);

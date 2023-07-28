@@ -58,6 +58,7 @@ int selobj;
 
 static int create_toolbar(void);
 static void objadd_handler(rtk_widget *w, void *cls);
+static void addlight_handler(rtk_widget *w, void *cls);
 static int create_mtlwin(void);
 static int create_colordlg(void);
 static void mtlpreview_draw(rtk_widget *w, void *cls);
@@ -183,6 +184,10 @@ static int create_toolbar(void)
 	icon = rtk_define_icon(icons, "obj_box", 16, 48, 16, 16);
 	w = rtk_create_iconbutton(objmenu, icon, 0);
 	rtk_set_callback(w, objadd_handler, (void*)OBJ_BOX);
+	icon = rtk_define_icon(icons, "light", 112, 48, 16, 16);
+	w = rtk_create_iconbutton(objmenu, icon, 0);
+	rtk_set_callback(w, addlight_handler, 0);
+
 	rtk_hide(objmenu);
 
 	return 0;
@@ -337,6 +342,21 @@ static void objadd_handler(rtk_widget *w, void *cls)
 
 	scn_add_object(scn, obj);
 	selobj = newidx;
+	inval_vport();
+}
+
+static void addlight_handler(rtk_widget *w, void *cls)
+{
+	struct light *lt;
+
+	rtk_hide(objmenu);
+
+	if(!(lt = create_light())) {
+		return;
+	}
+	lt->pos.y = 10;
+
+	scn_add_light(scn, lt);
 	inval_vport();
 }
 

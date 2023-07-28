@@ -41,11 +41,6 @@ struct object {
 	OBJ_COMMON_ATTR;
 };
 
-struct sphere {
-	OBJ_COMMON_ATTR;
-	float rad;
-};
-
 struct csgnode {
 	OBJ_COMMON_ATTR;
 	int op;

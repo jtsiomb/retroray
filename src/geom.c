@@ -50,7 +50,7 @@ int ray_object_csg(const cgm_ray *ray, const struct object *obj, struct csghit *
 
 	switch(obj->type) {
 	case OBJ_SPHERE:
-		res = ray_sphere(&localray, (const struct sphere*)obj, hit);
+		res = ray_sphere(&localray, obj, hit);
 		break;
 
 	case OBJ_BOX:
@@ -74,7 +74,7 @@ int ray_object_csg(const cgm_ray *ray, const struct object *obj, struct csghit *
 
 #define EPSILON	1e-5
 
-int ray_sphere(const cgm_ray *ray, const struct sphere *sph, struct csghit *hit)
+int ray_sphere(const cgm_ray *ray, const struct object *sph, struct csghit *hit)
 {
 	int i;
 	float a, b, c, d, sqrt_d, t1, t2;/*, invrad;*/
@@ -84,7 +84,7 @@ int ray_sphere(const cgm_ray *ray, const struct sphere *sph, struct csghit *hit)
 	b = 2.0f * ray->dir.x * ray->origin.x +
 		2.0f * ray->dir.y * ray->origin.y +
 		2.0f * ray->dir.z * ray->origin.z;
-	c = cgm_vdot(&ray->origin, &ray->origin) - sph->rad * sph->rad;
+	c = cgm_vdot(&ray->origin, &ray->origin) - 1.0f;
 
 	if((d = b * b - 4.0 * a * c) < 0.0) return 0;
 

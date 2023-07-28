@@ -48,6 +48,7 @@ static void act_settool(int tidx);
 static void act_rmobj(void);
 
 static void moveobj(struct object *obj, int px0, int py0, int px1, int py1);
+static void scaleobj(struct object *obj, int px0, int py0, int px1, int py1);
 
 void inval_vport(void);
 
@@ -118,6 +119,7 @@ static int mdl_start(void)
 	gaw_enable(GAW_LIGHTING);
 	gaw_enable(GAW_LIGHT0);
 	gaw_enable(GAW_SPECULAR);
+	gaw_enable(GAW_NORMALIZE);
 
 	rend_pan(0, -TOOLBAR_HEIGHT);
 	return 0;
@@ -143,7 +145,6 @@ static void mdl_display(void)
 		gaw_get_modelview(view_matrix);
 		cgm_mcopy(view_matrix_inv, view_matrix);
 		cgm_minverse(view_matrix_inv);
-
 		draw_grid();
 
 		num = scn_num_objects(scn);
@@ -151,7 +152,7 @@ static void mdl_display(void)
 			setup_material(scn->objects[i]->mtl);
 
 			if(i == selobj) {
-				gaw_zoffset(1);
+				gaw_zoffset(0.1);
 				gaw_enable(GAW_POLYGON_OFFSET);
 				draw_object(scn->objects[i]);
 				gaw_disable(GAW_POLYGON_OFFSET);
@@ -187,8 +188,6 @@ static void mdl_display(void)
 
 static void draw_object(struct object *obj)
 {
-	struct sphere *sph;
-
 	if(!obj->xform_valid) {
 		calc_object_matrix(obj);
 	}
@@ -197,8 +196,6 @@ static void draw_object(struct object *obj)
 
 	switch(obj->type) {
 	case OBJ_SPHERE:
-		sph = (struct sphere*)obj;
-		gaw_scale(sph->rad, sph->rad, sph->rad);
 		cmesh_draw(mesh_sph);
 		break;
 
@@ -404,6 +401,13 @@ static void mdl_motion(int x, int y)
 				}
 				break;
 
+			case TOOL_SCALE:
+				if(selobj >= 0) {
+					struct object *obj = scn->objects[selobj];
+					scaleobj(obj, mouse_x, mouse_y, x, y);
+				}
+				break;
+
 			default:
 				break;
 			}
@@ -528,16 +532,56 @@ static void moveobj(struct object *obj, int px0, int py0, int px1, int py1)
 	float dist;
 	cgm_vec3 p0, p1;
 
+	/* project px0,py0 to the object plane */
 	primray(&ray, px0, py0);
 	cgm_vnormalize(&ray.dir);
 	dist = ray_object_dist(&ray, obj);
 	cgm_raypos(&p0, &ray, dist);
+
+	/* project px1,py1 to the object plane */
 	primray(&ray, px1, py1);
 	cgm_vnormalize(&ray.dir);
 	cgm_raypos(&p1, &ray, dist);
 
+	/* find the vector from p0 to p1 on the plane and translate */
 	cgm_vsub(&p1, &p0);
 	cgm_vadd(&obj->pos, &p1);
+	obj->xform_valid = 0;
+
+	inval_vport();
+}
+
+static void scaleobj(struct object *obj, int px0, int py0, int px1, int py1)
+{
+	cgm_ray ray;
+	float dist, len;
+	cgm_vec3 p0, p1;
+
+	/* project px0,py0 to the object plane */
+	primray(&ray, px0, py0);
+	cgm_vnormalize(&ray.dir);
+	dist = ray_object_dist(&ray, obj);
+	cgm_raypos(&p0, &ray, dist);
+
+	/* project px1,py1 to the object plane */
+	primray(&ray, px1, py1);
+	cgm_vnormalize(&ray.dir);
+	cgm_raypos(&p1, &ray, dist);
+
+	/* compute the scale factor as a function of the signed length of the
+	 * vector from p0 to p1
+	 */
+	cgm_vsub(&p1, &p0);
+	len = cgm_vlength(&p1);
+
+	cgm_vsub(&p0, &obj->pos);
+	if(cgm_vdot(&p0, &p1) < 0) {
+		len = -len;
+	}
+
+	obj->scale.x += len;
+	obj->scale.y += len;
+	obj->scale.z += len;
 	obj->xform_valid = 0;
 
 	inval_vport();
