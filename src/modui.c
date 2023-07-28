@@ -274,6 +274,7 @@ static int create_mtlwin(void)
 	}
 	mtlw.preview_valid = 0;
 
+	rtk_hide(mtlwin);
 	return 0;
 }
 
