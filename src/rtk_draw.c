@@ -31,7 +31,7 @@ static void draw_drawbox(rtk_widget *w);
 
 
 #define BEVELSZ		1
-#define PAD			2
+#define PAD			(w->pad)
 #define OFFS		(BEVELSZ + PAD)
 #define CHKBOXSZ	(BEVELSZ * 2 + 8)
 

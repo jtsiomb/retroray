@@ -24,6 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 enum {
 	OBJ_NULL,
 	OBJ_SPHERE,
+	OBJ_BOX,
 	OBJ_CSG
 };
 

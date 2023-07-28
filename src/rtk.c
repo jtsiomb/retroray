@@ -61,6 +61,7 @@ rtk_widget *rtk_create_widget(int type)
 	w->on_drag = on_any_nop;
 	w->on_drop = on_any_nop;
 
+	w->pad = 2;
 	return w;
 }
 
@@ -84,6 +85,11 @@ void rtk_free_widget(rtk_widget *w)
 int rtk_type(rtk_widget *w)
 {
 	return w->type;
+}
+
+void rtk_padding(rtk_widget *w, int pad)
+{
+	w->pad = pad;
 }
 
 void rtk_move(rtk_widget *w, int x, int y)
@@ -836,8 +842,26 @@ rtk_widget *rtk_find_widget_at(rtk_screen *scr, rtk_widget *win, int x, int y, u
 
 int rtk_input_key(rtk_screen *scr, int key, int press)
 {
-	if(scr->focus) {
+	if(scr->focus && (!scr->modal || rtk_win_descendant(scr->modal, scr->focus))) {
 		scr->focus->on_key(scr->focus, key, press);
+		return 1;
+	}
+
+	if(scr->modal) {
+		if(!press) return 1;
+
+		switch(key) {
+		case 27:
+			rtk_hide(scr->modal);
+			break;
+
+		case '\n':
+			/* TODO */
+			break;
+
+		default:
+			break;
+		}
 		return 1;
 	}
 	return 0;
@@ -914,6 +938,21 @@ int rtk_input_mmotion(rtk_screen *scr, int x, int y)
 	return 1;
 }
 
+void rtk_invalidate_screen(rtk_screen *scr)
+{
+	int i;
+	for(i=0; i<scr->num_win; i++) {
+		rtk_invalidate(scr->winlist[i]);
+	}
+}
+
+void rtk_draw_screen(rtk_screen *scr)
+{
+	int i;
+	for(i=0; i<scr->num_win; i++) {
+		rtk_draw_widget(scr->winlist[i]);
+	}
+}
 
 /* --- misc functions --- */
 void rtk_null_rect(rtk_rect *rect)

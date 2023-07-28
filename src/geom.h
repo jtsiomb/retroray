@@ -43,6 +43,7 @@ int ray_object(const cgm_ray *ray, const struct object *obj, struct rayhit *hit)
 int ray_object_csg(const cgm_ray *ray, const struct object *obj, struct csghit *hit);
 
 int ray_sphere(const cgm_ray *ray, const struct sphere *sph, struct csghit *hit);
+int ray_box(const cgm_ray *ray, const struct object *box, struct csghit *hit);
 int ray_csg(const cgm_ray *ray, const struct csgnode *csg, struct csghit *hit);
 
 float ray_object_dist(const cgm_ray *ray, const struct object *obj);

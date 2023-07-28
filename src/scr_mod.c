@@ -45,7 +45,6 @@ static void setup_material(struct material *mtl);
 static void draw_grid(void);
 
 static void act_settool(int tidx);
-static void act_addobj(void);
 static void act_rmobj(void);
 
 static void moveobj(struct object *obj, int px0, int py0, int px1, int py1);
@@ -62,7 +61,7 @@ struct app_screen scr_model = {
 };
 
 
-static struct cmesh *mesh_sph;
+static struct cmesh *mesh_sph, *mesh_box;
 
 static float cam_theta, cam_phi = 20, cam_dist = 8;
 static float view_matrix[16], proj_matrix[16];
@@ -92,6 +91,12 @@ static int mdl_init(void)
 	}
 	gen_sphere(mesh_sph, 1.0f, 16, 8, 1.0f, 1.0f);
 
+	if(!(mesh_box = cmesh_alloc())) {
+		errormsg("failed to allocate box vis mesh\n");
+		return -1;
+	}
+	gen_box(mesh_box, 1, 1, 1, 0, 0);
+
 	selobj = -1;
 	vpdirty = 1;
 	return 0;
@@ -100,6 +105,7 @@ static int mdl_init(void)
 static void mdl_destroy(void)
 {
 	cmesh_free(mesh_sph);
+	cmesh_free(mesh_box);
 	modui_cleanup();
 }
 
@@ -164,9 +170,7 @@ static void mdl_display(void)
 		vpdirty = 0;
 
 		/* dirty all GUI windows */
-		rtk_invalidate(toolbar);
-		rtk_invalidate(mtlwin);
-		rtk_invalidate(colordlg);
+		rtk_invalidate_screen(modui);
 	}
 
 	/* render layer */
@@ -178,9 +182,7 @@ static void mdl_display(void)
 	}
 
 	/* GUI */
-	rtk_draw_widget(toolbar);
-	rtk_draw_widget(mtlwin);
-	rtk_draw_widget(colordlg);
+	rtk_draw_screen(modui);
 }
 
 static void draw_object(struct object *obj)
@@ -198,6 +200,10 @@ static void draw_object(struct object *obj)
 		sph = (struct sphere*)obj;
 		gaw_scale(sph->rad, sph->rad, sph->rad);
 		cmesh_draw(mesh_sph);
+		break;
+
+	case OBJ_BOX:
+		cmesh_draw(mesh_box);
 		break;
 
 	default:
@@ -405,16 +411,6 @@ static void mdl_motion(int x, int y)
 	}
 }
 
-static void add_sphere(void)
-{
-	struct object *obj;
-
-	if(!(obj = create_object(OBJ_SPHERE))) {
-		return;
-	}
-	scn_add_object(scn, obj);
-}
-
 void tbn_callback(rtk_widget *w, void *cls)
 {
 	int id = (intptr_t)cls;
@@ -451,7 +447,7 @@ void tbn_callback(rtk_widget *w, void *cls)
 		break;
 
 	case TBN_ADD:
-		act_addobj();
+		rtk_show_modal(objmenu);
 		break;
 
 	case TBN_RM:
@@ -491,15 +487,6 @@ static void act_settool(int tidx)
 			}
 		}
 	}
-}
-
-static void act_addobj(void)
-{
-	int idx = scn_num_objects(scn);
-	add_sphere();
-	selobj = idx;
-
-	inval_vport();
 }
 
 static void act_rmobj(void)

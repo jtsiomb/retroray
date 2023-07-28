@@ -29,6 +29,7 @@ enum {
 	int type; \
 	int x, y, width, height; \
 	int absx, absy; \
+	int pad; \
 	char *text; \
 	int value; \
 	unsigned int flags; \

@@ -76,6 +76,8 @@ void rtk_free_widget(rtk_widget *w);
 int rtk_type(rtk_widget *w);
 rtk_widget *rtk_parent(rtk_widget *w);
 
+void rtk_padding(rtk_widget *w, int pad);
+
 void rtk_move(rtk_widget *w, int x, int y);
 void rtk_pos(rtk_widget *w, int *xptr, int *yptr);
 void rtk_abspos(rtk_widget *w, int *xptr, int *yptr);
@@ -172,6 +174,9 @@ int rtk_input_resize(rtk_screen *scr, int x, int y);
 int rtk_input_key(rtk_screen *scr, int key, int press);
 int rtk_input_mbutton(rtk_screen *scr, int bn, int press, int x, int y);
 int rtk_input_mmotion(rtk_screen *scr, int x, int y);
+
+void rtk_invalidate_screen(rtk_screen *scr);
+void rtk_draw_screen(rtk_screen *scr);
 
 /* misc */
 void rtk_null_rect(rtk_rect *r);

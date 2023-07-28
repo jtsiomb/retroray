@@ -51,12 +51,13 @@ static rtk_widget *tbn_buttons[NUM_TOOL_BUTTONS];
 static rtk_iconsheet *icons;
 
 rtk_screen *modui;
-rtk_widget *toolbar, *mtlwin, *colordlg;
+rtk_widget *toolbar, *objmenu, *mtlwin, *colordlg;
 rtk_widget *tools[NUM_TOOLS];
 
 int selobj;
 
 static int create_toolbar(void);
+static void objadd_handler(rtk_widget *w, void *cls);
 static int create_mtlwin(void);
 static int create_colordlg(void);
 static void mtlpreview_draw(rtk_widget *w, void *cls);
@@ -127,6 +128,7 @@ static int create_toolbar(void)
 {
 	int i, toolidx;
 	rtk_widget *w;
+	rtk_icon *icon;
 
 	for(i=0; i<NUM_TOOL_BUTTONS; i++) {
 		if(tbn_icon_name[i]) {
@@ -166,6 +168,22 @@ static int create_toolbar(void)
 		}
 	}
 	assert(toolidx == NUM_TOOLS);
+
+	/* object creation menu */
+	if(!(objmenu = rtk_create_window(0, "objmenu", TBN_ADD * 24 - 4, TOOLBAR_HEIGHT, 22, 22 * 5, 0))) {
+		return -1;
+	}
+	rtk_add_window(modui, objmenu);
+	rtk_win_layout(objmenu, RTK_VBOX);
+	rtk_padding(objmenu, 0);
+
+	icon = rtk_define_icon(icons, "obj_sphere", 0, 48, 16, 16);
+	w = rtk_create_iconbutton(objmenu, icon, 0);
+	rtk_set_callback(w, objadd_handler, (void*)OBJ_SPHERE);
+	icon = rtk_define_icon(icons, "obj_box", 16, 48, 16, 16);
+	w = rtk_create_iconbutton(objmenu, icon, 0);
+	rtk_set_callback(w, objadd_handler, (void*)OBJ_BOX);
+	rtk_hide(objmenu);
 
 	return 0;
 }
@@ -294,6 +312,34 @@ void modui_cleanup(void)
 	rtk_free_screen(modui);
 }
 
+static void objadd_handler(rtk_widget *w, void *cls)
+{
+	struct object *obj = 0;
+	int type = (intptr_t)cls;
+	int newidx = scn_num_objects(scn);
+
+	switch(type) {
+	case OBJ_SPHERE:
+		obj = create_object(OBJ_SPHERE);
+		break;
+
+	case OBJ_BOX:
+		obj = create_object(OBJ_BOX);
+		break;
+
+	default:
+		break;
+	}
+
+	rtk_hide(objmenu);
+
+	if(!obj) return;
+
+	scn_add_object(scn, obj);
+	selobj = newidx;
+	inval_vport();
+}
+
 static void mtlpreview_draw(rtk_widget *w, void *cls)
 {
 	int i, j, r, g, b;
@@ -327,6 +373,7 @@ static void mtlpreview_draw(rtk_widget *w, void *cls)
 	} else {
 		cgm_vcons(&lt.color, 1, 1, 1);
 		lt.energy = 1;
+		lt.shadows = 0;
 		cgm_vcons(&lt.pos, -5, 5, 5);
 		obj.mtl = curmtl;
 

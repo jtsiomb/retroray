@@ -19,15 +19,26 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 int ray_object(const cgm_ray *ray, const struct object *obj, struct rayhit *hit)
 {
+	int i;
 	struct csghit csghit;
 
 	if(!ray_object_csg(ray, obj, &csghit)) {
 		return 0;
 	}
-	if(hit) {
-		*hit = csghit.ivlist[0].a;
+
+	/* find first hit in the positive half-space of the ray origin */
+	for(i=0; i<csghit.ivcount; i++) {
+		if(csghit.ivlist[i].a.t >= 1e-6) {
+			if(hit) *hit = csghit.ivlist[i].a;
+			return 1;
+		}
+		if(csghit.ivlist[i].b.t >= 1e-6) {
+			if(hit) *hit = csghit.ivlist[i].b;
+			return 1;
+		}
 	}
-	return 1;
+
+	return 0;
 }
 
 int ray_object_csg(const cgm_ray *ray, const struct object *obj, struct csghit *hit)
@@ -40,6 +51,10 @@ int ray_object_csg(const cgm_ray *ray, const struct object *obj, struct csghit *
 	switch(obj->type) {
 	case OBJ_SPHERE:
 		res = ray_sphere(&localray, (const struct sphere*)obj, hit);
+		break;
+
+	case OBJ_BOX:
+		res = ray_box(&localray, obj, hit);
 		break;
 
 	default:
@@ -109,6 +124,84 @@ int ray_sphere(const cgm_ray *ray, const struct sphere *sph, struct csghit *hit)
 			rhptr->uv.x = (atan2(rhptr->norm.z, rhptr->norm.x) + CGM_PI) / (2.0 * CGM_PI);
 			rhptr->uv.y = acos(rhptr->norm.y) / CGM_PI;
 			rhptr->obj = (struct object*)sph;
+			rhptr = &hit->ivlist[0].b;
+		}
+	}
+	return 1;
+}
+
+int ray_box(const cgm_ray *ray, const struct object *box, struct csghit *hit)
+{
+	int i, sign[3];
+	float param[2][3];
+	float inv_dir[3];
+	float tmin, tmax, tymin, tymax, tzmin, tzmax;
+	float s;
+	struct rayhit *rhptr;
+
+	for(i=0; i<3; i++) {
+		param[0][i] = -0.5;
+		param[1][i] = 0.5;
+
+		inv_dir[i] = 1.0f / *(&ray->dir.x + i);
+		sign[i] = inv_dir[i] < 0;
+	}
+
+	tmin = (param[sign[0]][0] - ray->origin.x) * inv_dir[0];
+	tmax = (param[1 - sign[0]][0] - ray->origin.x) * inv_dir[0];
+	tymin = (param[sign[1]][1] - ray->origin.y) * inv_dir[1];
+	tymax = (param[1 - sign[1]][1] - ray->origin.y) * inv_dir[1];
+
+	if(tmin > tymax || tymin > tmax) {
+		return 0;
+	}
+	if(tymin > tmin) {
+		tmin = tymin;
+	}
+	if(tymax < tmax) {
+		tmax = tymax;
+	}
+
+	tzmin = (param[sign[2]][2] - ray->origin.z) * inv_dir[2];
+	tzmax = (param[1 - sign[2]][2] - ray->origin.z) * inv_dir[2];
+
+	if(tmin > tzmax || tzmin > tmax) {
+		return 0;
+	}
+	if(tzmin > tmin) {
+		tmin = tzmin;
+	}
+	if(tzmax < tmax) {
+		tmax = tzmax;
+	}
+
+	if(hit) {
+		hit->ivcount = 1;
+		hit->ivlist[0].a.t = tmin;
+		hit->ivlist[0].b.t = tmax;
+
+		rhptr = &hit->ivlist[0].a;
+		for(i=0; i<2; i++) {
+			cgm_raypos(&rhptr->pos, ray, rhptr->t);
+
+			rhptr->norm.x = rhptr->norm.y = rhptr->norm.z = 0.0f;
+			if(fabs(rhptr->pos.x) > fabs(rhptr->pos.y) && fabs(rhptr->pos.x) > fabs(rhptr->pos.z)) {
+				s = rhptr->pos.x > 0.0f ? 1.0f : -1.0f;
+				rhptr->norm.x = s;
+				rhptr->uv.x = rhptr->pos.z * s * 0.5f + 0.5f;
+				rhptr->uv.y = rhptr->pos.y * s * 0.5f + 0.5f;
+			} else if(fabs(rhptr->pos.y) > fabs(rhptr->pos.z)) {
+				s = rhptr->pos.y > 0.0f ? 1.0f : -1.0f;
+				rhptr->norm.y = s;
+				rhptr->uv.x = rhptr->pos.x * s * 0.5f + 0.5f;
+				rhptr->uv.y = rhptr->pos.z * s * 0.5f + 0.5f;
+			} else {
+				s = rhptr->pos.z > 0.0f ? 1.0f : -1.0f;
+				rhptr->norm.z = s;
+				rhptr->uv.x = rhptr->pos.x * s * 0.5f + 0.5f;
+				rhptr->uv.y = rhptr->pos.y * s * 0.5f + 0.5f;
+			}
+			rhptr->obj = (struct object*)box;
 			rhptr = &hit->ivlist[0].b;
 		}
 	}
