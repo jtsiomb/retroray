@@ -100,6 +100,7 @@ static int mdl_init(void)
 
 	selobj = -1;
 	vpdirty = 1;
+	axismask = 0xff;
 	return 0;
 }
 
@@ -266,6 +267,32 @@ static void mdl_keyb(int key, int press)
 		return;
 	}
 
+	switch(key) {
+	case 'x':
+		if(modkeys & KEY_MOD_SHIFT) {
+			axismask = press ? ~1 : 0xff;
+		} else {
+			axismask = press ? 1 : 0xff;
+		}
+		return;
+	case 'y':
+		if(modkeys & KEY_MOD_SHIFT) {
+			axismask = press ? ~2 : 0xff;
+		} else {
+			axismask = press ? 2 : 0xff;
+		}
+		return;
+	case 'z':
+		if(modkeys & KEY_MOD_SHIFT) {
+			axismask = press ? ~4 : 0xff;
+		} else {
+			axismask = press ? 4 : 0xff;
+		}
+		return;
+	default:
+		break;
+	}
+
 	if(press) {
 		switch(key) {
 		case 27:
@@ -309,7 +336,7 @@ static void mdl_mouse(int bn, int press, int x, int y)
 		rband.x = x;
 		rband.y = y;
 		vpdrag |= (1 << bn);
-		if(modkeys) {
+		if(modkeys & (KEY_MOD_ALT | KEY_MOD_CTRL)) {
 			vpnav |= (1 << bn);
 		}
 	} else {
@@ -545,7 +572,11 @@ static void moveobj(struct object *obj, int px0, int py0, int px1, int py1)
 
 	/* find the vector from p0 to p1 on the plane and translate */
 	cgm_vsub(&p1, &p0);
-	cgm_vadd(&obj->pos, &p1);
+
+	if(axismask & 1) obj->pos.x += p1.x;
+	if(axismask & 2) obj->pos.y += p1.y;
+	if(axismask & 4) obj->pos.z += p1.z;
+
 	obj->xform_valid = 0;
 
 	inval_vport();
@@ -579,9 +610,9 @@ static void scaleobj(struct object *obj, int px0, int py0, int px1, int py1)
 		len = -len;
 	}
 
-	obj->scale.x += len;
-	obj->scale.y += len;
-	obj->scale.z += len;
+	if(axismask & 1) obj->scale.x += len;
+	if(axismask & 2) obj->scale.y += len;
+	if(axismask & 4) obj->scale.z += len;
 	obj->xform_valid = 0;
 
 	inval_vport();

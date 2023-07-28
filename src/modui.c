@@ -55,6 +55,7 @@ rtk_widget *toolbar, *objmenu, *mtlwin, *colordlg;
 rtk_widget *tools[NUM_TOOLS];
 
 int selobj;
+unsigned int axismask;
 
 static int create_toolbar(void);
 static void objadd_handler(rtk_widget *w, void *cls);
