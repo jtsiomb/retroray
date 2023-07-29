@@ -340,9 +340,9 @@ void calc_object_matrix(struct object *obj)
 
 	/* dir_xform is the inverse/transpose upper 3x3 of the matrix */
 	cgm_mcopy(obj->dir_xform, mat);
-	obj->dir_xform[3] = obj->dir_xform[7] = obj->dir_xform[11] = 0.0f;
+	/*obj->dir_xform[3] = obj->dir_xform[7] = obj->dir_xform[11] = 0.0f;
 	obj->dir_xform[12] = obj->dir_xform[13] = obj->dir_xform[14] = 0.0f;
-	obj->dir_xform[15] = 1.0f;
+	obj->dir_xform[15] = 1.0f;*/
 	cgm_minverse(obj->dir_xform);
 	cgm_mtranspose(obj->dir_xform);
 
