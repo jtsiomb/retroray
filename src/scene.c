@@ -284,6 +284,7 @@ struct object *create_object(int type)
 	cgm_vcons(&obj->scale, 1, 1, 1);
 	cgm_vcons(&obj->pivot, 0, 0, 0);
 	cgm_midentity(obj->xform);
+	cgm_midentity(obj->dir_xform);
 	cgm_midentity(obj->inv_xform);
 	obj->xform_valid = 1;
 	obj->mtl = default_material();
@@ -336,6 +337,14 @@ void calc_object_matrix(struct object *obj)
 
 	cgm_mpretranslate(mat, -obj->pivot.x, -obj->pivot.y, -obj->pivot.z);
 	/* that's basically: pivot * rotation * translation * scaling * -pivot */
+
+	/* dir_xform is the inverse/transpose upper 3x3 of the matrix */
+	cgm_mcopy(obj->dir_xform, mat);
+	obj->dir_xform[3] = obj->dir_xform[7] = obj->dir_xform[11] = 0.0f;
+	obj->dir_xform[12] = obj->dir_xform[13] = obj->dir_xform[14] = 0.0f;
+	obj->dir_xform[15] = 1.0f;
+	cgm_minverse(obj->dir_xform);
+	cgm_mtranspose(obj->dir_xform);
 
 	cgm_mcopy(obj->inv_xform, mat);
 	cgm_minverse(obj->inv_xform);

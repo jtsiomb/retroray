@@ -33,7 +33,7 @@ enum {
 	char *name; \
 	cgm_vec3 pos, scale, pivot; \
 	cgm_quat rot; \
-	float xform[16], inv_xform[16]; \
+	float xform[16], dir_xform[16], inv_xform[16]; \
 	int xform_valid; \
 	struct material *mtl
 

@@ -64,9 +64,9 @@ int ray_object_csg(const cgm_ray *ray, const struct object *obj, struct csghit *
 	if(res && hit) {
 		for(i=0; i<hit->ivcount; i++) {
 			cgm_vmul_m4v3(&hit->ivlist[i].a.pos, obj->xform);
-			cgm_vmul_m3v3(&hit->ivlist[i].a.norm, obj->xform);
+			cgm_vmul_m3v3(&hit->ivlist[i].a.norm, obj->dir_xform);
 			cgm_vmul_m4v3(&hit->ivlist[i].b.pos, obj->xform);
-			cgm_vmul_m3v3(&hit->ivlist[i].b.norm, obj->xform);
+			cgm_vmul_m3v3(&hit->ivlist[i].b.norm, obj->dir_xform);
 		}
 	}
 	return res;
