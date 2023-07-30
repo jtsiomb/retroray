@@ -125,6 +125,7 @@ void rtk_win_clear(rtk_widget *w);
 void rtk_win_add(rtk_widget *par, rtk_widget *child);
 void rtk_win_rm(rtk_widget *par, rtk_widget *child);
 int rtk_win_has(rtk_widget *par, rtk_widget *child);
+rtk_widget *rtk_win_child(const rtk_widget *par, int idx);
 
 /* button functions */
 void rtk_bn_mode(rtk_widget *w, int mode);

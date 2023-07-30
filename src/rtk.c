@@ -402,6 +402,20 @@ int rtk_win_has(rtk_widget *par, rtk_widget *child)
 	return 0;
 }
 
+rtk_widget *rtk_win_child(const rtk_widget *par, int idx)
+{
+	rtk_widget *w;
+	rtk_window *win = (rtk_window*)par;
+
+	RTK_ASSERT_TYPE(par, RTK_WIN);
+
+	w = win->clist;
+	while(w && idx-- > 0) {
+		w = w->next;
+	}
+	return idx > 0 ? 0 : w;
+}
+
 int rtk_win_descendant(const rtk_widget *par, const rtk_widget *w)
 {
 	rtk_widget *c;
@@ -695,7 +709,22 @@ rtk_icon *rtk_define_icon(rtk_iconsheet *is, const char *name, int x, int y, int
 	icon->height = h;
 	icon->scanlen = is->width;
 	icon->pixels = is->pixels + y * is->width + x;
+
+	icon->next = is->icons;
+	is->icons = icon;
 	return icon;
+}
+
+rtk_icon *rtk_lookup_icon(rtk_iconsheet *is, const char *name)
+{
+	rtk_icon *icon = is->icons;
+	while(icon) {
+		if(strcmp(icon->name, name) == 0) {
+			return icon;
+		}
+		icon = icon->next;
+	}
+	return 0;
 }
 
 static void sethover(rtk_screen *scr, rtk_widget *w)
@@ -890,6 +919,11 @@ int rtk_input_mbutton(rtk_screen *scr, int bn, int press, int x, int y)
 		}
 		handled = w ? 1 : 0;
 	} else {
+		if(!w && scr->modal) {
+			rtk_hide(scr->modal);
+			return 1;
+		}
+
 		if(bn == 0) {
 			rtk_widget *newfocus = 0;
 			if(w) {

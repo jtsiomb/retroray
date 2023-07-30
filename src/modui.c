@@ -27,21 +27,21 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 static const char *tbn_icon_name[] = {
 	"new", "open", "save", 0,
-	"sel", "move", "rot", "scale", 0,
+	"sel", "move", "rot", "scale", 0, "xyz", 0,
 	"add", "remove", 0,
 	"union", "isect", "diff", 0,
 	"mtl", "rend", "rend-area", "viewrend", 0, "cfg"
 };
 static int tbn_icon_pos[][2] = {
 	{0,0}, {16,0}, {32,0}, {-1,-1},
-	{48,0}, {64,0}, {80,0}, {96,0}, {-1,-1},
+	{48,0}, {64,0}, {80,0}, {96,0}, {-1,-1}, {0, 64}, {-1,-1},
 	{112,0}, {112,16}, {-1,-1},
 	{0,16}, {16,16}, {32,16}, {-1,-1},
 	{48,16}, {64,16}, {64, 32}, {80,16}, {-1,-1}, {96,16}
 };
 static int tbn_istool[] = {
 	0, 0, 0, 0,
-	1, 1, 1, 1, 0,
+	1, 1, 1, 1, 0, 0, 0,
 	0, 0, 0,
 	1, 1, 1, 0,
 	0, 0, 1, 0, 0, 0
@@ -51,7 +51,7 @@ static rtk_widget *tbn_buttons[NUM_TOOL_BUTTONS];
 static rtk_iconsheet *icons;
 
 rtk_screen *modui;
-rtk_widget *toolbar, *objmenu, *mtlwin, *colordlg;
+rtk_widget *toolbar, *objmenu, *xyzmenu, *mtlwin, *colordlg;
 rtk_widget *tools[NUM_TOOLS];
 
 int selobj;
@@ -60,6 +60,7 @@ unsigned int axismask;
 static int create_toolbar(void);
 static void objadd_handler(rtk_widget *w, void *cls);
 static void addlight_handler(rtk_widget *w, void *cls);
+static void xyz_handler(rtk_widget *w, void *cls);
 static int create_mtlwin(void);
 static int create_colordlg(void);
 static void mtlpreview_draw(rtk_widget *w, void *cls);
@@ -170,6 +171,31 @@ static int create_toolbar(void)
 		}
 	}
 	assert(toolidx == NUM_TOOLS);
+
+	/* constraint menu */
+	if(!(xyzmenu = rtk_create_window(0, "xyzmenu", TBN_XYZ * 24 - 4, TOOLBAR_HEIGHT, 22, 22 * 7, 0))) {
+		return -1;
+	}
+	rtk_add_window(modui, xyzmenu);
+	rtk_win_layout(xyzmenu, RTK_VBOX);
+	rtk_padding(xyzmenu, 0);
+	for(i=0; i<7; i++) {
+		static const char *names[] = {"xyz", "x", "y", "z", "yz", "xz", "xy"};
+
+
+		if(i == 0) {
+			icon = rtk_lookup_icon(icons, "xyz");
+		} else {
+			icon = rtk_define_icon(icons, names[i], i * 16, 64, 16, 16);
+		}
+		w = rtk_create_iconbutton(xyzmenu, icon, 0);
+		rtk_set_callback(w, xyz_handler, (void*)(intptr_t)i);
+		rtk_bn_mode(w, RTK_TOGGLEBN);
+
+		if(i == 0) rtk_set_value(w, 1);
+	}
+
+	rtk_hide(xyzmenu);
 
 	/* object creation menu */
 	if(!(objmenu = rtk_create_window(0, "objmenu", TBN_ADD * 24 - 4, TOOLBAR_HEIGHT, 22, 22 * 5, 0))) {
@@ -319,6 +345,30 @@ void modui_cleanup(void)
 	rtk_free_screen(modui);
 }
 
+void set_axismask(unsigned int mask)
+{
+	int i, bnidx;
+	rtk_widget *w;
+	static const int maskidx[] = {-1, 1, 2, 6, 3, 5, 4, 0};
+
+	if(mask <= 0 || mask >= 8) {
+		mask = 0xff;
+		bnidx = 0;
+	} else {
+		bnidx = maskidx[mask];
+	}
+	axismask = mask;
+
+	for(i=0; i<7; i++) {
+		w = rtk_win_child(xyzmenu, i);
+		if(i == bnidx) {
+			rtk_bn_set_icon(tbn_buttons[TBN_XYZ], rtk_bn_get_icon(w));
+		} else {
+			rtk_set_value(w, 0);
+		}
+	}
+}
+
 static void objadd_handler(rtk_widget *w, void *cls)
 {
 	struct object *obj = 0;
@@ -360,6 +410,16 @@ static void addlight_handler(rtk_widget *w, void *cls)
 
 	scn_add_light(scn, lt);
 	inval_vport();
+}
+
+static void xyz_handler(rtk_widget *w, void *cls)
+{
+	int bnidx = (intptr_t)cls;
+	static const unsigned int mask[] = {0xff, 1, 2, 4, 6, 5, 3};
+
+	rtk_hide(xyzmenu);
+
+	set_axismask(mask[bnidx]);
 }
 
 static void mtlpreview_draw(rtk_widget *w, void *cls)

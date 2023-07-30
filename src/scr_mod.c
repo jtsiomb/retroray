@@ -270,23 +270,23 @@ static void mdl_keyb(int key, int press)
 	switch(key) {
 	case 'x':
 		if(modkeys & KEY_MOD_SHIFT) {
-			axismask = press ? ~1 : 0xff;
+			set_axismask(press ? ~1 : 0xff);
 		} else {
-			axismask = press ? 1 : 0xff;
+			set_axismask(press ? 1 : 0xff);
 		}
 		return;
 	case 'y':
 		if(modkeys & KEY_MOD_SHIFT) {
-			axismask = press ? ~2 : 0xff;
+			set_axismask(press ? ~2 : 0xff);
 		} else {
-			axismask = press ? 2 : 0xff;
+			set_axismask(press ? 2 : 0xff);
 		}
 		return;
 	case 'z':
 		if(modkeys & KEY_MOD_SHIFT) {
-			axismask = press ? ~4 : 0xff;
+			set_axismask(press ? ~4 : 0xff);
 		} else {
-			axismask = press ? 4 : 0xff;
+			set_axismask(press ? 4 : 0xff);
 		}
 		return;
 	default:
@@ -458,6 +458,11 @@ void tbn_callback(rtk_widget *w, void *cls)
 	case TBN_SCALE:
 		act_settool(id - TBN_SEL);
 		break;
+
+	case TBN_XYZ:
+		rtk_show_modal(xyzmenu);
+		break;
+
 	case TBN_UNION:
 	case TBN_ISECT:
 	case TBN_DIFF:

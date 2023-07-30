@@ -15,7 +15,7 @@ enum {
 /* toolbar buttons */
 enum {
 	TBN_NEW, TBN_OPEN, TBN_SAVE, TBN_SEP1,
-	TBN_SEL, TBN_MOVE, TBN_ROT, TBN_SCALE, TBN_SEP2,
+	TBN_SEL, TBN_MOVE, TBN_ROT, TBN_SCALE, TBN_SEP2, TBN_XYZ, TBN_SEP6,
 	TBN_ADD, TBN_RM, TBN_SEP3,
 	TBN_UNION, TBN_ISECT, TBN_DIFF, TBN_SEP4,
 	TBN_MTL, TBN_REND, TBN_REND_AREA, TBN_VIEWREND, TBN_SEP5, TBN_CFG,
@@ -24,7 +24,7 @@ enum {
 };
 
 extern rtk_screen *modui;
-extern rtk_widget *toolbar, *objmenu, *mtlwin, *colordlg;
+extern rtk_widget *toolbar, *objmenu, *xyzmenu, *mtlwin, *colordlg;
 extern rtk_widget *tools[NUM_TOOLS];
 
 extern int selobj;
@@ -34,6 +34,8 @@ int modui_init(void);
 void modui_cleanup(void);
 
 void tbn_callback(rtk_widget *w, void *cls);
+
+void set_axismask(unsigned int mask);
 
 void inval_vport(void);	/* scr_mod.c */
 
