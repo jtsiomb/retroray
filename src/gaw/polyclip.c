@@ -84,12 +84,24 @@ int clip_frustum(struct vertex *vout, int *voutnum,
 	int i, nextidx, res;
 	int edges_clipped = 0;
 
-	if(vnum == 1) {
+	*voutnum = 0;
+
+	switch(vnum) {
+	case 1:
 		/* special case: point clipping */
 		return inside_frustum_plane(vin, fplane) ? 1 : -1;
-	}
 
-	*voutnum = 0;
+	case 2:
+		/* line clipping */
+		if(inside_frustum_plane(vin, fplane)) {
+			vout[(*voutnum)++] = *vin;
+		}
+		clip_edge_frustum(vout, voutnum, vin, vin + 1, fplane);
+		return *voutnum > 0 ? 1 : -1;
+
+	default:
+		break;
+	}
 
 	for(i=0; i<vnum; i++) {
 		nextidx = i + 1;

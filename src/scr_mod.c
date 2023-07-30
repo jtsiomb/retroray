@@ -64,7 +64,7 @@ struct app_screen scr_model = {
 
 static struct cmesh *mesh_sph, *mesh_box;
 
-static float cam_theta, cam_phi = 20, cam_dist = 8;
+static float cam_theta, cam_phi = 40, cam_dist = 8;
 static float view_matrix[16], proj_matrix[16];
 static float view_matrix_inv[16], proj_matrix_inv[16];
 static int viewport[4];
@@ -220,20 +220,37 @@ static void setup_material(struct material *mtl)
 
 static void draw_grid(void)
 {
+	int i;
+
 	gaw_save();
 	gaw_disable(GAW_LIGHTING);
+	gaw_disable(GAW_DEPTH_TEST);
 
 	gaw_begin(GAW_LINES);
+	gaw_color3f(0.3, 0.3, 0.3);
+	for(i=0; i<10; i++) {
+		float offs = (float)((i + 1) * 2);
+		gaw_vertex3f(offs, 0, 20);
+		gaw_vertex3f(offs, 0, -20);
+		gaw_vertex3f(-offs, 0, 20);
+		gaw_vertex3f(-offs, 0, -20);
+
+		gaw_vertex3f(20, 0, offs);
+		gaw_vertex3f(-20, 0, offs);
+		gaw_vertex3f(20, 0, -offs);
+		gaw_vertex3f(-20, 0, -offs);
+	}
+
 	gaw_color3f(0.5, 0, 0);
 	gaw_vertex3f(0, 0, 0);
-	gaw_vertex3f(-100, 0, 0);
+	gaw_vertex3f(-20, 0, 0);
 	gaw_vertex3f(0, 0, 0);
-	gaw_vertex3f(100, 0, 0);
-	gaw_color3f(0, 0.5, 0);
+	gaw_vertex3f(20, 0, 0);
+	gaw_color3f(0, 0, 0.8);
 	gaw_vertex3f(0, 0, 0);
-	gaw_vertex3f(0, 0, -100);
+	gaw_vertex3f(0, 0, -20);
 	gaw_vertex3f(0, 0, 0);
-	gaw_vertex3f(0, 0, 100);
+	gaw_vertex3f(0, 0, 20);
 	gaw_end();
 
 	gaw_restore();

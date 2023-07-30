@@ -363,7 +363,11 @@ void gaw_swtnl_drawprim(int prim, struct vertex *v, int vnum)
 		break;
 
 	case GAW_LINES:
-		draw_line(pv);
+		if(ST->opt & (1 << GAW_DEPTH_TEST)) {
+			draw_line_zbuf(pv);
+		} else {
+			draw_line(pv);
+		}
 		break;
 
 	default:
