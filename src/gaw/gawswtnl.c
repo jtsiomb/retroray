@@ -427,7 +427,8 @@ void gaw_draw_indexed(int prim, const unsigned int *idxarr, int nidx)
 	/* calc the normal matrix */
 	if(NEED_NORMALS) {
 		memcpy(st.norm_mat, st.mat[GAW_MODELVIEW][mvtop], 16 * sizeof(float));
-		st.norm_mat[12] = st.norm_mat[13] = st.norm_mat[14] = 0.0f;
+		cgm_minverse(st.norm_mat);
+		cgm_mtranspose(st.norm_mat);
 	}
 
 	vidx = 0;
