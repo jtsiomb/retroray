@@ -28,11 +28,11 @@ int ray_object(const cgm_ray *ray, const struct object *obj, struct rayhit *hit)
 
 	/* find first hit in the positive half-space of the ray origin */
 	for(i=0; i<csghit.ivcount; i++) {
-		if(csghit.ivlist[i].a.t >= 1e-6) {
+		if(csghit.ivlist[i].a.t >= 1e-4) {
 			if(hit) *hit = csghit.ivlist[i].a;
 			return 1;
 		}
-		if(csghit.ivlist[i].b.t >= 1e-6) {
+		if(csghit.ivlist[i].b.t >= 1e-4) {
 			if(hit) *hit = csghit.ivlist[i].b;
 			return 1;
 		}
