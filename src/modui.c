@@ -351,7 +351,7 @@ void set_axismask(unsigned int mask)
 	rtk_widget *w;
 	static const int maskidx[] = {-1, 1, 2, 6, 3, 5, 4, 0};
 
-	if(mask <= 0 || mask >= 8) {
+	if(!mask || mask >= 8) {
 		mask = 0xff;
 		bnidx = 0;
 	} else {
@@ -406,7 +406,7 @@ static void addlight_handler(rtk_widget *w, void *cls)
 	if(!(lt = create_light())) {
 		return;
 	}
-	lt->pos.y = 10;
+	lt->pos = get_view_pos();
 
 	scn_add_light(scn, lt);
 	inval_vport();

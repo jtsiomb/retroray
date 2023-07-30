@@ -1,6 +1,7 @@
 #ifndef MODUI_H_
 #define MODUI_H_
 
+#include "cgmath/cgmath.h"
 #include "rtk.h"
 
 #define TOOLBAR_HEIGHT	26
@@ -37,6 +38,8 @@ void tbn_callback(rtk_widget *w, void *cls);
 
 void set_axismask(unsigned int mask);
 
-void inval_vport(void);	/* scr_mod.c */
+/* scr_mod.c */
+void inval_vport(void);
+cgm_vec3 get_view_pos(void);
 
 #endif	/* MODUI_H_ */

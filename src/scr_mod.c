@@ -64,7 +64,7 @@ struct app_screen scr_model = {
 
 static struct cmesh *mesh_sph, *mesh_box;
 
-static float cam_theta, cam_phi = 40, cam_dist = 8;
+static float cam_theta, cam_phi = 20, cam_dist = 8;
 static float view_matrix[16], proj_matrix[16];
 static float view_matrix_inv[16], proj_matrix_inv[16];
 static int viewport[4];
@@ -644,4 +644,11 @@ void inval_vport(void)
 {
 	vpdirty = 1;
 	app_redisplay(0, 0, 0, 0);
+}
+
+cgm_vec3 get_view_pos(void)
+{
+	cgm_vec3 p = {0};
+	cgm_vmul_m4v3(&p, view_matrix_inv);
+	return p;
 }
