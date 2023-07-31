@@ -186,17 +186,43 @@ void app_redisplay(int x, int y, int w, int h)
 	dirty_valid = 1;
 }
 
+static int rect_rect_test(const rtk_rect *a, const rtk_rect *b)
+{
+	if(a->x >= b->x + b->width) return 0;
+	if(a->y >= b->y + b->height) return 0;
+	if(a->x + a->width < b->x) return 0;
+	if(a->y + a->height < b->y) return 0;
+	return 1;
+}
+
 void app_swap_buffers(void)
 {
+	uint32_t *src;
+
 	if(opt.vsync) {
 		vid_vsync();
 	}
 	if(dirty_valid) {
 		if(dirty.width < win_width || dirty.height < win_height) {
-			uint32_t *src = framebuf + dirty.y * win_width + dirty.x;
+			if(prev_mx >= 0) {
+				int x1, y1;
+				rtk_rect mrect;
+				mrect.x = prev_mx - 3;
+				mrect.y = prev_my - 3;
+				mrect.width = 7;
+				mrect.height = 7;
+				x1 = dirty.x + dirty.width;
+				y1 = dirty.y + dirty.height;
+				if(rect_rect_test(&dirty, &mrect)) {
+					rtk_rect_union(&dirty, &mrect);
+					prev_mx = -1;
+				}
+			}
+			src = framebuf + dirty.y * win_width + dirty.x;
 			vid_blit32(dirty.x, dirty.y, dirty.width, dirty.height, src, 0);
 		} else {
 			vid_blitfb32(framebuf, 0);
+			prev_mx = -1;
 		}
 		dirty_valid = 0;
 	}
