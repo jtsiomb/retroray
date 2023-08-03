@@ -48,6 +48,7 @@ static void act_settool(int tidx);
 static void act_rmobj(void);
 
 static void moveobj(struct object *obj, int px0, int py0, int px1, int py1);
+static void rotobj(struct object *obj, int px0, int py0, int px1, int py1);
 static void scaleobj(struct object *obj, int px0, int py0, int px1, int py1);
 
 void inval_vport(void);
@@ -445,6 +446,13 @@ static void mdl_motion(int x, int y)
 				}
 				break;
 
+			case TOOL_ROT:
+				if(selobj >= 0) {
+					struct object *obj = scn->objects[selobj];
+					rotobj(obj, mouse_x, mouse_y, x, y);
+				}
+				break;
+
 			case TOOL_SCALE:
 				if(selobj >= 0) {
 					struct object *obj = scn->objects[selobj];
@@ -602,6 +610,10 @@ static void moveobj(struct object *obj, int px0, int py0, int px1, int py1)
 	obj->xform_valid = 0;
 
 	inval_vport();
+}
+
+static void rotobj(struct object *obj, int px0, int py0, int px1, int py1)
+{
 }
 
 static void scaleobj(struct object *obj, int px0, int py0, int px1, int py1)
