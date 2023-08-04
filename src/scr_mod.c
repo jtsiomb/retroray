@@ -474,6 +474,9 @@ void tbn_callback(rtk_widget *w, void *cls)
 	switch(id) {
 	case TBN_NEW:
 		scn_clear(scn);
+		selobj = -1;
+		select_material(-1);
+		rtk_invalidate_screen(modui);
 		inval_vport();
 		break;
 

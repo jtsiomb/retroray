@@ -68,7 +68,6 @@ static void draw_colorbn(rtk_widget *w, void *cls);
 static void draw_huebox(rtk_widget *w, void *cls);
 static void draw_huebar(rtk_widget *w, void *cls);
 static void mbn_callback(rtk_widget *w, void *cls);
-static void select_material(int midx);
 static void start_color_picker(cgm_vec3 *dest, rtk_widget *updw);
 static void colbn_handler(rtk_widget *w, void *cls);
 static void colbox_mbutton(rtk_widget *w, int bn, int press, int x, int y);
@@ -717,12 +716,14 @@ static void mbn_callback(rtk_widget *w, void *cls)
 	}
 }
 
-static void select_material(int midx)
+void select_material(int midx)
 {
 	char buf[64];
 	int num_mtl = scn_num_materials(scn);
 
 	if(midx < 0 || midx >= num_mtl) {
+		curmtl_idx = -1;
+		curmtl = 0;
 		return;
 	}
 	curmtl_idx = midx;

@@ -37,6 +37,7 @@ void modui_cleanup(void);
 void tbn_callback(rtk_widget *w, void *cls);
 
 void set_axismask(unsigned int mask);
+void select_material(int midx);
 
 /* scr_mod.c */
 void inval_vport(void);
