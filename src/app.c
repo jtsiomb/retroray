@@ -289,8 +289,24 @@ void app_chscr(struct app_screen *scr)
 void gui_fill(rtk_rect *rect, uint32_t color)
 {
 	int i, j;
-	uint32_t *fb = framebuf + rect->y * win_width + rect->x;
+	uint32_t *fb;
 
+	if(rect->x < 0) {
+		rect->width += rect->x;
+		rect->x = 0;
+	}
+	if(rect->y < 0) {
+		rect->height += rect->y;
+		rect->y = 0;
+	}
+	if(rect->x + rect->width >= win_width) {
+		rect->width = win_width - rect->x;
+	}
+	if(rect->y + rect->height >= win_height) {
+		rect->height = win_height - rect->y;
+	}
+
+	fb = framebuf + rect->y * win_width + rect->x;
 	for(i=0; i<rect->height; i++) {
 		for(j=0; j<rect->width; j++) {
 			fb[j] = color;
