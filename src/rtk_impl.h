@@ -103,6 +103,7 @@ void rtk_calc_widget_rect(rtk_widget *w, rtk_rect *rect);
 void rtk_abs_pos(rtk_widget *w, int *xpos, int *ypos);
 int rtk_hittest(rtk_widget *w, int x, int y);
 void rtk_invalfb(rtk_widget *w);
+void rtk_clearfb(rtk_widget *w);
 
 
 #endif	/* RTK_IMPL_H_ */
