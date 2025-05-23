@@ -168,39 +168,30 @@ int kb_getkey(void)
 {
 	int res;
 
-	if(buffer) {
-		if(buf_ridx == buf_widx) {
-			return -1;
-		}
-		res = buffer[buf_ridx];
-		ADVANCE(buf_ridx);
-	} else {
-		res = last_key;
-		last_key = -1;
+	if(buf_ridx == buf_widx) {
+		return -1;
 	}
+	res = buffer[buf_ridx];
+	ADVANCE(buf_ridx);
 	return res;
 }
 
 void kb_putback(int key)
 {
-	if(buffer) {
-		/* go back a place */
-		if(--buf_ridx < 0) {
-			buf_ridx += BUFSIZE;
-		}
-
-		/* if the write end hasn't caught up with us, go back one place
-		 * and put it there, otherwise just overwrite the oldest key which
-		 * is right where we were.
-		 */
-		if(buf_ridx == buf_widx) {
-			ADVANCE(buf_ridx);
-		}
-
-		buffer[buf_ridx] = key;
-	} else {
-		last_key = key;
+	/* go back a place */
+	if(--buf_ridx < 0) {
+		buf_ridx += BUFSIZE;
 	}
+
+	/* if the write end hasn't caught up with us, go back one place
+	 * and put it there, otherwise just overwrite the oldest key which
+	 * is right where we were.
+	 */
+	if(buf_ridx == buf_widx) {
+		ADVANCE(buf_ridx);
+	}
+
+	buffer[buf_ridx] = key;
 }
 
 static void INTERRUPT kbintr()

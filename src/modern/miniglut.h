@@ -1,6 +1,6 @@
 /*
 MiniGLUT - minimal GLUT subset without dependencies
-Copyright (C) 2020-2022  John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2020-2024  John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -86,6 +86,20 @@ enum {
 	GLUT_INIT_WINDOW_HEIGHT,
 	GLUT_ELAPSED_TIME,
 	GLUT_WINDOW_COLORMAP_SIZE
+};
+
+/* glutDeviceGet */
+enum {
+	GLUT_HAS_KEYBOARD,
+	GLUT_HAS_MOUSE,
+	GLUT_HAS_SPACEBALL,
+	GLUT_HAS_DIAL_AND_BUTTON_BOX,
+	GLUT_HAS_TABLET,
+	GLUT_NUM_MOUSE_BUTTONS,
+	GLUT_NUM_SPACEBALL_BUTTONS,
+	GLUT_NUM_BUTTON_BOX_BUTTONS,
+	GLUT_NUM_DIALS,
+	GLUT_NUM_TABLET_BUTTONS
 };
 
 enum {

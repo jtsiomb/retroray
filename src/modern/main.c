@@ -114,7 +114,6 @@ unsigned long get_msec(void)
 
 void app_redisplay(int x, int y, int w, int h)
 {
-	/*dbgmsg("fakeupd: %d,%d (%dx%d)\n", x, y, w, h);*/
 	glutPostRedisplay();
 }
 
@@ -255,6 +254,10 @@ static void skeydown(int key, int x, int y)
 	modkeys = glutGetModifiers();
 	if((k = translate_skey(key)) >= 0) {
 		app_keyboard(k, 1);
+	}
+
+	if(key == GLUT_KEY_F1) {
+		glutPostRedisplay();
 	}
 }
 

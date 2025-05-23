@@ -53,7 +53,7 @@ void vid_register_vga(void)
 		case 0x3:
 			modes[i].vmem_addr = 0xb8000;
 			break;
-				
+
 		case 0x13:
 			modes[i].ops = gfxops_mode13h;
 			break;

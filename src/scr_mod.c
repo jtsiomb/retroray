@@ -136,7 +136,11 @@ static void mdl_display(void)
 	int i, num;
 
 	/* viewport */
+#ifdef GFX_GL
+	if(1) {
+#else
 	if(vpdirty || vpnav) {
+#endif
 		gaw_clear(GAW_COLORBUF | GAW_DEPTHBUF);
 
 		gaw_matrix_mode(GAW_MODELVIEW);
