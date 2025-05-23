@@ -79,9 +79,11 @@ int app_init(void)
 		app_fullscreen(1);
 	}
 
+#ifdef GFX_SW
 	/*dtx_target_user(txdraw, 0);*/
 	dtx_target_raster((unsigned char*)framebuf, win_width, win_height);
 	dtx_set(DTX_RASTER_THRESHOLD, 127);
+#endif
 
 	uifont = malloc_nf(sizeof *uifont);
 	if(load_font(uifont, "data/uifont14.gmp") == -1) {
@@ -170,8 +172,8 @@ void app_reshape(int x, int y)
 	}
 #ifdef GFX_SW
 	gaw_sw_framebuffer(x, y, framebuf);
-#endif
 	dtx_target_raster((unsigned char*)framebuf, x, y);
+#endif
 
 	win_width = x;
 	win_height = y;
@@ -382,10 +384,23 @@ void gui_blit(int x, int y, rtk_icon *icon)
 
 void gui_drawtext(int x, int y, const char *str)
 {
+	gaw_matrix_mode(GAW_MODELVIEW);
+	gaw_push_matrix();
+	gaw_translate(x, y, 0);
+	gaw_scale(1, -1, 1);
+
 	use_font(uifont);
+#ifdef GFX_GL
+	gaw_color4f(0, 0, 0, 1);
+#else
 	dtx_position(x, y);
 	dtx_color(0, 0, 0, 1);
+#endif
 	dtx_string(str);
+	dtx_flush();
+
+	gaw_matrix_mode(GAW_MODELVIEW);
+	gaw_pop_matrix();
 }
 
 void gui_textrect(const char *str, rtk_rect *rect)

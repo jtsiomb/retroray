@@ -737,4 +737,6 @@ void gaw_drawpix(int x, int y, int w, int h, int pitch, int fmt, void *pix)
 	glPixelZoom(1, -1);
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch);
 	glDrawPixels(w, h, glfmt[fmt], GL_UNSIGNED_BYTE, pix);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+	glPixelZoom(1, 1);
 }
