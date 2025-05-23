@@ -112,6 +112,19 @@ unsigned long get_msec(void)
 	return (unsigned long)glutGet(GLUT_ELAPSED_TIME);
 }
 
+void app_clear_rect(int x, int y, int w, int h)
+{
+	if(framebuf) {
+		rtk_rect r;
+		r.x = x;
+		r.y = y;
+		r.width = w;
+		r.height = h;
+		gui_fill(&r, 0);
+	}
+}
+
+
 void app_redisplay(int x, int y, int w, int h)
 {
 	glutPostRedisplay();
@@ -128,6 +141,11 @@ void app_swap_buffers(void)
 	glLoadIdentity();
 	glOrtho(0, win_width, win_height, 0, -1, 1);
 
+	glPushAttrib(GL_ENABLE_BIT);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_LIGHTING);
+
+
 	glRasterPos2i(0, 0);
 	glPixelZoom(opt.scale, -opt.scale);
 	glEnable(GL_ALPHA_TEST);
@@ -136,10 +154,6 @@ void app_swap_buffers(void)
 	glDisable(GL_ALPHA_TEST);
 
 	if(rband.width | rband.height) {
-		glPushAttrib(GL_ENABLE_BIT);
-		glDisable(GL_DEPTH_TEST);
-		glDisable(GL_LIGHTING);
-
 		glEnable(GL_COLOR_LOGIC_OP);
 		glLogicOp(GL_XOR);
 
@@ -150,9 +164,9 @@ void app_swap_buffers(void)
 		glVertex2f(rband.x + rband.width, rband.y + rband.height);
 		glVertex2f(rband.x, rband.y + rband.height);
 		glEnd();
-
-		glPopAttrib();
 	}
+
+	glPopAttrib();
 
 	glPopMatrix();
 	glMatrixMode(GL_MODELVIEW);

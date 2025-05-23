@@ -163,6 +163,10 @@ break_evloop:
 	return 0;
 }
 
+void app_clear_rect(int x, int y, int w, int h)
+{
+}
+
 void app_redisplay(int x, int y, int w, int h)
 {
 	rtk_rect r;

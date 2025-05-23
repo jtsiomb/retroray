@@ -95,6 +95,7 @@ void rtk_padding(rtk_widget *w, int pad)
 void rtk_move(rtk_widget *w, int x, int y)
 {
 	if(!w->par) {
+		rtk_clearfb(w);
 		rtk_invalfb(w);
 	}
 	w->x = x;
@@ -121,6 +122,7 @@ void rtk_abspos(rtk_widget *w, int *xptr, int *yptr)
 void rtk_resize(rtk_widget *w, int xsz, int ysz)
 {
 	if(!w->par) {
+		rtk_clearfb(w);
 		rtk_invalfb(w);
 	}
 	w->width = xsz;
@@ -288,6 +290,7 @@ void rtk_hide(rtk_widget *w)
 	if(w->scr && w->scr->modal == w) {
 		w->scr->modal = 0;
 	}
+	rtk_clearfb(w);
 	rtk_invalfb(w);
 	inval_vport();
 }

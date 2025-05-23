@@ -18,8 +18,12 @@ dep = $(src:.c=.d)
 bin = retroray
 
 warn = -pedantic -Wall
-dbg = -g
-#opt = -O3
+ifeq ($(build_opt), true)
+	opt = -O3
+endif
+ifeq ($(build_dbg), true)
+	dbg = -g
+endif
 def = -DMINIGLUT_USE_LIBC $(gawdef_$(build_gfx))
 inc = -Isrc -Isrc/modern -Ilibs -Ilibs/imago/src -Ilibs/treestor/include -Ilibs/drawtext
 libs = libs/unix/imago.a libs/unix/treestor.a libs/unix/drawtext.a

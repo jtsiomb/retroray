@@ -245,6 +245,27 @@ void rtk_invalfb(rtk_widget *w)
 	app_redisplay(rect.x, rect.y, rect.width, rect.height);
 }
 
+void rtk_clearfb(rtk_widget *w)
+{
+	rtk_rect rect;
+
+	rect.x = w->x;
+	rect.y = w->y;
+	rect.width = w->width;
+	rect.height = w->height;
+
+	rtk_abs_pos(w, &rect.x, &rect.y);
+
+	if(w->type == RTK_WIN && (w->flags & FRAME)) {
+		rect.x -= WINFRM_SZ;
+		rect.y -= WINFRM_SZ + WINFRM_TBAR;
+		rect.width += WINFRM_SZ * 2;
+		rect.height += WINFRM_SZ * 2 + WINFRM_TBAR;
+	}
+
+	app_clear_rect(rect.x, rect.y, rect.width, rect.height);
+}
+
 static int need_relayout(rtk_widget *w)
 {
 	rtk_widget *c;
