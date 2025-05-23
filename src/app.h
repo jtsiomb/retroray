@@ -120,6 +120,8 @@ void app_rband(int x, int y, int w, int h);
 /* defined in scr_mod.c for convenience */
 void primray(cgm_ray *ray, int x, int y);
 
+void gui_begin(void);
+void gui_end(void);
 void gui_fill(rtk_rect *rect, uint32_t color);
 void gui_blit(int x, int y, rtk_icon *icon);
 void gui_drawtext(int x, int y, const char *str);

@@ -33,6 +33,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #ifdef GFX_SW
 #include "gaw/gaw_sw.h"
 #endif
+#include "gaw/polyfill.h"	/* color packing macros */
 
 int mouse_x, mouse_y, mouse_state[3];
 unsigned int modkeys;
@@ -60,7 +61,8 @@ int app_init(void)
 {
 	int i;
 	char *start_scr_name;
-	static rtk_draw_ops guigfx = {gui_fill, gui_blit, gui_drawtext, gui_textrect};
+	static rtk_draw_ops guigfx = {gui_begin, gui_end, gui_fill, gui_blit,
+		gui_drawtext, gui_textrect};
 
 #if !defined(NDEBUG) && defined(DBG_FPEXCEPT)
 	infomsg("floating point exceptions enabled\n");
@@ -286,8 +288,46 @@ void app_chscr(struct app_screen *scr)
 	cur_scr = scr;
 }
 
+
+void gui_begin(void)
+{
+#ifdef GFX_GL
+	gaw_matrix_mode(GAW_MODELVIEW);
+	gaw_push_matrix();
+	gaw_load_identity();
+	gaw_matrix_mode(GAW_PROJECTION);
+	gaw_push_matrix();
+	gaw_load_identity();
+	gaw_ortho(0, win_width, win_height, 0, -1, 1);
+
+	gaw_save();
+	gaw_disable(GAW_DEPTH_TEST);
+	gaw_disable(GAW_CULL_FACE);
+	gaw_disable(GAW_LIGHTING);
+#endif
+}
+
+void gui_end(void)
+{
+#ifdef GFX_GL
+	gaw_restore();
+
+	gaw_matrix_mode(GAW_PROJECTION);
+	gaw_pop_matrix();
+	gaw_matrix_mode(GAW_MODELVIEW);
+	gaw_pop_matrix();
+#endif
+}
+
 void gui_fill(rtk_rect *rect, uint32_t color)
 {
+#ifdef GFX_GL
+	float r = ((color & 0xff0000) >> 16) / 255.0f;
+	float g = ((color & 0xff00) >> 8) / 255.0f;
+	float b = (color & 0xff) / 255.0f;
+	gaw_color3f(r, g, b);
+	gaw_rect(rect->x, rect->y, rect->x + rect->width, rect->y + rect->height);
+#else
 	int i, j;
 	uint32_t *fb;
 
@@ -313,10 +353,14 @@ void gui_fill(rtk_rect *rect, uint32_t color)
 		}
 		fb += win_width;
 	}
+#endif
 }
 
 void gui_blit(int x, int y, rtk_icon *icon)
 {
+#ifdef GFX_GL
+	gaw_drawpix(x, y, icon->width, icon->height, icon->scanlen, GAW_RGBA, icon->pixels);
+#else
 	int i, j;
 	uint32_t *dest, *src;
 
@@ -333,6 +377,7 @@ void gui_blit(int x, int y, rtk_icon *icon)
 		dest += win_width;
 		src += icon->scanlen;
 	}
+#endif
 }
 
 void gui_drawtext(int x, int y, const char *str)

@@ -52,6 +52,8 @@ typedef struct rtk_icon {
 
 
 typedef struct rtk_draw_ops {
+	void (*begin)(void);
+	void (*end)(void);
 	void (*fill)(rtk_rect *rect, uint32_t color);
 	void (*blit)(int x, int y, rtk_icon *icon);
 	void (*drawtext)(int x, int y, const char *str);

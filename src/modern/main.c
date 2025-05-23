@@ -40,7 +40,6 @@ static Display *xdpy;
 static Window xwin;
 
 static void (*glx_swap_interval_ext)();
-static void (*glx_swap_interval_sgi)();
 #endif
 #ifdef _WIN32
 #include <windows.h>
@@ -84,9 +83,7 @@ int main(int argc, char **argv)
 	xdpy = glXGetCurrentDisplay();
 	xwin = glXGetCurrentDrawable();
 
-	if(!(glx_swap_interval_ext = glXGetProcAddress((unsigned char*)"glXSwapIntervalEXT"))) {
-		glx_swap_interval_sgi = glXGetProcAddress((unsigned char*)"glXSwapIntervalSGI");
-	}
+	glx_swap_interval_ext = glXGetProcAddress((unsigned char*)"glXSwapIntervalEXT");
 #endif
 #ifdef _WIN32
 	wgl_swap_interval_ext = wglGetProcAddress("wglSwapIntervalEXT");
@@ -144,14 +141,6 @@ void app_swap_buffers(void)
 	glPushAttrib(GL_ENABLE_BIT);
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_LIGHTING);
-
-
-	glRasterPos2i(0, 0);
-	glPixelZoom(opt.scale, -opt.scale);
-	glEnable(GL_ALPHA_TEST);
-	glAlphaFunc(GL_GREATER, 0.5f);
-	glDrawPixels(win_width, win_height, GL_BGRA, GL_UNSIGNED_BYTE, framebuf);
-	glDisable(GL_ALPHA_TEST);
 
 	if(rband.width | rband.height) {
 		glEnable(GL_COLOR_LOGIC_OP);
@@ -215,8 +204,6 @@ void app_vsync(int vsync)
 	vsync = vsync ? 1 : 0;
 	if(glx_swap_interval_ext) {
 		glx_swap_interval_ext(xdpy, xwin, vsync);
-	} else if(glx_swap_interval_sgi) {
-		glx_swap_interval_sgi(vsync);
 	}
 }
 #endif

@@ -446,11 +446,8 @@ static void mtlpreview_draw(rtk_widget *w, void *cls)
 	savpix = mtlw.preview_pixels;
 
 	if(mtlw.preview_valid) {
-		for(i=0; i<MTL_PREVIEW_SZ; i++) {
-			memcpy(pix, savpix, MTL_PREVIEW_SZ * 4);
-			pix += win_width;
-			savpix += MTL_PREVIEW_SZ;
-		}
+		struct rtk_icon icon = {0, MTL_PREVIEW_SZ, MTL_PREVIEW_SZ, MTL_PREVIEW_SZ, savpix, 0};
+		gui_blit(rect.x, rect.y, &icon);
 	} else {
 		cgm_vcons(&lt.color, 1, 1, 1);
 		lt.energy = 1;
@@ -601,12 +598,13 @@ static void rgb_to_hsv(int r, int g, int b, int *hptr, int *sptr, int *vptr)
 
 static void draw_huebox(rtk_widget *w, void *cls)
 {
+	static uint32_t pixels[HUEBOX_SZ * HUEBOX_SZ];
+	static rtk_icon icon = {0, HUEBOX_SZ, HUEBOX_SZ, HUEBOX_SZ, pixels};
 	int i, j, hue, sat, val, r, g, b;
 	rtk_rect rect;
-	uint32_t *pptr;
+	uint32_t *pptr = icon.pixels;
 
 	rtk_get_absrect(w, &rect);
-	pptr = framebuf + rect.y * win_width + rect.x;
 
 	hue = colw.hsv[0];
 
@@ -623,18 +621,22 @@ static void draw_huebox(rtk_widget *w, void *cls)
 			}
 			pptr[j] = PACK_RGB32(r, g, b);
 		}
-		pptr += win_width;
+		pptr += HUEBOX_SZ;
 	}
+
+	gui_blit(rect.x, rect.y, &icon);
 }
 
 static void draw_huebar(rtk_widget *w, void *cls)
 {
+	static uint32_t pixels[HUEBOX_SZ * HUEBAR_HEIGHT];
+	static rtk_icon icon = {0, HUEBOX_SZ, HUEBAR_HEIGHT, HUEBOX_SZ, pixels};
 	int i, j, hue, r, g, b;
 	rtk_rect rect;
 	uint32_t *fbptr, *pptr, col;
 
 	rtk_get_absrect(w, &rect);
-	fbptr = framebuf + rect.y * win_width + rect.x;
+	fbptr = pixels;
 
 	for(i=0; i<HUEBOX_SZ; i++) {
 		hue = i * 360 / HUEBOX_SZ;
@@ -648,12 +650,14 @@ static void draw_huebar(rtk_widget *w, void *cls)
 
 		pptr = fbptr++;
 		for(j=0; j<HUEBAR_HEIGHT / 4; j++) {
-			*pptr = col; pptr += win_width;
-			*pptr = col; pptr += win_width;
-			*pptr = col; pptr += win_width;
-			*pptr = col; pptr += win_width;
+			*pptr = col; pptr += HUEBOX_SZ;
+			*pptr = col; pptr += HUEBOX_SZ;
+			*pptr = col; pptr += HUEBOX_SZ;
+			*pptr = col; pptr += HUEBOX_SZ;
 		}
 	}
+
+	gui_blit(rect.x, rect.y, &icon);
 }
 
 static void mbn_callback(rtk_widget *w, void *cls)

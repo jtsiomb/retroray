@@ -199,4 +199,6 @@ void gaw_poly_wire(void);
 void gaw_poly_flat(void);
 void gaw_poly_gouraud(void);
 
+void gaw_drawpix(int x, int y, int w, int h, int pitch, int fmt, void *pix);
+
 #endif	/* GRAPHICS_API_WRAPPER_H_ */
