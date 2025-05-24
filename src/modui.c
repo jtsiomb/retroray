@@ -446,7 +446,8 @@ static void mtlpreview_draw(rtk_widget *w, void *cls)
 	savpix = mtlw.preview_pixels;
 
 	if(mtlw.preview_valid) {
-		struct rtk_icon icon = {0, MTL_PREVIEW_SZ, MTL_PREVIEW_SZ, MTL_PREVIEW_SZ, savpix, 0};
+		struct rtk_icon icon = {0, MTL_PREVIEW_SZ, MTL_PREVIEW_SZ, MTL_PREVIEW_SZ};
+		icon.pixels = savpix;
 		gui_blit(rect.x, rect.y, &icon);
 	} else {
 		cgm_vcons(&lt.color, 1, 1, 1);
