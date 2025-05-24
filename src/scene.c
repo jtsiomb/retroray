@@ -21,6 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "geom.h"
 #include "darray.h"
 #include "logger.h"
+#include "treestor.h"
 
 static struct material *default_material(void);
 
@@ -69,6 +70,78 @@ void scn_clear(struct scene *scn)
 		free(scn->mtl[i]);
 	}
 	darr_clear(scn->mtl);
+}
+
+static struct material *read_material(struct ts_node *tsmtl)
+{
+	struct material *mtl;
+
+	if(!(mtl = malloc(sizeof *mtl))) {
+		errormsg("failed to allocate new material!\n");
+		return 0;
+	}
+	mtl_init(mtl);
+
+	return mtl;
+}
+
+static struct object *read_object(struct scene *scn, struct ts_node *tsobj)
+{
+	return 0;
+}
+
+static struct light *read_light(struct ts_node *tslt)
+{
+	return 0;
+}
+
+int scn_load(struct scene *scn, const char *fname)
+{
+	int res = -1;
+	struct ts_node *ts, *tsn;
+	struct material *mtl;
+	struct object *obj;
+	struct light *lt;
+
+	if(!(ts = ts_load(fname)) || strcmp(ts->name, "rrscene") != 0) {
+		errormsg("failed to load: %s\n", fname);
+		return -1;
+	}
+
+	scn_clear(scn);
+
+	tsn = ts->child_list;
+	while(tsn) {
+		if(strcmp(tsn->name, "material") == 0) {
+			if(!(mtl = read_material(tsn))) {
+				goto end;
+			}
+			scn_add_material(scn, mtl);
+
+		} else if(strcmp(tsn->name, "object") == 0) {
+			if(!(obj = read_object(scn, tsn))) {
+				goto end;
+			}
+			scn_add_object(scn, obj);
+
+		} else if(strcmp(tsn->name, "light") == 0) {
+			if(!(lt = read_light(tsn))) {
+				goto end;
+			}
+			scn_add_light(scn, lt);
+		}
+		tsn = tsn->next;
+	}
+
+	res = 0;
+end:
+	ts_free_tree(ts);
+	return res;
+}
+
+int scn_save(struct scene *scn, const char *fname)
+{
+	return -1;
 }
 
 int scn_add_object(struct scene *scn, struct object *obj)
