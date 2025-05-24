@@ -142,6 +142,15 @@ void app_swap_buffers(void)
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_LIGHTING);
 
+#ifndef GFX_GL
+	glRasterPos2i(0, 0);
+	glPixelZoom(opt.scale, -opt.scale);
+	glEnable(GL_ALPHA_TEST);
+	glAlphaFunc(GL_GREATER, 0.5f);
+	glDrawPixels(win_width, win_height, GL_BGRA, GL_UNSIGNED_BYTE, framebuf);
+	glDisable(GL_ALPHA_TEST);
+#endif
+
 	if(rband.width | rband.height) {
 		glEnable(GL_COLOR_LOGIC_OP);
 		glLogicOp(GL_XOR);
