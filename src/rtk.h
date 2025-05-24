@@ -179,6 +179,8 @@ int rtk_input_mbutton(rtk_screen *scr, int bn, int press, int x, int y);
 int rtk_input_mmotion(rtk_screen *scr, int x, int y);
 
 void rtk_invalidate_screen(rtk_screen *scr);
+void rtk_draw_begin(void);
+void rtk_draw_end(void);
 void rtk_draw_screen(rtk_screen *scr);
 
 /* misc */

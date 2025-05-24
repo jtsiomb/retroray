@@ -25,6 +25,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "font.h"
 #include "rend.h"
 #include "modui.h"
+#include "options.h"
 
 static int vpdirty, vpnav;
 static rtk_rect totalrend;
@@ -189,7 +190,28 @@ static void mdl_display(void)
 	}
 
 	/* GUI */
+	rtk_draw_begin();
 	rtk_draw_screen(modui);
+#ifdef GFX_GL
+	if(totalrend.width) {
+		static rtk_icon rfb;
+		rfb.pixels = framebuf + totalrend.y * win_width + totalrend.x;
+		rfb.width = totalrend.width;
+		rfb.height = totalrend.height;
+		rfb.scanlen = win_width;
+
+		gaw_matrix_mode(GAW_PROJECTION);
+		gaw_load_identity();
+		gaw_ortho(0, win_width, win_height, 0, -1, 1);
+		gaw_viewport(0, 0, win_width * opt.scale, win_height * opt.scale);
+
+		gaw_enable(GAW_ALPHA_TEST);
+		gaw_alpha_func(GAW_GREATER, 0.5f);
+		gui_blit(totalrend.x, totalrend.y, &rfb);
+		gaw_disable(GAW_ALPHA_TEST);
+	}
+#endif
+	rtk_draw_end();
 }
 
 static void draw_object(struct object *obj)
@@ -268,7 +290,12 @@ static void mdl_reshape(int x, int y)
 	viewport[0] = 0;
 	viewport[1] = TOOLBAR_HEIGHT;
 	viewport[2] = x;
+#ifdef GFX_GL
+	/* XXX temp render-rect viewport match hack, until I fix it properly */
+	viewport[3] = y;
+#else
 	viewport[3] = y - TOOLBAR_HEIGHT;
+#endif
 	gaw_viewport(viewport[0], viewport[1], viewport[2], viewport[3]);
 
 	gaw_matrix_mode(GAW_PROJECTION);
@@ -382,6 +409,7 @@ static void mdl_mouse(int bn, int press, int x, int y)
 						rtk_rect_union(&totalrend, &rband);
 					} else {
 						totalrend = rband;
+						memset(framebuf, 0, win_width * win_height * sizeof *framebuf);
 					}
 				}
 			}
@@ -663,6 +691,8 @@ void inval_vport(void)
 {
 	vpdirty = 1;
 	app_redisplay(0, 0, 0, 0);
+
+	totalrend.width = totalrend.height = 0;
 }
 
 cgm_vec3 get_view_pos(void)

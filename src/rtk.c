@@ -983,14 +983,22 @@ void rtk_invalidate_screen(rtk_screen *scr)
 	}
 }
 
+void rtk_draw_begin(void)
+{
+	rtk_gfx.begin();
+}
+
+void rtk_draw_end(void)
+{
+	rtk_gfx.end();
+}
+
 void rtk_draw_screen(rtk_screen *scr)
 {
 	int i;
-	rtk_gfx.begin();
 	for(i=0; i<scr->num_win; i++) {
 		rtk_draw_widget(scr->winlist[i]);
 	}
-	rtk_gfx.end();
 }
 
 /* --- misc functions --- */
