@@ -75,6 +75,8 @@ void scn_clear(struct scene *scn)
 static struct material *read_material(struct ts_node *tsmtl)
 {
 	struct material *mtl;
+	const char *str;
+	float *vec;
 
 	if(!(mtl = malloc(sizeof *mtl))) {
 		errormsg("failed to allocate new material!\n");
@@ -82,17 +84,100 @@ static struct material *read_material(struct ts_node *tsmtl)
 	}
 	mtl_init(mtl);
 
+	if((str = ts_get_attr_str(tsmtl, "name", 0))) {
+		mtl_set_name(mtl, str);
+	}
+	if((vec = ts_get_attr_vec(tsmtl, "kd", 0))) {
+		cgm_vcons(&mtl->kd, vec[0], vec[1], vec[2]);
+	}
+	if((vec = ts_get_attr_vec(tsmtl, "ks", 0))) {
+		cgm_vcons(&mtl->ks, vec[0], vec[1], vec[2]);
+	}
+	if((vec = ts_get_attr_vec(tsmtl, "ke", 0))) {
+		cgm_vcons(&mtl->ke, vec[0], vec[1], vec[2]);
+	}
+	mtl->shin = ts_get_attr_num(tsmtl, "shininess", mtl->shin);
+	mtl->refl = ts_get_attr_num(tsmtl, "reflect", mtl->refl);
+	mtl->trans = ts_get_attr_num(tsmtl, "transmit", mtl->trans);
+	mtl->ior = ts_get_attr_num(tsmtl, "ior", mtl->ior);
+
 	return mtl;
 }
 
 static struct object *read_object(struct scene *scn, struct ts_node *tsobj)
 {
-	return 0;
+	int objtype;
+	struct object *obj;
+	struct material *mtl;
+	const char *str;
+	float *vec;
+
+	if(!(str = ts_get_attr_str(tsobj, "type", 0))) {
+		objtype = OBJ_NULL;
+	} else if(strcmp(str, "sphere") == 0) {
+		objtype = OBJ_SPHERE;
+	} else if(strcmp(str, "box") == 0) {
+		objtype = OBJ_BOX;
+	} else {
+		warnmsg("ignoring unknown object type: %s\n", str);
+		return 0;
+	}
+
+	if(!(obj = create_object(objtype))) {
+		errormsg("failed to allocate new object\n");
+		return 0;
+	}
+	if((str = ts_get_attr_str(tsobj, "name", 0))) {
+		set_object_name(obj, str);
+	}
+	if((str = ts_get_attr_str(tsobj, "material", 0))) {
+		if((mtl = scn_find_material(scn, str))) {
+			obj->mtl = mtl;
+		} else {
+			warnmsg("object refers to unknown material: %s\n", str);
+		}
+	}
+	if((vec = ts_get_attr_vec(tsobj, "pos", 0))) {
+		cgm_vcons(&obj->pos, vec[0], vec[1], vec[2]);
+	}
+	if((vec = ts_get_attr_vec(tsobj, "scale", 0))) {
+		cgm_vcons(&obj->scale, vec[0], vec[1], vec[2]);
+	}
+	if((vec = ts_get_attr_vec(tsobj, "pivot", 0))) {
+		cgm_vcons(&obj->pivot, vec[0], vec[1], vec[2]);
+	}
+	if((vec = ts_get_attr_vec(tsobj, "rot", 0))) {
+		cgm_qcons(&obj->rot, vec[0], vec[1], vec[2], vec[3]);
+	}
+
+	obj->xform_valid = 0;
+	/* TODO csg */
+	return obj;
 }
 
 static struct light *read_light(struct ts_node *tslt)
 {
-	return 0;
+	struct light *lt;
+	const char *str;
+	float *vec;
+
+	if(!(lt = create_light())) {
+		errormsg("failed to allocate light\n");
+		return 0;
+	}
+	if((str = ts_get_attr_str(tslt, "name", 0))) {
+		set_light_name(lt, str);
+	}
+	if((vec = ts_get_attr_vec(tslt, "pos", 0))) {
+		cgm_vcons(&lt->pos, vec[0], vec[1], vec[2]);
+	}
+	if((vec = ts_get_attr_vec(tslt, "color", 0))) {
+		set_light_color(lt, vec[0], vec[1], vec[2]);
+	}
+	lt->energy = ts_get_attr_num(tslt, "energy", lt->energy);
+	lt->shadows = ts_get_attr_int(tslt, "shadows", lt->shadows);
+
+	return lt;
 }
 
 int scn_load(struct scene *scn, const char *fname)
@@ -139,9 +224,187 @@ end:
 	return res;
 }
 
+#define ADD_ATTR_STR(tsn, aname, s) \
+	do { \
+		struct ts_attr *attr; \
+		if(!(attr = ts_alloc_attr()) || ts_set_attr_name(attr, aname) == -1 || \
+				ts_set_value_str(&attr->val, s) == -1) { \
+			goto err; \
+		} \
+		ts_add_attr(tsn, attr); \
+	} while(0)
+
+#define ADD_ATTR_NUM(tsn, aname, n) \
+	do { \
+		struct ts_attr *attr; \
+		if(!(attr = ts_alloc_attr()) || ts_set_attr_name(attr, aname) == -1 || \
+				ts_set_valuef(&attr->val, n) == -1) { \
+			goto err; \
+		} \
+		ts_add_attr(tsn, attr); \
+	} while(0)
+
+#define ADD_ATTR_INT(tsn, aname, n) \
+	do { \
+		struct ts_attr *attr; \
+		if(!(attr = ts_alloc_attr()) || ts_set_attr_name(attr, aname) == -1 || \
+				ts_set_valuei(&attr->val, n) == -1) { \
+			goto err; \
+		} \
+		ts_add_attr(tsn, attr); \
+	} while(0)
+
+#define ADD_ATTR_VEC(tsn, aname, x, y, z) \
+	do { \
+		struct ts_attr *attr; \
+		if(!(attr = ts_alloc_attr()) || ts_set_attr_name(attr, aname) == -1 || \
+				ts_set_valuefv(&attr->val, 3, x, y, z) == -1) { \
+			goto err; \
+		} \
+		ts_add_attr(tsn, attr); \
+	} while(0)
+
+#define ADD_ATTR_VEC4(tsn, aname, x, y, z, w) \
+	do { \
+		struct ts_attr *attr; \
+		if(!(attr = ts_alloc_attr()) || ts_set_attr_name(attr, aname) == -1 || \
+				ts_set_valuefv(&attr->val, 4, x, y, z, w) == -1) { \
+			goto err; \
+		} \
+		ts_add_attr(tsn, attr); \
+	} while(0)
+
+static struct ts_node *cons_tsmtl(struct material *mtl)
+{
+	struct ts_node *tsmtl;
+
+	if(!(tsmtl = ts_alloc_node()) || ts_set_node_name(tsmtl, "material") == -1) {
+		return 0;
+	}
+
+	ADD_ATTR_STR(tsmtl, "name", mtl->name);
+
+	ADD_ATTR_VEC(tsmtl, "kd", mtl->kd.x, mtl->kd.y, mtl->kd.z);
+	ADD_ATTR_VEC(tsmtl, "ks", mtl->ks.x, mtl->ks.y, mtl->ks.z);
+	ADD_ATTR_VEC(tsmtl, "ke", mtl->ke.x, mtl->ke.y, mtl->ke.z);
+	ADD_ATTR_NUM(tsmtl, "shin", mtl->shin);
+	ADD_ATTR_NUM(tsmtl, "reflect", mtl->refl);
+	ADD_ATTR_NUM(tsmtl, "transmit", mtl->trans);
+	ADD_ATTR_NUM(tsmtl, "ior", mtl->ior);
+
+	return tsmtl;
+err:
+	ts_free_node(tsmtl);
+	return 0;
+}
+
+static struct ts_node *cons_tsobj(struct object *obj)
+{
+	const char *typestr;
+	struct ts_node *tsobj;
+
+	if(!(tsobj = ts_alloc_node()) || ts_set_node_name(tsobj, "object") == -1) {
+		return 0;
+	}
+
+	ADD_ATTR_STR(tsobj, "name", obj->name);
+
+	switch(obj->type) {
+	case OBJ_SPHERE:
+		typestr = "sphere";
+		break;
+	case OBJ_BOX:
+		typestr = "box";
+		break;
+	default:
+		typestr = 0;
+	}
+	if(typestr) {
+		ADD_ATTR_STR(tsobj, "type", typestr);
+	}
+
+	if(obj->mtl && obj->mtl != default_material()) {
+		ADD_ATTR_STR(tsobj, "material", obj->mtl->name);
+	}
+
+	ADD_ATTR_VEC(tsobj, "pos", obj->pos.x, obj->pos.y, obj->pos.z);
+	ADD_ATTR_VEC4(tsobj, "rot", obj->rot.x, obj->rot.y, obj->rot.z, obj->rot.w);
+	ADD_ATTR_VEC(tsobj, "scale", obj->scale.x, obj->scale.y, obj->scale.z);
+	ADD_ATTR_VEC(tsobj, "pivot", obj->pivot.x, obj->pivot.y, obj->pivot.z);
+
+	return tsobj;
+err:
+	ts_free_node(tsobj);
+	return 0;
+}
+
+static struct ts_node *cons_tslight(struct light *lt)
+{
+	struct ts_node *tslt;
+
+	if(!(tslt = ts_alloc_node()) || ts_set_node_name(tslt, "light") == -1) {
+		return 0;
+	}
+
+	ADD_ATTR_STR(tslt, "name", lt->name);
+
+	ADD_ATTR_VEC(tslt, "pos", lt->pos.x, lt->pos.y, lt->pos.z);
+	ADD_ATTR_VEC(tslt, "color", lt->orig_color.x, lt->orig_color.y, lt->orig_color.z);
+	ADD_ATTR_NUM(tslt, "energy", lt->energy);
+	ADD_ATTR_INT(tslt, "shadows", lt->shadows);
+
+	return tslt;
+err:
+	ts_free_node(tslt);
+	return 0;
+}
+
 int scn_save(struct scene *scn, const char *fname)
 {
-	return -1;
+	int i, count, res = -1;
+	struct ts_node *ts, *tsn;
+
+	if(!(ts = ts_alloc_node()) || ts_set_node_name(ts, "rrscene") == -1) {
+		errormsg("failed to allocate tree node\n");
+		goto end;
+	}
+
+	count = scn_num_materials(scn);
+	for(i=0; i<count; i++) {
+		if(!(tsn = cons_tsmtl(scn->mtl[i]))) {
+			errormsg("failed to construct material tree\n");
+			goto end;
+		}
+		ts_add_child(ts, tsn);
+	}
+
+	count = scn_num_objects(scn);
+	for(i=0; i<count; i++) {
+		if(!(tsn = cons_tsobj(scn->objects[i]))) {
+			errormsg("failed to construct object tree\n");
+			goto end;
+		}
+		ts_add_child(ts, tsn);
+	}
+
+	count = scn_num_lights(scn);
+	for(i=0; i<count; i++) {
+		if(!(tsn = cons_tslight(scn->lights[i]))) {
+			errormsg("failed to construct light tree\n");
+			goto end;
+		}
+		ts_add_child(ts, tsn);
+	}
+
+	if(ts_save(ts, fname) == -1) {
+		errormsg("failed to write: %s\n", fname);
+		goto end;
+	}
+
+	res = 0;
+end:
+	ts_free_tree(ts);
+	return res;
 }
 
 int scn_add_object(struct scene *scn, struct object *obj)

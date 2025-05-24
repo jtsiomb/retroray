@@ -91,6 +91,7 @@ extern struct font *uifont;
 extern uint32_t *framebuf, *rendbuf;
 
 extern struct scene *scn;
+extern const char *scn_fname;
 
 
 int app_init(void);

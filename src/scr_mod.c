@@ -512,6 +512,10 @@ void tbn_callback(rtk_widget *w, void *cls)
 		inval_vport();
 		break;
 
+	case TBN_SAVE:
+		scn_save(scn, scn_fname ? scn_fname : "foo.scn");
+		break;
+
 	case TBN_SEL:
 	case TBN_MOVE:
 	case TBN_ROT:

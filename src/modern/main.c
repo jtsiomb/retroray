@@ -60,6 +60,9 @@ int main(int argc, char **argv)
 {
 	glutInit(&argc, argv);
 
+	if(argv[1]) {
+		scn_fname = argv[1];
+	}
 	load_options(CFGFILE);
 
 	glutInitWindowSize(opt.xres * opt.scale, opt.yres * opt.scale);

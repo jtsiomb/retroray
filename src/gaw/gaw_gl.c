@@ -731,10 +731,18 @@ void gaw_poly_gouraud(void)
 	glShadeModel(GL_SMOOTH);
 }
 
+static int zoom[2];
+
+void gaw_pixelzoom(int x, int y)
+{
+	zoom[0] = x;
+	zoom[1] = y;
+}
+
 void gaw_drawpix(int x, int y, int w, int h, int pitch, int fmt, void *pix)
 {
 	glRasterPos2i(x, y);
-	glPixelZoom(1, -1);
+	glPixelZoom(zoom[0], -zoom[1]);
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch);
 	glDrawPixels(w, h, glfmt[fmt], GL_UNSIGNED_BYTE, pix);
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);

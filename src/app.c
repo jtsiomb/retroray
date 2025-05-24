@@ -50,6 +50,7 @@ struct font *uifont;
 uint32_t *framebuf;
 
 struct scene *scn;
+const char *scn_fname;
 
 /* available screens */
 #define MAX_SCREENS	8
@@ -94,6 +95,9 @@ int app_init(void)
 	rtk_setup(&guigfx);
 
 	if(!(scn = create_scene())) {
+		return -1;
+	}
+	if(scn_fname && scn_load(scn, scn_fname) == -1) {
 		return -1;
 	}
 
@@ -361,6 +365,7 @@ void gui_fill(rtk_rect *rect, uint32_t color)
 void gui_blit(int x, int y, rtk_icon *icon)
 {
 #ifdef GFX_GL
+	gaw_pixelzoom(opt.scale, opt.scale);
 	gaw_drawpix(x, y, icon->width, icon->height, icon->scanlen, GAW_RGBA, icon->pixels);
 #else
 	int i, j;
