@@ -2,6 +2,7 @@
 #include "rtk.h"
 #include "rtk_impl.h"
 #include "util.h"
+#include "gfxutil.h"
 
 rtk_draw_ops rtk_gfx;
 #define gfx rtk_gfx
@@ -437,18 +438,18 @@ static void abs_widget_rect(rtk_widget *w, rtk_rect *rect)
 	rect->height = w->height;
 }
 
-#define COL_BG					0xff666666
-#define COL_BGHL				0xff808080
-#define COL_LBEV				0xffaaaaaa
-#define COL_SBEV				0xff222222
-#define COL_TEXT				0xff000000
-#define COL_WINFRM_FOCUS		0xff6688cc
-#define COL_WINFRM_LIT_FOCUS	0xff88aaff
-#define COL_WINFRM_SHAD_FOCUS	0xff224466
-#define COL_WINFRM				0xff667788
-#define COL_WINFRM_LIT			0xff8899aa
-#define COL_WINFRM_SHAD			0xff224455
-#define COL_TBOX				0xffeeccbb
+#define COL_BG					PACK_RGB32(0x66, 0x66, 0x66)
+#define COL_BGHL				PACK_RGB32(0x80, 0x80, 0x80)
+#define COL_LBEV				PACK_RGB32(0xaa, 0xaa, 0xaa)
+#define COL_SBEV				PACK_RGB32(0x22, 0x22, 0x22)
+#define COL_TEXT				PACK_RGB32(0, 0, 0)
+#define COL_WINFRM_FOCUS		PACK_RGB32(0x66, 0x88, 0xcc)
+#define COL_WINFRM_LIT_FOCUS	PACK_RGB32(0x88, 0xaa, 0xff)
+#define COL_WINFRM_SHAD_FOCUS	PACK_RGB32(0x22, 0x44, 0x66)
+#define COL_WINFRM				PACK_RGB32(0x66, 0x77, 0x88)
+#define COL_WINFRM_LIT			PACK_RGB32(0x88, 0x99, 0xaa)
+#define COL_WINFRM_SHAD			PACK_RGB32(0x22, 0x44, 0x55)
+#define COL_TBOX				PACK_RGB32(0xee, 0xcc, 0xbb)
 
 static void hline(int x, int y, int sz, uint32_t col)
 {

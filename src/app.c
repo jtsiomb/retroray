@@ -28,12 +28,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "options.h"
 #include "font.h"
 #include "util.h"
+#include "gfxutil.h"
 #include "rtk.h"
 
 #ifdef GFX_SW
 #include "gaw/gaw_sw.h"
 #endif
-#include "gaw/polyfill.h"	/* color packing macros */
 
 int mouse_x, mouse_y, mouse_state[3];
 unsigned int modkeys;
@@ -328,9 +328,9 @@ void gui_end(void)
 void gui_fill(rtk_rect *rect, uint32_t color)
 {
 #ifdef GFX_GL
-	float r = ((color & 0xff0000) >> 16) / 255.0f;
-	float g = ((color & 0xff00) >> 8) / 255.0f;
-	float b = (color & 0xff) / 255.0f;
+	float r = UNP_RED(color) / 255.0f;
+	float g = UNP_GREEN(color) / 255.0f;
+	float b = UNP_BLUE(color) / 255.0f;
 	gaw_color3f(r, g, b);
 	gaw_rect(rect->x, rect->y, rect->x + rect->width, rect->y + rect->height);
 #else

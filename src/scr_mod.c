@@ -513,7 +513,7 @@ void tbn_callback(rtk_widget *w, void *cls)
 		break;
 
 	case TBN_SAVE:
-		scn_save(scn, scn_fname ? scn_fname : "foo.scn");
+		scn_save(scn, scn_fname ? scn_fname : "foo.rry");
 		break;
 
 	case TBN_SEL:
@@ -653,6 +653,53 @@ static void moveobj(struct object *obj, int px0, int py0, int px1, int py1)
 
 static void rotobj(struct object *obj, int px0, int py0, int px1, int py1)
 {
+	cgm_ray ray;
+	float dist, mag;
+	cgm_vec3 p0, p1, axis, up;
+	cgm_quat qrot;
+
+	/* project px0,py0 to the object plane */
+	primray(&ray, px0, py0);
+	cgm_vnormalize(&ray.dir);
+	dist = ray_object_dist(&ray, obj);
+	cgm_raypos(&p0, &ray, dist);
+
+	/* project px1,py1 to the object plane */
+	primray(&ray, px1, py1);
+	cgm_vnormalize(&ray.dir);
+	cgm_raypos(&p1, &ray, dist);
+
+	/* axis of rotation runs from the center of the object to the view point */
+	axis = ray.origin;
+	cgm_vsub(&axis, &obj->pos);
+	cgm_vnormalize(&axis);
+
+	/* vectors from object center to each projected point */
+	cgm_vsub(&p0, &obj->pos);
+	cgm_vsub(&p1, &obj->pos);
+	cgm_vcross(&up, &p0, &p1);
+	mag = cgm_vlength(&up);
+
+	if(cgm_vdot(&up, &axis) < 0) {
+		mag = -mag;
+	}
+
+	if(axismask == 1 || axismask == 6) {
+		cgm_qrotation(&qrot, mag, 1, 0, 0);
+	} else if(axismask == 2 || axismask == 5) {
+		cgm_qrotation(&qrot, mag, 0, 1, 0);
+	} else if(axismask == 4 || axismask == 3) {
+		cgm_qrotation(&qrot, mag, 0, 0, 1);
+	} else {
+		cgm_qrotation(&qrot, mag, axis.x, axis.y, axis.z);
+	}
+
+	cgm_qmul(&qrot, &obj->rot);
+	obj->rot = qrot;
+
+	obj->xform_valid = 0;
+
+	inval_vport();
 }
 
 static void scaleobj(struct object *obj, int px0, int py0, int px1, int py1)

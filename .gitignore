@@ -23,5 +23,9 @@ config.mk
 *.map
 *.MAP
 *.LOG
+*.log
 *.zip
 core
+*.png
+compile_commands.json
+*.rry

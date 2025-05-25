@@ -24,7 +24,7 @@ endif
 ifeq ($(build_dbg), true)
 	dbg = -g
 endif
-def = -DMINIGLUT_USE_LIBC $(gawdef_$(build_gfx))
+def = $(gawdef_$(build_gfx))
 inc = -Isrc -Isrc/modern -Ilibs -Ilibs/imago/src -Ilibs/treestor/include -Ilibs/drawtext
 libs = libs/unix/imago.a libs/unix/treestor.a libs/unix/drawtext.a
 
@@ -61,9 +61,12 @@ cleandep:
 libs:
 	$(MAKE) -C libs
 
-.PHONY: clean-libs
-clean-libs:
+.PHONY: cleanlibs
+cleanlibs:
 	$(MAKE) -C libs clean
+
+.PHONY: cleanall
+cleanall: clean cleanlibs cleandep
 
 .PHONY: data
 data:
