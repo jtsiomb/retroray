@@ -48,7 +48,7 @@ $(bin): cflags.occ $(obj) $(libs)
 .c: src;src/dos;src/gaw
 .asm: src;src/dos;src/gaw
 
-cflags.occ: Makefile
+cflags.occ: Makefile.wat
 	%write $@ $(CFLAGS)
 
 .c.obj: .autodepend
@@ -66,34 +66,34 @@ clean: .symbolic
 
 imago.lib:
 	cd libs/imago
-	wmake
+	wmake -f Makefile.wat
 	cd ../..
 
 treestor.lib:
 	cd libs/treestor
-	wmake
+	wmake -f Makefile.wat
 	cd ../..
 
 drawtext.lib:
 	cd libs/drawtext
-	wmake
+	wmake -f Makefile.wat
 	cd ../..
 
 !else
 
 imago.lib:
 	cd libs\imago
-	wmake
+	wmake -f Makefile.wat
 	cd ..\..
 
 treestor.lib:
 	cd libs\treestor
-	wmake
+	wmake -f Makefile.wat
 	cd ..\..
 
 drawtext.lib:
 	cd libs\drawtext
-	wmake
+	wmake -f Makefile.wat
 	cd ..\..
 
 clean: .symbolic
