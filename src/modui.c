@@ -437,7 +437,7 @@ static void mtlpreview_draw(rtk_widget *w, void *cls)
 	assert(rect.height == MTL_PREVIEW_SZ);
 
 	if(!curmtl) {
-		gui_fill(&rect, 0xff000000);
+		gui_fill(&rect, PACK_RGB32(0, 0, 0));
 		mtlw.preview_valid = 0;
 		return;
 	}
