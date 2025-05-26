@@ -72,7 +72,8 @@ static float view_matrix_inv[16], proj_matrix_inv[16];
 static int viewport[4];
 static cgm_ray pickray;
 
-static int cur_tool, prev_tool = -1;
+static int cur_tool;
+/*static int prev_tool = -1;*/
 
 static rtk_rect rband;
 static int rband_valid;
@@ -572,7 +573,7 @@ static void act_settool(int tidx)
 		inval_vport();
 	}
 
-	prev_tool = cur_tool;
+	/*prev_tool = cur_tool;*/
 	cur_tool = tidx;
 	for(i=0; i<NUM_TOOLS; i++) {
 		if(i == cur_tool) {

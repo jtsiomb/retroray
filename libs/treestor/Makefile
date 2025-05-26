@@ -1,7 +1,9 @@
+include ../../config.mk
+
 obj = src/treestor.o src/text.o src/dynarr.o
 alib = ../unix/treestor.a
 
-CFLAGS = -O3 -Iinclude
+CFLAGS = $(CFLAGS_extra) $(opt) $(dbg) -Iinclude
 
 $(alib): $(obj)
 	$(AR) rcs $@ $(obj)

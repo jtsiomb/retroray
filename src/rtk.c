@@ -648,13 +648,13 @@ rtk_widget *rtk_create_vbox(rtk_widget *par)
 rtk_widget *rtk_create_field(rtk_widget *par, const char *lbtext, rtk_callback cbfunc)
 {
 	rtk_widget *hbox;
-	rtk_widget *lb, *tb;
+	rtk_widget *tb;
 
 	if(!(hbox = rtk_create_window(par, "field", 0, 0, 0, 0, 0))) {
 		return 0;
 	}
 	rtk_win_layout(hbox, RTK_HBOX);
-	if(!(lb = rtk_create_label(hbox, lbtext))) {
+	if(!rtk_create_label(hbox, lbtext)) {
 		rtk_free_widget(hbox);
 		return 0;
 	}

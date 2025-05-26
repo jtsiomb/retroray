@@ -816,21 +816,21 @@ static struct dtx_glyphmap *load_glyphmap(struct io *io)
 		}
 
 		if(line[0] == '#') {
-			int c, res;
+			int c;
 			float x, y, xsz, ysz, orig_x, orig_y, adv, line_adv, baseline;
 			int ptsize;
 
-			if((res = sscanf(line + 1, " size: %d\n", &ptsize)) == 1) {
+			if(sscanf(line + 1, " size: %d\n", &ptsize) == 1) {
 				gmap->ptsize = ptsize;
 
-			} else if((res = sscanf(line + 1, " advance: %f\n", &line_adv)) == 1) {
+			} else if(sscanf(line + 1, " advance: %f\n", &line_adv) == 1) {
 				gmap->line_advance = line_adv;
 
-			} else if((res = sscanf(line + 1, " baseline: %f\n", &baseline)) == 1) {
+			} else if(sscanf(line + 1, " baseline: %f\n", &baseline) == 1) {
 				gmap->baseline = baseline;
 
-			} else if((res = sscanf(line + 1, " %d: %fx%f+%f+%f o:%f,%f adv:%f\n",
-							&c, &xsz, &ysz, &x, &y, &orig_x, &orig_y, &adv)) == 8) {
+			} else if(sscanf(line + 1, " %d: %fx%f+%f+%f o:%f,%f adv:%f\n", &c,
+						&xsz, &ysz, &x, &y, &orig_x, &orig_y, &adv) == 8) {
 				if(!(g = malloc(sizeof *g))) {
 					fperror("load_glyphmap: failed to allocate glyph");
 					goto err;

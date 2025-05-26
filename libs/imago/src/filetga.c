@@ -112,7 +112,7 @@ static int read_tga(struct img_pixmap *img, struct img_io *io)
 	int i, idx, c, r, g, b;
 	int rle_mode = 0, rle_pix_left = 0;
 	int pixel_bytes;
-	int fmt;
+	enum img_fmt fmt;
 	struct img_colormap cmap;
 
 	/* read header */

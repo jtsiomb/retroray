@@ -18,17 +18,44 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #ifndef GFXUTIL_H_
 #define GFXUTIL_H_
 
-#ifdef GFX_GL
-#define PACK_RGB32(r, g, b)	(0xff000000 | (r) | ((g) << 8) | ((b) << 16))
-#define UNP_RED(c)			((c) & 0xff)
-#define UNP_GREEN(c)		(((c) & 0xff00) >> 8)
-#define UNP_BLUE(c)			(((c) & 0xff0000) >> 16)
+
+#if defined(__sgi)
+#define BUILD_BIGEND
 #else
-#define PACK_RGB32(r, g, b)	(0xff000000 | ((r) << 16) | ((g) << 8) | (b))
-#define UNP_RED(c)			(((c) & 0xff0000) >> 16)
-#define UNP_GREEN(c)		(((c) & 0xff00) >> 8)
-#define UNP_BLUE(c)			((c) & 0xff)
+#define BUILD_LITEND
 #endif
 
+
+#ifdef BUILD_BIGEND
+
+#define RSHIFT		24
+#define GSHIFT		16
+#define BSHIFT		8
+#define ASHIFT		0
+
+#else	/* little endian */
+
+#ifdef GFX_GL
+#define RSHIFT		0
+#define GSHIFT		8
+#define BSHIFT		16
+#define ASHIFT		24
+#else
+#define RSHIFT		16
+#define GSHIFT		8
+#define BSHIFT		0
+#define ASHIFT		24
+#endif
+#endif
+
+#define RMASK		(0xff << RSHIFT)
+#define GMASK		(0xff << GSHIFT)
+#define BMASK		(0xff << BSHIFT)
+#define AMASK		(0xff << ASHIFT)
+
+#define PACK_RGB32(r, g, b)	(((r) << RSHIFT) | ((g) << GSHIFT) | ((b) << BSHIFT) | (0xff << ASHIFT))
+#define UNP_RED(c)			(((c) & RMASK) >> RSHIFT)
+#define UNP_GREEN(c)		(((c) & GMASK) >> GSHIFT)
+#define UNP_BLUE(c)			(((c) & BMASK) >> BSHIFT)
 
 #endif	/* GFXUTIL_H_ */

@@ -1,3 +1,5 @@
+include config.mk
+
 src = src/app.c src/cmesh.c src/cpuid.c src/darray.c src/font.c src/geom.c \
 	  src/logger.c src/material.c src/meshgen.c src/meshload.c src/modui.c \
 	  src/options.c src/rbtree.c src/rend.c src/rtk.c src/rtk_draw.c \
@@ -8,16 +10,14 @@ src = src/app.c src/cmesh.c src/cpuid.c src/darray.c src/font.c src/geom.c \
 obj = $(src:.c=.o)
 bin = retroray
 
-dbg = -g3
-opt = -O3
 def = -DGFX_GL
 inc = -Isrc -Isrc/modern -Ilibs -Ilibs/imago/src -Ilibs/treestor/include -Ilibs/drawtext
 libs = libs/unix/imago.a libs/unix/treestor.a libs/unix/drawtext.a
 
-CFLAGS = $(warn) $(dbg) $(opt) $(inc) $(def)
-LDFLAGS = $(libs) -lGL -lGLU -lX11 -lm
+CFLAGS = $(CFLAGS_extra) $(warn) $(dbg) $(opt) $(inc) $(def)
+LDFLAGS = $(LDFLAGS_extra) $(libs) -lGL -lGLU -lX11 -lm
 
-$(bin): $(obj) libs
+$(bin): $(obj) build-libs
 	$(CC) -o $@ $(obj) $(LDFLAGS)
 
 .c.o:
@@ -31,8 +31,11 @@ clean:
 cleandep:
 	rm -f $(dep)
 
-.PHONY: libs
-libs:
+.PHONY: cleanall
+cleanall: clean clean-libs
+
+.PHONY: build-libs
+build-libs:
 	cd libs && $(MAKE)
 
 .PHONY: clean-libs

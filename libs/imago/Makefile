@@ -1,3 +1,5 @@
+include ../../config.mk
+
 mobj = src/byteord.o src/filelbm.o src/filergbe.o src/imago2.o src/conv.o \
 	   src/filepng.o src/filetga.o src/imago_gl.o src/filejpeg.o src/fileppm.o \
 	   src/ftmodule.o src/modules.o
@@ -23,7 +25,7 @@ jobj = jpeglib/jcapimin.o jpeglib/jcapistd.o jpeglib/jccoefct.o jpeglib/jccolor.
 obj = $(mobj) $(zobj) $(pobj) $(jobj)
 alib = ../unix/imago.a
 
-CFLAGS = -O3 -Izlib -Ilibpng -Ijpeglib $(pic)
+CFLAGS = $(CFLAGS_extra) $(opt) $(dbg) -Izlib -Ilibpng -Ijpeglib $(pic)
 
 $(alib): $(obj)
 	$(AR) rcs $@ $(obj)
