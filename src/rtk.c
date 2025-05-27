@@ -7,6 +7,7 @@
 #include "rtk.h"
 #include "rtk_impl.h"
 #include "logger.h"
+#include "gfxutil.h"
 
 static void on_any_nop();
 static void on_window_drag(rtk_widget *w, int dx, int dy, int total_dx, int total_dy);
@@ -668,7 +669,10 @@ rtk_widget *rtk_create_field(rtk_widget *par, const char *lbtext, rtk_callback c
 /* --- icon functions --- */
 rtk_iconsheet *rtk_load_iconsheet(const char *fname)
 {
-	 rtk_iconsheet *is;
+	int i;
+	rtk_iconsheet *is;
+	unsigned char *rgbptr;
+	unsigned int *dest;
 
 	if(!(is = malloc(sizeof *is))) {
 		return 0;
@@ -678,6 +682,13 @@ rtk_iconsheet *rtk_load_iconsheet(const char *fname)
 	if(!(is->pixels = img_load_pixels(fname, &is->width, &is->height, IMG_FMT_RGBA32))) {
 		free(is);
 		return 0;
+	}
+
+	rgbptr = (unsigned char*)is->pixels;
+	dest = is->pixels;
+	for(i=0; i<is->width * is->height; i++) {
+		dest[i] = PACK_RGB32(rgbptr[0], rgbptr[1], rgbptr[2]);
+		rgbptr += 4;
 	}
 	return is;
 }

@@ -379,7 +379,7 @@ void gui_blit(int x, int y, rtk_icon *icon)
 			int r = src[j] & 0xff;
 			int g = (src[j] >> 8) & 0xff;
 			int b = (src[j] >> 16) & 0xff;
-			dest[j] = 0xff000000 | (r << 16) | (g << 8) | b;
+			dest[j] = src[j];
 		}
 		dest += win_width;
 		src += icon->scanlen;
