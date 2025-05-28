@@ -12,7 +12,7 @@ gawsrc_sw = src/gaw/gaw_sw.c src/gaw/gawswtnl.c src/gaw/polyfill.c src/gaw/polyc
 gawdef_gl = -DGFX_GL
 gawdef_sw = -DGFX_SW
 
-src = $(wildcard src/*.c) $(wildcard src/modern/*.c) $(gawsrc_$(build_gfx))
+src = $(wildcard src/*.c) $(wildcard src/sys_glut/*.c) $(gawsrc_$(build_gfx))
 obj = $(src:.c=.o)
 dep = $(src:.c=.d)
 bin = retroray
@@ -25,7 +25,7 @@ ifeq ($(build_dbg), true)
 	dbg = -g
 endif
 def = $(gawdef_$(build_gfx))
-inc = -Isrc -Isrc/modern -Ilibs -Ilibs/imago/src -Ilibs/treestor/include -Ilibs/drawtext
+inc = -Isrc -Isrc/sys_glut -Ilibs -Ilibs/imago/src -Ilibs/treestor/include -Ilibs/drawtext
 libs = libs/unix/imago.a libs/unix/treestor.a libs/unix/drawtext.a
 
 CFLAGS = $(warn) $(dbg) $(opt) $(inc) $(def) $(cflags_$(rend)) -MMD

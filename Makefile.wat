@@ -1,7 +1,7 @@
 !ifdef __UNIX__
-dosobj = src/dos/main.obj src/dos/keyb.obj src/dos/mouse.obj src/dos/timer.obj &
-	src/dos/cdpmi.obj src/dos/vidsys.obj src/dos/drv_vga.obj src/dos/drv_vbe.obj &
-	src/dos/drv_s3.obj
+dosobj = src/sys_dos/main.obj src/sys_dos/keyb.obj src/sys_dos/mouse.obj src/sys_dos/timer.obj &
+	src/sys_dos/cdpmi.obj src/sys_dos/vidsys.obj src/sys_dos/drv_vga.obj src/sys_dos/drv_vbe.obj &
+	src/sys_dos/drv_s3.obj
 appobj = src/app.obj src/cmesh.obj src/darray.obj src/font.obj src/logger.obj &
 	src/meshgen.obj src/meshload.obj src/options.obj src/rbtree.obj src/geom.obj &
 	src/rend.obj src/rtk.obj src/rtk_draw.obj src/scene.obj src/scr_mod.obj &
@@ -9,12 +9,12 @@ appobj = src/app.obj src/cmesh.obj src/darray.obj src/font.obj src/logger.obj &
 	src/util.obj src/util_s.obj src/cpuid.obj src/cpuid_s.obj
 gawobj = src/gaw/gaw_sw.obj src/gaw/gawswtnl.obj src/gaw/polyclip.obj src/gaw/polyfill.obj
 
-incpath = -Isrc -Isrc/dos -Ilibs -Ilibs/imago/src -Ilibs/treestor/include -Ilibs/drawtext
+incpath = -Isrc -Isrc/sys_dos -Ilibs -Ilibs/imago/src -Ilibs/treestor/include -Ilibs/drawtext
 libpath = libpath libs/dos
 !else
-dosobj = src\dos\main.obj src\dos\keyb.obj src\dos\mouse.obj src\dos\timer.obj &
-	src\dos\cdpmi.obj src\dos\vidsys.obj src\dos\drv_vga.obj src\dos\drv_vbe.obj &
-	src\dos\drv_s3.obj
+dosobj = src\sys_dos\main.obj src\sys_dos\keyb.obj src\sys_dos\mouse.obj src\sys_dos\timer.obj &
+	src\sys_dos\cdpmi.obj src\sys_dos\vidsys.obj src\sys_dos\drv_vga.obj src\sys_dos\drv_vbe.obj &
+	src\sys_dos\drv_s3.obj
 appobj = src\app.obj src\cmesh.obj src\darray.obj src\font.obj src\logger.obj &
 	src\meshgen.obj src\meshload.obj src\options.obj src\rbtree.obj src\geom.obj &
 	src\rend.obj src\rtk.obj src\rtk_draw.obj src\scene.obj src\scr_mod.obj &
@@ -22,7 +22,7 @@ appobj = src\app.obj src\cmesh.obj src\darray.obj src\font.obj src\logger.obj &
 	src\util.obj src\util_s.obj src\cpuid.obj src\cpuid_s.obj
 gawobj = src\gaw\gaw_sw.obj src\gaw\gawswtnl.obj src\gaw\polyclip.obj src\gaw\polyfill.obj
 
-incpath = -Isrc -Isrc\dos -Ilibs -Ilibs\imago\src -Ilibs\treestor\include -Ilibs\drawtext
+incpath = -Isrc -Isrc\sys_dos -Ilibs -Ilibs\imago\src -Ilibs\treestor\include -Ilibs\drawtext
 libpath = libpath libs\dos
 !endif
 
@@ -45,8 +45,8 @@ $(bin): cflags.occ $(obj) $(libs)
 	%write ldflags.lnk $(LDFLAGS)
 	$(LD) debug all name $@ system dos4g file { @objects } @ldflags
 
-.c: src;src/dos;src/gaw
-.asm: src;src/dos;src/gaw
+.c: src;src/sys_dos;src/gaw
+.asm: src;src/sys_dos;src/gaw
 
 cflags.occ: Makefile.wat
 	%write $@ $(CFLAGS)
@@ -98,7 +98,7 @@ drawtext.lib:
 
 clean: .symbolic
 	del src\*.obj
-	del src\dos\*.obj
+	del src\sys_dos\*.obj
 	del src\gaw\*.obj
 	del *.lnk
 	del cflags.occ
