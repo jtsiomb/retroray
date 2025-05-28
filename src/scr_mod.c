@@ -27,8 +27,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "modui.h"
 #include "options.h"
 
-static int vpdirty, vpnav;
+static int vpdirty, vpnav, projdirty;
 static rtk_rect totalrend;
+static float scr_aspect;
 
 
 static int mdl_init(void);
@@ -40,6 +41,8 @@ static void mdl_reshape(int x, int y);
 static void mdl_keyb(int key, int press);
 static void mdl_mouse(int bn, int press, int x, int y);
 static void mdl_motion(int x, int y);
+
+static void update_projmat(void);
 
 static void draw_object(struct object *obj);
 static void setup_material(struct material *mtl);
@@ -144,6 +147,10 @@ static void mdl_display(void)
 #else
 	if(vpdirty || vpnav) {
 #endif
+		if(projdirty) {
+			update_projmat();
+			projdirty = 0;
+		}
 		gaw_clear(GAW_COLORBUF | GAW_DEPTHBUF);
 
 		gaw_matrix_mode(GAW_MODELVIEW);
@@ -288,7 +295,7 @@ static void draw_grid(void)
 
 static void mdl_reshape(int x, int y)
 {
-	float aspect = (float)x / (float)(y - TOOLBAR_HEIGHT);
+	scr_aspect = (float)x / (float)(y - TOOLBAR_HEIGHT);
 
 	viewport[0] = 0;
 	viewport[1] = TOOLBAR_HEIGHT;
@@ -301,12 +308,7 @@ static void mdl_reshape(int x, int y)
 #endif
 	gaw_viewport(viewport[0], viewport[1], viewport[2], viewport[3]);
 
-	gaw_matrix_mode(GAW_PROJECTION);
-	gaw_load_identity();
-	gaw_perspective(50, aspect, 0.5, 100.0);
-	gaw_get_projection(proj_matrix);
-	cgm_mcopy(proj_matrix_inv, proj_matrix);
-	cgm_minverse(proj_matrix_inv);
+	update_projmat();
 
 	rtk_resize(toolbar, win_width, TOOLBAR_HEIGHT);
 
@@ -394,6 +396,7 @@ static void mdl_mouse(int bn, int press, int x, int y)
 
 		if(bn == 3) {
 			cam_dist *= 0.75;
+			if(cam_dist < 0.1) cam_dist = 0.1;
 			inval_vport();
 		} else if(bn == 4) {
 			cam_dist *= 1.3333333;
@@ -468,8 +471,9 @@ static void mdl_motion(int x, int y)
 
 		if(mouse_state[2]) {
 			cam_dist += dy * 0.1f;
-			if(cam_dist < 0) cam_dist = 0;
+			if(cam_dist < 0.1) cam_dist = 0.1;
 			inval_vport();
+			projdirty = 1;
 		}
 
 		if(mouse_state[1]) {
@@ -586,6 +590,21 @@ void tbn_callback(rtk_widget *w, void *cls)
 	default:
 		break;
 	}
+}
+
+
+static void update_projmat(void)
+{
+	float znear = 0.5f;
+	if(cam_dist < 2.0f) {
+		znear = 0.1f;
+	}
+	gaw_matrix_mode(GAW_PROJECTION);
+	gaw_load_identity();
+	gaw_perspective(50, scr_aspect, znear, cam_dist * 32.0f);
+	gaw_get_projection(proj_matrix);
+	cgm_mcopy(proj_matrix_inv, proj_matrix);
+	cgm_minverse(proj_matrix_inv);
 }
 
 static void act_settool(int tidx)
