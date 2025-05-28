@@ -66,6 +66,7 @@ struct app_screen scr_model = {
 
 static struct cmesh *mesh_sph, *mesh_box;
 
+static cgm_vec3 cam_pos;
 static float cam_theta, cam_phi = 20, cam_dist = 8;
 static float view_matrix[16], proj_matrix[16];
 static float view_matrix_inv[16], proj_matrix_inv[16];
@@ -150,6 +151,7 @@ static void mdl_display(void)
 		gaw_translate(0, 0, -cam_dist);
 		gaw_rotate(cam_phi, 1, 0, 0);
 		gaw_rotate(cam_theta, 0, 1, 0);
+		gaw_translate(-cam_pos.x, -cam_pos.y, -cam_pos.z);
 		gaw_get_modelview(view_matrix);
 		cgm_mcopy(view_matrix_inv, view_matrix);
 		cgm_minverse(view_matrix_inv);
@@ -389,6 +391,14 @@ static void mdl_mouse(int bn, int press, int x, int y)
 		if(modkeys & (KEY_MOD_ALT | KEY_MOD_CTRL)) {
 			vpnav |= (1 << bn);
 		}
+
+		if(bn == 3) {
+			cam_dist *= 0.75;
+			inval_vport();
+		} else if(bn == 4) {
+			cam_dist *= 1.3333333;
+			inval_vport();
+		}
 	} else {
 		vpnav &= ~(1 << bn);
 		vpdrag &= ~(1 << bn);
@@ -436,6 +446,8 @@ static void mdl_mouse(int bn, int press, int x, int y)
 static void mdl_motion(int x, int y)
 {
 	int dx, dy;
+	cgm_vec3 up, right;
+	float viewrot[16], pan_speed;
 
 	if(!vpdrag && rtk_input_mmotion(modui, x, y)) {
 		return;
@@ -457,6 +469,22 @@ static void mdl_motion(int x, int y)
 		if(mouse_state[2]) {
 			cam_dist += dy * 0.1f;
 			if(cam_dist < 0) cam_dist = 0;
+			inval_vport();
+		}
+
+		if(mouse_state[1]) {
+			cgm_mrotation_axis(viewrot, 0, -cgm_deg_to_rad(cam_phi));
+			cgm_mrotate_axis(viewrot, 1, -cgm_deg_to_rad(cam_theta));
+
+			cgm_vcons(&right, 1, 0, 0);
+			cgm_vcons(&up, 0, 1, 0);
+
+			cgm_vmul_m3v3(&right, viewrot);
+			cgm_vmul_m3v3(&up, viewrot);
+
+			pan_speed = cam_dist * 0.002 + 0.0025;
+			cgm_vadd_scaled(&cam_pos, &up, dy * pan_speed);
+			cgm_vadd_scaled(&cam_pos, &right, dx * -pan_speed);
 			inval_vport();
 		}
 	} else {
