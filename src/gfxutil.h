@@ -58,4 +58,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #define UNP_GREEN(c)		(((c) & GMASK) >> GSHIFT)
 #define UNP_BLUE(c)			(((c) & BMASK) >> BSHIFT)
 
+void rgb_to_hsv(int r, int g, int b, int *hptr, int *sptr, int *vptr);
+void hsv_to_rgb(int h, int s, int v, int *rptr, int *gptr, int *bptr);
+
 #endif	/* GFXUTIL_H_ */

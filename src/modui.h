@@ -30,6 +30,8 @@ extern rtk_widget *tools[NUM_TOOLS];
 
 extern int selobj;
 extern unsigned int axismask;
+extern rtk_iconsheet *icons;
+extern rtk_icon *tbn_icons[];
 
 int modui_init(void);
 void modui_cleanup(void);
@@ -37,10 +39,19 @@ void modui_cleanup(void);
 void tbn_callback(rtk_widget *w, void *cls);
 
 void set_axismask(unsigned int mask);
-void select_material(int midx);
 
 /* scr_mod.c */
 void inval_vport(void);
 cgm_vec3 get_view_pos(void);
+
+/* mtlui.c */
+int create_mtlwin(void);
+void select_material(int midx);
+
+/* extra widgets */
+int create_colordlg(void);
+void draw_huebox(rtk_widget *w, void *cls);
+void draw_huebar(rtk_widget *w, void *cls);
+
 
 #endif	/* MODUI_H_ */

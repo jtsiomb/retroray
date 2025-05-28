@@ -2,10 +2,10 @@ include config.mk
 
 src = src/app.c src/cmesh.c src/cpuid.c src/darray.c src/font.c src/geom.c \
 	  src/logger.c src/material.c src/meshgen.c src/meshload.c src/modui.c \
-	  src/options.c src/rbtree.c src/rend.c src/rtk.c src/rtk_draw.c \
-	  src/scene.c src/scr_mod.c src/scr_rend.c src/texture.c src/util.c \
-	  src/sys_glut/main.c src/sys_glut/miniglut.c \
-	  src/gaw/gaw_gl.c
+	  src/mtlui.c src/options.c src/rbtree.c src/rend.c src/rtk.c \
+	  src/rtk_draw.c src/scene.c src/scr_mod.c src/scr_rend.c src/texture.c \
+	  src/gfxutil.c src/util.c \
+	  src/sys_glut/main.c src/sys_glut/miniglut.c src/gaw/gaw_gl.c
 
 obj = $(src:.c=.o)
 bin = retroray
