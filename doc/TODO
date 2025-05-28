@@ -1,11 +1,9 @@
 Bugs
 ----
  - Color picker: constrain movement to bounds
- - Material editor: rename materials
 
 Features
 --------
- - View panning
  - 6dof input
  - Duplicate objects
  - Improve the renderer

@@ -1,6 +1,6 @@
 /*
 RetroRay - integrated standalone vintage modeller/renderer
-Copyright (C) 2023  John Tsiombikas <nuclear@mutantstargoat.com>
+Copyright (C) 2023-2025  John Tsiombikas <nuclear@mutantstargoat.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -68,6 +68,7 @@ static void draw_colorbn(rtk_widget *w, void *cls);
 static void draw_huebox(rtk_widget *w, void *cls);
 static void draw_huebar(rtk_widget *w, void *cls);
 static void mbn_callback(rtk_widget *w, void *cls);
+static void mtx_callback(rtk_widget *w, void *cls);
 static void start_color_picker(cgm_vec3 *dest, rtk_widget *updw);
 static void colbn_handler(rtk_widget *w, void *cls);
 static void colbox_mbutton(rtk_widget *w, int bn, int press, int x, int y);
@@ -236,7 +237,7 @@ static int create_mtlwin(void)
 	icon = rtk_define_icon(icons, "leftarrow", 0, 32, 16, 16);
 	mtlw.bn_prev = rtk_create_iconbutton(box, icon, mbn_callback);
 	mtlw.lb_mtlidx = rtk_create_label(box, "0/0");
-	w = rtk_create_textbox(box, "", 0);
+	w = rtk_create_textbox(box, "", mtx_callback);
 	rtk_resize(w, 88, 1);
 	mtlw.tx_mtlname = w;
 	icon = rtk_define_icon(icons, "rightarrow", 16, 32, 16, 16);
@@ -659,6 +660,16 @@ static void draw_huebar(rtk_widget *w, void *cls)
 	}
 
 	gui_blit(rect.x, rect.y, &icon);
+}
+
+static void mtx_callback(rtk_widget *w, void *cls)
+{
+	const char *newname = rtk_get_text(w);
+
+	if(!curmtl || !newname || !*newname || strcmp(newname, curmtl->name) == 0) {
+		return;
+	}
+	mtl_set_name(curmtl, newname);
 }
 
 static void mbn_callback(rtk_widget *w, void *cls)

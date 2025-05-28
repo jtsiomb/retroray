@@ -1,3 +1,20 @@
+/*
+RetroRay - integrated standalone vintage modeller/renderer
+Copyright (C) 2023-2025  John Tsiombikas <nuclear@mutantstargoat.com>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -1115,8 +1132,18 @@ static void on_textbox_key(rtk_widget *w, int key, int press)
 				tb->text[--tb->cursor] = 0;
 			}
 			tb->len--;
+			if(w->cbfunc) w->cbfunc(w, w->cbcls);
+			rtk_invalidate(w);
 		}
-		rtk_invalidate(w);
+		return;
+
+	case KEY_DEL:
+		if(tb->cursor < tb->len) {
+			memmove(tb->text + tb->cursor, tb->text + tb->cursor + 1, tb->len - tb->cursor);
+			tb->text[--tb->len] = 0;
+			if(w->cbfunc) w->cbfunc(w, w->cbcls);
+			rtk_invalidate(w);
+		}
 		return;
 
 	case KEY_HOME:
@@ -1173,6 +1200,7 @@ static void on_textbox_key(rtk_widget *w, int key, int press)
 		tb->len++;
 	}
 
+	if(w->cbfunc) w->cbfunc(w, w->cbcls);
 	rtk_invalidate(w);
 }
 
