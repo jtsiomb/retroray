@@ -17,6 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #include "rend.h"
 #include "app.h"
+#include "cgmath/cgmath.h"
 #include "geom.h"
 #include "util.h"
 #include "gfxutil.h"
@@ -167,7 +168,7 @@ int ray_trace(const cgm_ray *ray, int maxiter, cgm_vec3 *res)
 {
 	struct rayhit hit;
 
-	if(!scn_intersect(scn, ray, &hit)) {
+	if(maxiter <= 0 || !scn_intersect(scn, ray, &hit)) {
 		*res = bgcolor(ray);
 		return 0;
 	}
@@ -184,7 +185,8 @@ cgm_vec3 bgcolor(const cgm_ray *ray)
 cgm_vec3 shade(const cgm_ray *ray, const struct rayhit *hit, int maxiter)
 {
 	int i, num_lights;
-	cgm_vec3 color, dcol, scol, texel, vdir;
+	cgm_vec3 color, dcol, scol, texel, norm, vdir;
+	cgm_ray rray;
 	struct material *mtl;
 	struct light *lt;
 
@@ -193,16 +195,28 @@ cgm_vec3 shade(const cgm_ray *ray, const struct rayhit *hit, int maxiter)
 
 	mtl = hit->obj->mtl;
 
+	norm = hit->norm;
+	cgm_vnormalize(&norm);
+
 	vdir = ray->dir;
 	cgm_vneg(&vdir);
 	cgm_vnormalize(&vdir);
 
 	if(!(num_lights = scn_num_lights(scn))) {
-		calc_light(hit, &def_light, &vdir, &dcol, &scol);
+		calc_light(hit, &def_light, &norm, &vdir, &dcol, &scol);
 	}
 	for(i=0; i<num_lights; i++) {
 		lt = scn->lights[i];
-		calc_light(hit, lt, &vdir, &dcol, &scol);
+		calc_light(hit, lt, &norm, &vdir, &dcol, &scol);
+	}
+
+	if(mtl->refl) {
+		rray.origin = hit->pos;
+		rray.dir = vdir;
+		cgm_vreflect(&rray.dir, &hit->norm);
+		cgm_vscale(&rray.dir, -500.0f);
+		ray_trace(&rray, maxiter - 1, &color);
+		cgm_vadd_scaled(&scol, &color, mtl->refl);		/* TODO fresnel */
 	}
 
 	if(mtl->texmap) {
@@ -216,10 +230,10 @@ cgm_vec3 shade(const cgm_ray *ray, const struct rayhit *hit, int maxiter)
 }
 
 int calc_light(const struct rayhit *hit, const struct light *lt,
-		const cgm_vec3 *vdir, cgm_vec3 *dcol, cgm_vec3 *scol)
+		const cgm_vec3 *norm, const cgm_vec3 *vdir, cgm_vec3 *dcol, cgm_vec3 *scol)
 {
 	float ndotl, ndoth, spec;
-	cgm_vec3 norm, ldir, hdir;
+	cgm_vec3 ldir, hdir;
 	cgm_ray ray;
 	struct material *mtl = hit->obj->mtl;
 
@@ -233,18 +247,15 @@ int calc_light(const struct rayhit *hit, const struct light *lt,
 		return 0;	/* in shadow */
 	}
 
-	norm = hit->norm;
-	cgm_vnormalize(&norm);
-
 	cgm_vnormalize(&ldir);
 
 	hdir = *vdir;
 	cgm_vadd(&hdir, &ldir);
 	cgm_vnormalize(&hdir);
 
-	ndotl = cgm_vdot(&norm, &ldir);
+	ndotl = cgm_vdot(norm, &ldir);
 	if(ndotl < 0.0f) ndotl = 0.0f;
-	ndoth = cgm_vdot(&norm, &hdir);
+	ndoth = cgm_vdot(norm, &hdir);
 	if(ndoth < 0.0f) ndoth = 0.0f;
 
 	spec = pow(ndoth, mtl->shin);

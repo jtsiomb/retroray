@@ -93,6 +93,12 @@ extern uint32_t *framebuf, *rendbuf;
 extern struct scene *scn;
 extern const char *scn_fname;
 
+struct view {
+	float theta, phi, dist;
+	cgm_vec3 pos;
+};
+extern struct view view;
+
 
 int app_init(void);
 void app_shutdown(void);

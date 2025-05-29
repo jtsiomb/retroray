@@ -66,11 +66,10 @@ struct app_screen scr_model = {
 	mdl_keyb, mdl_mouse, mdl_motion
 };
 
+struct view view = {0, 20, 8};	/* theta, phi, dist, pos */
 
 static struct cmesh *mesh_sph, *mesh_box;
 
-static cgm_vec3 cam_pos;
-static float cam_theta, cam_phi = 20, cam_dist = 8;
 static float view_matrix[16], proj_matrix[16];
 static float view_matrix_inv[16], proj_matrix_inv[16];
 static int viewport[4];
@@ -88,6 +87,7 @@ static rtk_rect rendrect;
 
 static int mdl_init(void)
 {
+
 	if(modui_init() == -1) {
 		errormsg("failed to initialize modeller UI\n");
 		return -1;
@@ -155,10 +155,10 @@ static void mdl_display(void)
 
 		gaw_matrix_mode(GAW_MODELVIEW);
 		gaw_load_identity();
-		gaw_translate(0, 0, -cam_dist);
-		gaw_rotate(cam_phi, 1, 0, 0);
-		gaw_rotate(cam_theta, 0, 1, 0);
-		gaw_translate(-cam_pos.x, -cam_pos.y, -cam_pos.z);
+		gaw_translate(0, 0, -view.dist);
+		gaw_rotate(view.phi, 1, 0, 0);
+		gaw_rotate(view.theta, 0, 1, 0);
+		gaw_translate(-view.pos.x, -view.pos.y, -view.pos.z);
 		gaw_get_modelview(view_matrix);
 		cgm_mcopy(view_matrix_inv, view_matrix);
 		cgm_minverse(view_matrix_inv);
@@ -395,11 +395,11 @@ static void mdl_mouse(int bn, int press, int x, int y)
 		}
 
 		if(bn == 3) {
-			cam_dist *= 0.75;
-			if(cam_dist < 0.1) cam_dist = 0.1;
+			view.dist *= 0.75;
+			if(view.dist < 0.1) view.dist = 0.1;
 			inval_vport();
 		} else if(bn == 4) {
-			cam_dist *= 1.3333333;
+			view.dist *= 1.3333333;
 			inval_vport();
 		}
 	} else {
@@ -462,23 +462,23 @@ static void mdl_motion(int x, int y)
 	if(vpnav) {
 		/* navigation */
 		if(mouse_state[0]) {
-			cam_theta += dx * 0.5f;
-			cam_phi += dy * 0.5f;
-			if(cam_phi < -90) cam_phi = -90;
-			if(cam_phi > 90) cam_phi = 90;
+			view.theta += dx * 0.5f;
+			view.phi += dy * 0.5f;
+			if(view.phi < -90) view.phi = -90;
+			if(view.phi > 90) view.phi = 90;
 			inval_vport();
 		}
 
 		if(mouse_state[2]) {
-			cam_dist += dy * 0.1f;
-			if(cam_dist < 0.1) cam_dist = 0.1;
+			view.dist += dy * 0.1f;
+			if(view.dist < 0.1) view.dist = 0.1;
 			inval_vport();
 			projdirty = 1;
 		}
 
 		if(mouse_state[1]) {
-			cgm_mrotation_axis(viewrot, 0, -cgm_deg_to_rad(cam_phi));
-			cgm_mrotate_axis(viewrot, 1, -cgm_deg_to_rad(cam_theta));
+			cgm_mrotation_axis(viewrot, 0, -cgm_deg_to_rad(view.phi));
+			cgm_mrotate_axis(viewrot, 1, -cgm_deg_to_rad(view.theta));
 
 			cgm_vcons(&right, 1, 0, 0);
 			cgm_vcons(&up, 0, 1, 0);
@@ -486,9 +486,9 @@ static void mdl_motion(int x, int y)
 			cgm_vmul_m3v3(&right, viewrot);
 			cgm_vmul_m3v3(&up, viewrot);
 
-			pan_speed = cam_dist * 0.002 + 0.0025;
-			cgm_vadd_scaled(&cam_pos, &up, dy * pan_speed);
-			cgm_vadd_scaled(&cam_pos, &right, dx * -pan_speed);
+			pan_speed = view.dist * 0.002 + 0.0025;
+			cgm_vadd_scaled(&view.pos, &up, dy * pan_speed);
+			cgm_vadd_scaled(&view.pos, &right, dx * -pan_speed);
 			inval_vport();
 		}
 	} else {
@@ -596,12 +596,12 @@ void tbn_callback(rtk_widget *w, void *cls)
 static void update_projmat(void)
 {
 	float znear = 0.5f;
-	if(cam_dist < 2.0f) {
+	if(view.dist < 2.0f) {
 		znear = 0.1f;
 	}
 	gaw_matrix_mode(GAW_PROJECTION);
 	gaw_load_identity();
-	gaw_perspective(50, scr_aspect, znear, cam_dist * 32.0f);
+	gaw_perspective(50, scr_aspect, znear, view.dist * 32.0f);
 	gaw_get_projection(proj_matrix);
 	cgm_mcopy(proj_matrix_inv, proj_matrix);
 	cgm_minverse(proj_matrix_inv);

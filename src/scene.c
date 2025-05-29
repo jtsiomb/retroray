@@ -17,6 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #include <stdlib.h>
 #include <float.h>
+#include "app.h"
 #include "scene.h"
 #include "geom.h"
 #include "darray.h"
@@ -187,6 +188,7 @@ int scn_load(struct scene *scn, const char *fname)
 	struct material *mtl;
 	struct object *obj;
 	struct light *lt;
+	float *vec;
 
 	if(!(ts = ts_load(fname)) || strcmp(ts->name, "rrscene") != 0) {
 		errormsg("failed to load: %s\n", fname);
@@ -214,6 +216,14 @@ int scn_load(struct scene *scn, const char *fname)
 				goto end;
 			}
 			scn_add_light(scn, lt);
+
+		} else if(strcmp(tsn->name, "view") == 0) {
+			view.theta = ts_get_attr_num(tsn, "theta", view.theta);
+			view.phi = ts_get_attr_num(tsn, "phi", view.phi);
+			view.dist = ts_get_attr_num(tsn, "dist", view.dist);
+			if((vec = ts_get_attr_vec(tsn, "pos", 0))) {
+				cgm_vcons(&view.pos, vec[0], vec[1], vec[2]);
+			}
 		}
 		tsn = tsn->next;
 	}
@@ -362,18 +372,18 @@ err:
 int scn_save(struct scene *scn, const char *fname)
 {
 	int i, count, res = -1;
-	struct ts_node *ts, *tsn;
+	struct ts_node *ts, *tsn = 0;
 
 	if(!(ts = ts_alloc_node()) || ts_set_node_name(ts, "rrscene") == -1) {
 		errormsg("failed to allocate tree node\n");
-		goto end;
+		goto err;
 	}
 
 	count = scn_num_materials(scn);
 	for(i=0; i<count; i++) {
 		if(!(tsn = cons_tsmtl(scn->mtl[i]))) {
 			errormsg("failed to construct material tree\n");
-			goto end;
+			goto err;
 		}
 		ts_add_child(ts, tsn);
 	}
@@ -382,7 +392,7 @@ int scn_save(struct scene *scn, const char *fname)
 	for(i=0; i<count; i++) {
 		if(!(tsn = cons_tsobj(scn->objects[i]))) {
 			errormsg("failed to construct object tree\n");
-			goto end;
+			goto err;
 		}
 		ts_add_child(ts, tsn);
 	}
@@ -391,18 +401,31 @@ int scn_save(struct scene *scn, const char *fname)
 	for(i=0; i<count; i++) {
 		if(!(tsn = cons_tslight(scn->lights[i]))) {
 			errormsg("failed to construct light tree\n");
-			goto end;
+			goto err;
 		}
 		ts_add_child(ts, tsn);
 	}
 
+	if(!(tsn = ts_alloc_node()) || !(tsn->name = strdup("view"))) {
+		errormsg("failed to construct view tree\n");
+		goto err;
+	}
+	ADD_ATTR_NUM(tsn, "theta", view.theta);
+	ADD_ATTR_NUM(tsn, "phi", view.phi);
+	ADD_ATTR_NUM(tsn, "dist", view.dist);
+	ADD_ATTR_VEC(tsn, "pos", view.pos.x, view.pos.y, view.pos.z);
+	ts_add_child(ts, tsn);
+
+	tsn = 0;
+
 	if(ts_save(ts, fname) == -1) {
 		errormsg("failed to write: %s\n", fname);
-		goto end;
+		goto err;
 	}
 
 	res = 0;
-end:
+err:
+	ts_free_node(tsn);
 	ts_free_tree(ts);
 	return res;
 }

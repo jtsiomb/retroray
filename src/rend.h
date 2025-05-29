@@ -1,6 +1,6 @@
 /*
 RetroRay - integrated standalone vintage modeller/renderer
-Copyright (C) 2023  John Tsiombikas <nuclear@mutantstargoat.com>
+Copyright (C) 2023-2025  John Tsiombikas <nuclear@mutantstargoat.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ cgm_vec3 bgcolor(const cgm_ray *ray);
 cgm_vec3 shade(const cgm_ray *ray, const struct rayhit *hit, int maxiter);
 
 int calc_light(const struct rayhit *hit, const struct light *lt,
-		const cgm_vec3 *vdir, cgm_vec3 *dcol, cgm_vec3 *scol);
+		const cgm_vec3 *norm, const cgm_vec3 *vdir, cgm_vec3 *dcol, cgm_vec3 *scol);
 
 
 

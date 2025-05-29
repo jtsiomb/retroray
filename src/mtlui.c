@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include <assert.h>
+#include "cgmath/cgmath.h"
 #include "modui.h"
 #include "app.h"
 #include "rtk.h"
@@ -11,6 +12,7 @@ static void draw_colorbn(rtk_widget *w, void *cls);
 static void mtlpreview_draw(rtk_widget *w, void *cls);
 static void mbn_callback(rtk_widget *w, void *cls);
 static void mtx_callback(rtk_widget *w, void *cls);
+static void upd_slider_text(rtk_widget *w);
 static void slider_callback(rtk_widget *w, void *cls);
 static void start_color_picker(cgm_vec3 *dest, rtk_widget *updw);
 static void colbn_handler(rtk_widget *w, void *cls);
@@ -21,6 +23,7 @@ static void colbox_drag(rtk_widget *w, int dx, int dy, int total_dx, int total_d
 #define MTL_PREVIEW_SZ 128
 static cgm_vec2 mtlsph_uv[MTL_PREVIEW_SZ][MTL_PREVIEW_SZ];
 static cgm_vec3 mtlsph_norm[MTL_PREVIEW_SZ][MTL_PREVIEW_SZ];
+static float mtlsph_refl[MTL_PREVIEW_SZ][MTL_PREVIEW_SZ];
 
 struct mtlw {
 	rtk_widget *lb_mtlidx;
@@ -109,8 +112,7 @@ int create_mtlwin(void)
 	/* shininess */
 	hbox = rtk_create_hbox(mtlwin);
 	rtk_create_label(hbox, "shininess ..");
-	mtlw.slider_shin = rtk_create_slider(hbox, 0, 128, 0, slider_callback);
-	rtk_set_text(mtlw.slider_shin, "  0");
+	mtlw.slider_shin = rtk_create_slider(hbox, 1, 128, 0, slider_callback);
 	rtk_resize(mtlw.slider_shin, 85, 0);
 	/* reflection */
 	hbox = rtk_create_hbox(mtlwin);
@@ -122,7 +124,6 @@ int create_mtlwin(void)
 	hbox = rtk_create_hbox(mtlwin);
 	rtk_create_label(hbox, "transmit ....");
 	mtlw.slider_trans = rtk_create_slider(hbox, 0, 1024, 0, slider_callback);
-	rtk_set_text(mtlw.slider_trans, "  0%");
 	rtk_resize(mtlw.slider_trans, 85, 0);
 	/* ior */
 	hbox = rtk_create_hbox(mtlwin);
@@ -130,6 +131,11 @@ int create_mtlwin(void)
 	mtlw.slider_ior = rtk_create_slider(hbox, 0, 1024, 0, slider_callback);
 	rtk_set_text(mtlw.slider_ior, "1.00");
 	rtk_resize(mtlw.slider_ior, 85, 0);
+
+	upd_slider_text(mtlw.slider_shin);
+	upd_slider_text(mtlw.slider_refl);
+	upd_slider_text(mtlw.slider_trans);
+	upd_slider_text(mtlw.slider_ior);
 
 	curmtl = 0;
 	curmtl_idx = -1;
@@ -142,11 +148,27 @@ int create_mtlwin(void)
 			float r = sqrt(x * x + y * y);
 
 			if(r < 1.0f) {
-				float z = sqrt(1.0f - x * x - y * y);
-				cgm_vcons(&mtlsph_norm[j][i], x, y, z);
+				int envx, envy, chess;
+				cgm_vec3 norm, rdir;
+				cgm_vec2 rsph;
+				float u, v, z = sqrt(1.0f - x * x - y * y);
+				cgm_vcons(&norm, x, y, z);
+				mtlsph_norm[j][i] = norm;
+
+				cgm_vcons(&rdir, 0, 0, -1);
+				cgm_vreflect(&rdir, &norm);
+				rsph.x = atan2(rdir.x, rdir.z);
+				rsph.y = acos(rdir.y);
+				u = (rsph.x + CGM_PI) / (CGM_PI * 2.0f);
+				v = rsph.y / CGM_PI;
+				envx = (int)(u * 1024.0f);
+				envy = (int)(v * 1024.0f);
+				chess = ((envx >> 7) & 1) == ((envy >> 7) & 1);
+				mtlsph_refl[j][i] = chess ? 0.7 : 0.4;
 			} else {
 				cgm_vcons(&mtlsph_norm[j][i], 0, 0, 0);
 				mtlsph_uv[j][i].x = mtlsph_uv[j][i].y = 0.0f;
+				mtlsph_refl[j][i] = 0.0f;
 			}
 		}
 	}
@@ -178,7 +200,11 @@ void select_material(int midx)
 	rtk_set_value(mtlw.slider_refl, (int)(curmtl->refl * 1024.0f));
 	rtk_set_value(mtlw.slider_trans, (int)(curmtl->trans * 1024.0f));
 	rtk_set_value(mtlw.slider_ior, (int)((curmtl->ior - 1.0f) * 1024.0f));
-	/* TODO update slider text */
+
+	upd_slider_text(mtlw.slider_shin);
+	upd_slider_text(mtlw.slider_refl);
+	upd_slider_text(mtlw.slider_trans);
+	upd_slider_text(mtlw.slider_ior);
 
 	rtk_invalidate(mtlwin);
 	mtlw.preview_valid = 0;
@@ -190,6 +216,7 @@ static void mtlpreview_draw(rtk_widget *w, void *cls)
 	rtk_rect rect;
 	uint32_t *pix, *savpix;
 	cgm_vec3 dcol, scol, norm, vdir = {0, 0, 1};
+	float reflval;
 	struct rayhit hit;
 	struct object obj;
 	struct light lt;
@@ -231,11 +258,19 @@ static void mtlpreview_draw(rtk_widget *w, void *cls)
 				dcol = curmtl->kd;
 				cgm_vscale(&dcol, 0.05);
 				scol.x = scol.y = scol.z = 0.0f;
-				calc_light(&hit, &lt, &vdir, &dcol, &scol);
+				calc_light(&hit, &lt, &norm, &vdir, &dcol, &scol);
+
+				if(curmtl->refl) {
+					reflval = mtlsph_refl[j][i];
+					/* TODO fresnel */
+					scol.x += reflval * curmtl->refl;
+					scol.y += reflval * curmtl->refl;
+					scol.z += reflval * curmtl->refl;
+				}
+
 				r = (dcol.x + scol.x) * 255.0f;
 				g = (dcol.y + scol.y) * 255.0f;
 				b = (dcol.z + scol.z) * 255.0f;
-
 				if(r > 255) r = 255;
 				if(g > 255) g = 255;
 				if(b > 255) b = 255;
@@ -347,10 +382,29 @@ static void mbn_callback(rtk_widget *w, void *cls)
 	}
 }
 
-static void slider_callback(rtk_widget *w, void *cls)
+static void upd_slider_text(rtk_widget *w)
 {
 	int val;
 	char buf[64];
+
+	val = rtk_get_value(w);
+
+	if(w == mtlw.slider_shin) {
+		sprintf(buf, "%3d", val);
+		rtk_set_text(w, buf);
+	} else if(w == mtlw.slider_ior) {
+		sprintf(buf, "%1.2f", (float)val / 1024.0f + 1.0f);
+		rtk_set_text(w, buf);
+	} else {
+		/* refl/trans */
+		sprintf(buf, "%3d%%", val * 100 / 1024);
+		rtk_set_text(w, buf);
+	}
+}
+
+static void slider_callback(rtk_widget *w, void *cls)
+{
+	int val;
 
 	if(!curmtl) return;
 
@@ -358,25 +412,15 @@ static void slider_callback(rtk_widget *w, void *cls)
 
 	if(w == mtlw.slider_shin) {
 		curmtl->shin = (float)val;
-		sprintf(buf, "%3d", val);
-		rtk_set_text(w, buf);
-
 	} else if(w == mtlw.slider_refl) {
 		curmtl->refl = (float)val / 1024.0f;
-		sprintf(buf, "%3d%%", val * 100 / 1024);
-		rtk_set_text(w, buf);
-
 	} else if(w == mtlw.slider_trans) {
 		curmtl->trans = (float)val / 1024.0f;
-		sprintf(buf, "%3d%%", val * 100 / 1024);
-		rtk_set_text(w, buf);
-
 	} else if(w == mtlw.slider_ior) {
 		curmtl->ior = (float)val / 1024.0f + 1.0f;
-		sprintf(buf, "%1.2f", curmtl->ior);
-		rtk_set_text(w, buf);
 	}
 
+	upd_slider_text(w);
 	mtlw.preview_valid = 0;
 }
 
