@@ -129,7 +129,7 @@ static int mdl_start(void)
 	gaw_enable(GAW_SPECULAR);
 	gaw_enable(GAW_NORMALIZE);
 
-	rend_pan(0, -TOOLBAR_HEIGHT);
+	//rend_pan(0, -TOOLBAR_HEIGHT);
 	return 0;
 }
 
@@ -663,7 +663,7 @@ void primray(cgm_ray *ray, int x, int y)
 	cgm_vec3 npos, farpt;
 	float inv_pv[16];
 
-	y = win_height - y;
+	y = win_height - (y - TOOLBAR_HEIGHT);
 	nx = (float)(x - viewport[0]) / (float)viewport[2];
 	ny = (float)(y - viewport[1]) / (float)viewport[3];
 
