@@ -166,23 +166,39 @@ static void mdl_display(void)
 
 		num = scn_num_objects(scn);
 		for(i=0; i<num; i++) {
-			setup_material(scn->objects[i]->mtl);
+			struct object *obj = scn->objects[i];
 
-			if(i == selobj) {
-				gaw_zoffset(0.1);
-				gaw_enable(GAW_POLYGON_OFFSET);
-				draw_object(scn->objects[i]);
-				gaw_disable(GAW_POLYGON_OFFSET);
-
+			if(obj->type == OBJ_LIGHT) {
 				gaw_save();
 				gaw_disable(GAW_LIGHTING);
-				gaw_poly_wire();
-				gaw_color3f(0, 1, 0);
-				draw_object(scn->objects[i]);
+				if(i != selobj) {
+					gaw_poly_wire();
+					gaw_color3f(0.6, 0.6, 0.3);
+				} else {
+					gaw_color3f(1, 1, 0);
+				}
+				draw_object(obj);
 				gaw_poly_gouraud();
 				gaw_restore();
 			} else {
-				draw_object(scn->objects[i]);
+				setup_material(scn->objects[i]->mtl);
+
+				if(i == selobj) {
+					gaw_zoffset(0.1);
+					gaw_enable(GAW_POLYGON_OFFSET);
+					draw_object(obj);
+					gaw_disable(GAW_POLYGON_OFFSET);
+
+					gaw_save();
+					gaw_disable(GAW_LIGHTING);
+					gaw_poly_wire();
+					gaw_color3f(0, 1, 0);
+					draw_object(obj);
+					gaw_poly_gouraud();
+					gaw_restore();
+				} else {
+					draw_object(obj);
+				}
 			}
 		}
 		vpdirty = 0;
@@ -234,19 +250,12 @@ static void draw_object(struct object *obj)
 
 	switch(obj->type) {
 	case OBJ_SPHERE:
+	case OBJ_LIGHT:
 		cmesh_draw(mesh_sph);
 		break;
 
 	case OBJ_BOX:
 		cmesh_draw(mesh_box);
-		break;
-
-	case OBJ_LIGHT:
-		gaw_save();
-		gaw_disable(GAW_LIGHTING);
-		gaw_color3f(1, 1, 0);
-		cmesh_draw(mesh_sph);
-		gaw_restore();
 		break;
 
 	default:
@@ -442,7 +451,6 @@ static void mdl_mouse(int bn, int press, int x, int y)
 				int newsel = scn_object_index(scn, hit.obj);
 				if(newsel != selobj) {
 					selobj = newsel;
-					printf("selected %d: %s\n", selobj, scn->objects[selobj]->name);
 					inval_vport();
 				}
 			} else {
@@ -450,7 +458,6 @@ static void mdl_mouse(int bn, int press, int x, int y)
 					inval_vport();
 				}
 				selobj = -1;
-				printf("deselected\n");
 			}
 		}
 	}
