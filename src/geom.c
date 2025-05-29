@@ -50,6 +50,7 @@ int ray_object_csg(const cgm_ray *ray, const struct object *obj, struct csghit *
 
 	switch(obj->type) {
 	case OBJ_SPHERE:
+	case OBJ_LIGHT:
 		res = ray_sphere(&localray, obj, hit);
 		break;
 

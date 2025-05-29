@@ -25,7 +25,11 @@ enum {
 	OBJ_NULL,
 	OBJ_SPHERE,
 	OBJ_BOX,
-	OBJ_CSG
+	OBJ_CSG,
+
+	OBJ_LIGHT,
+
+	NUM_OBJ_TYPES
 };
 
 #define OBJ_COMMON_ATTR \
@@ -48,8 +52,7 @@ struct csgnode {
 };
 
 struct light {
-	char *name;
-	cgm_vec3 pos;
+	OBJ_COMMON_ATTR;
 	cgm_vec3 color, orig_color;
 	float energy;
 	int shadows;
@@ -89,6 +92,7 @@ int scn_light_index(const struct scene *scn, const struct light *mtl);
 struct light *scn_find_light(const struct scene *scn, const char *mname);
 
 int scn_intersect(const struct scene *scn, const cgm_ray *ray, struct rayhit *hit);
+int scn_pick(const struct scene *scn, const cgm_ray *ray, struct rayhit *hit);
 
 /* --- objects --- */
 struct object *create_object(int type);

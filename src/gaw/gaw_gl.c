@@ -748,3 +748,42 @@ void gaw_drawpix(int x, int y, int w, int h, int pitch, int fmt, void *pix)
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 	glPixelZoom(1, 1);
 }
+
+
+static __inline void xform4_vec3(const float *mat, float *vec)
+{
+	float x = mat[0] * vec[0] + mat[4] * vec[1] + mat[8] * vec[2] + mat[12];
+	float y = mat[1] * vec[0] + mat[5] * vec[1] + mat[9] * vec[2] + mat[13];
+	float z = mat[2] * vec[0] + mat[6] * vec[1] + mat[10] * vec[2] + mat[14];
+	vec[3] = mat[3] * vec[0] + mat[7] * vec[1] + mat[11] * vec[2] + mat[15];
+	vec[2] = z;
+	vec[1] = y;
+	vec[0] = x;
+}
+
+int gaw_xform_point(float *vec)
+{
+	float mvmat[16], pmat[16];
+	float vport[4];
+	int inside;
+	float rcp_w;
+
+	glGetFloatv(GL_MODELVIEW_MATRIX, mvmat);
+	glGetFloatv(GL_PROJECTION_MATRIX, pmat);
+	glGetFloatv(GL_VIEWPORT, vport);
+
+	xform4_vec3(mvmat, vec);
+	xform4_vec3(pmat, vec);
+
+	inside = vec[0] > -vec[3] && vec[0] < vec[3] && vec[1] > -vec[3] && vec[1] < vec[3];
+
+	rcp_w = vec[3] == 0.0f ? 1.0f : 1.0f / vec[3];
+
+	vec[0] *= rcp_w;
+	vec[1] *= rcp_w;
+	vec[2] *= rcp_w;
+
+	vec[0] = (vec[0] * 0.5f + 0.5f) * vport[2] + vport[0];
+	vec[1] = (0.5f - vec[1] * 0.5f) * vport[3] + vport[1];
+	return inside;
+}

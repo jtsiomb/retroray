@@ -60,10 +60,6 @@ void scn_clear(struct scene *scn)
 		free_object(scn->objects[i]);
 	}
 	darr_clear(scn->objects);
-
-	for(i=0; i<darr_size(scn->lights); i++) {
-		free_light(scn->lights[i]);
-	}
 	darr_clear(scn->lights);
 
 	for(i=0; i<darr_size(scn->mtl); i++) {
@@ -178,6 +174,7 @@ static struct light *read_light(struct ts_node *tslt)
 	lt->energy = ts_get_attr_num(tslt, "energy", lt->energy);
 	lt->shadows = ts_get_attr_int(tslt, "shadows", lt->shadows);
 
+	lt->xform_valid = 0;
 	return lt;
 }
 
@@ -529,6 +526,7 @@ struct material *scn_find_material(const struct scene *scn, const char *mname)
 
 int scn_add_light(struct scene *scn, struct light *light)
 {
+	darr_push(scn->objects, &light);
 	darr_push(scn->lights, &light);
 	return 0;
 }
@@ -536,6 +534,8 @@ int scn_add_light(struct scene *scn, struct light *light)
 int scn_rm_light(struct scene *scn, struct light *light)
 {
 	int idx, num_lights;
+
+	scn_rm_object(scn, scn_object_index(scn, (struct object*)light));
 
 	if((idx = scn_light_index(scn, light)) == -1) {
 		return -1;
@@ -592,6 +592,7 @@ int scn_intersect(const struct scene *scn, const cgm_ray *ray, struct rayhit *hi
 
 	numobj = darr_size(scn->objects);
 	for(i=0; i<numobj; i++) {
+		if(scn->objects[i]->type == OBJ_LIGHT) continue;
 		if(ray_object(ray, scn->objects[i], &tmphit) && tmphit.t < hit0.t) {
 			hit0 = tmphit;
 		}
@@ -604,6 +605,28 @@ int scn_intersect(const struct scene *scn, const cgm_ray *ray, struct rayhit *hi
 	return 0;
 }
 
+int scn_pick(const struct scene *scn, const cgm_ray *ray, struct rayhit *hit)
+{
+	int i, numobj;
+	struct rayhit hit0, tmphit;
+
+	hit0.t = FLT_MAX;
+	hit0.obj = 0;
+
+	numobj = darr_size(scn->objects);
+	for(i=0; i<numobj; i++) {
+		if(ray_object(ray, scn->objects[i], &tmphit) && tmphit.t < hit0.t) {
+			hit0 = tmphit;
+		}
+	}
+
+	if(hit0.obj) {
+		if(hit) *hit = hit0;
+		return 1;
+	}
+	return 0;
+
+}
 
 /* --- object functions --- */
 
@@ -611,28 +634,35 @@ struct object *create_object(int type)
 {
 	struct object *obj;
 	char buf[32];
-	static int objid;
+	static int objid[NUM_OBJ_TYPES];
 
 	switch(type) {
 	case OBJ_SPHERE:
 		if(!(obj = calloc(1, sizeof *obj))) {
 			goto err;
 		}
-		sprintf(buf, "sphere%03d", objid);
+		sprintf(buf, "sphere%03d", objid[type]++);
 		break;
 
 	case OBJ_BOX:
 		if(!(obj = calloc(1, sizeof *obj))) {
 			goto err;
 		}
-		sprintf(buf, "box%03d", objid);
+		sprintf(buf, "box%03d", objid[type]++);
+		break;
+
+	case OBJ_LIGHT:
+		if(!(obj = calloc(1, sizeof(struct light)))) {
+			goto err;
+		}
+		sprintf(buf, "light%03d", objid[type]++);
 		break;
 
 	default:
 		if(!(obj = calloc(1, sizeof *obj))) {
 			goto err;
 		}
-		sprintf(buf, "object%03d", objid);
+		sprintf(buf, "object%03d", objid[OBJ_NULL]++);
 		break;
 	}
 
@@ -649,7 +679,6 @@ struct object *create_object(int type)
 	obj->mtl = default_material();
 
 	set_object_name(obj, buf);
-	objid++;
 	return obj;
 
 err:
@@ -715,19 +744,15 @@ void calc_object_matrix(struct object *obj)
 struct light *create_light(void)
 {
 	struct light *lt;
-	static int ltidx;
-	char buf[64];
 
-	if(!(lt = calloc(1, sizeof *lt))) {
+	if(!(lt = (struct light*)create_object(OBJ_LIGHT))) {
 		return 0;
 	}
 	cgm_vcons(&lt->pos, 0, 0, 0);
+	cgm_vcons(&lt->scale, 0.1, 0.1, 0.1);	/* TODO ... ugh */
 
 	set_light_color(lt, 1, 1, 1);
 	set_light_energy(lt, 1);
-
-	sprintf(buf, "light%03d", ltidx++);
-	set_light_name(lt, buf);
 
 	lt->shadows = 1;
 	return lt;

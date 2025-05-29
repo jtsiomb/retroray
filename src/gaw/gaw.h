@@ -202,4 +202,6 @@ void gaw_poly_gouraud(void);
 void gaw_pixelzoom(int x, int y);
 void gaw_drawpix(int x, int y, int w, int h, int pitch, int fmt, void *pix);
 
+int gaw_xform_point(float *vec);
+
 #endif	/* GRAPHICS_API_WRAPPER_H_ */

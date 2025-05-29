@@ -15,3 +15,5 @@ Features
  - Visualize and manipulate lights
  - separate UI scale
  - Scene graph window with selection, visibility, renaming ...
+ - better viewport wireframe visualization
+ - viewport wireframe-only option

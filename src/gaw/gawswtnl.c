@@ -957,3 +957,26 @@ static void shade(struct vertex *v)
 	v->g = g > 255 ? 255 : g;
 	v->b = b > 255 ? 255 : b;
 }
+
+int gaw_xform_point(float *vec)
+{
+	int mvtop = st.mtop[GAW_MODELVIEW];
+	int ptop = st.mtop[GAW_PROJECTION];
+	int inside;
+	float rcp_w;
+
+	xform4_vec3(st.mat[GAW_MODELVIEW][mvtop], vec);
+	xform4_vec3(st.mat[GAW_PROJECTION][ptop], vec);
+
+	inside = vec[0] > -vec[3] && vec[0] < vec[3] && vec[1] > -vec[3] && vec[1] < vec[3];
+
+	rcp_w = vec[3] == 0.0f ? 1.0f : 1.0f / vec[3];
+
+	vec[0] *= rcp_w;
+	vec[1] *= rcp_w;
+	vec[2] *= rcp_w;
+
+	vec[0] = (vec[0] * 0.5f + 0.5f) * (float)st.vport[2] + st.vport[0];
+	vec[1] = (0.5f - vec[1] * 0.5f) * (float)st.vport[3] + st.vport[1];
+	return inside;
+}

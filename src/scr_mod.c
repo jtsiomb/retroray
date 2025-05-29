@@ -241,6 +241,14 @@ static void draw_object(struct object *obj)
 		cmesh_draw(mesh_box);
 		break;
 
+	case OBJ_LIGHT:
+		gaw_save();
+		gaw_disable(GAW_LIGHTING);
+		gaw_color3f(1, 1, 0);
+		cmesh_draw(mesh_sph);
+		gaw_restore();
+		break;
+
 	default:
 		break;
 	}
@@ -430,10 +438,11 @@ static void mdl_mouse(int bn, int press, int x, int y)
 
 		} else if(bn == 0 && x == rband.x && y == rband.y) {
 			primray(&pickray, x, y);
-			if(scn_intersect(scn, &pickray, &hit)) {
+			if(scn_pick(scn, &pickray, &hit)) {
 				int newsel = scn_object_index(scn, hit.obj);
 				if(newsel != selobj) {
 					selobj = newsel;
+					printf("selected %d: %s\n", selobj, scn->objects[selobj]->name);
 					inval_vport();
 				}
 			} else {
@@ -441,6 +450,7 @@ static void mdl_mouse(int bn, int press, int x, int y)
 					inval_vport();
 				}
 				selobj = -1;
+				printf("deselected\n");
 			}
 		}
 	}
