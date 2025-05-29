@@ -1,6 +1,6 @@
 /*
 RetroRay - integrated standalone vintage modeller/renderer
-Copyright (C) 2023  John Tsiombikas <nuclear@mutantstargoat.com>
+Copyright (C) 2023-2025  John Tsiombikas <nuclear@mutantstargoat.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -35,8 +35,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #endif
 
 static const float *vertex_ptr, *normal_ptr, *texcoord_ptr, *color_ptr;
+static const int *edgef_ptr;
 static int vertex_nelem, texcoord_nelem, color_nelem;
-static int vertex_stride, normal_stride, texcoord_stride, color_stride;
+static int vertex_stride, normal_stride, texcoord_stride, color_stride, edgef_stride;
 
 static char *glextstr;
 static int have_edgeclamp = -1;
@@ -312,10 +313,17 @@ void gaw_color_array(int nelem, int stride, const void *ptr)
 	color_ptr = ptr;
 }
 
+void gaw_edge_flag_array(int stride, const void *ptr)
+{
+	edgef_stride = stride;
+	edgef_ptr = ptr;
+}
+
 static int glprim[] = {GL_POINTS, GL_LINES, GL_TRIANGLES, GL_QUADS, GL_QUAD_STRIP};
 
 void gaw_draw(int prim, int nverts)
 {
+#ifdef GL_VERSION_1_1
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glVertexPointer(vertex_nelem, GL_FLOAT, vertex_stride, vertex_ptr);
 	if(normal_ptr) {
@@ -330,6 +338,10 @@ void gaw_draw(int prim, int nverts)
 		glEnableClientState(GL_COLOR_ARRAY);
 		glTexCoordPointer(color_nelem, GL_FLOAT, color_stride, color_ptr);
 	}
+	if(edgef_ptr) {
+		glEnableClientState(GL_EDGE_FLAG_ARRAY);
+		glEdgeFlagPointer(edgef_stride, edgef_ptr);
+	}
 
 	glDrawArrays(glprim[prim], 0, nverts);
 
@@ -337,10 +349,73 @@ void gaw_draw(int prim, int nverts)
 	glDisableClientState(GL_NORMAL_ARRAY);
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	glDisableClientState(GL_COLOR_ARRAY);
+	glDisableClientState(GL_EDGE_FLAG_ARRAY);
+#else
+	int i, vadv, nadv, tadv, cadv, eadv;
+	const float *vptr, *nptr, *tptr, *cptr;
+	const int *eptr;
+
+	vptr = vertex_ptr;
+	vadv = vertex_stride ? vertex_stride / sizeof(float) : vertex_nelem;
+	if(normal_ptr) {
+		nptr = normal_ptr;
+		nadv = normal_stride ? normal_stride / sizeof(float) : 3;
+	}
+	if(texcoord_ptr) {
+		tptr = texcoord_ptr;
+		tadv = texcoord_stride ? texcoord_stride / sizeof(float) : texcoord_nelem;
+	}
+	if(color_ptr) {
+		cptr = color_ptr;
+		cadv = color_stride ? color_stride / sizeof(float) : color_nelem;
+	}
+	if(edgef_ptr) {
+		eptr = edgef_ptr;
+		eadv = edgef_stride ? edgef_stride / sizeof(int) : 1;
+	}
+
+	glBegin(glprim[prim]);
+	for(i=0; i<nverts; i++) {
+		if(nptr) {
+			glNormal3fv(nptr);
+			nptr += nadv;
+		}
+		if(tptr) {
+			glTexCoord2fv(tptr);
+			tptr += tadv;
+		}
+		if(cptr) {
+			if(color_nelem > 3) {
+				glColor4fv(cptr);
+			} else {
+				glColor3fv(cptr);
+			}
+			cptr += cadv;
+		}
+		if(eptr) {
+			glEdgeFlag(*eptr);
+			eptr += eadv;
+		}
+		switch(vertex_nelem) {
+		case 2:
+			glVertex2fv(vptr);
+			break;
+		case 3:
+			glVertex3fv(vptr);
+			break;
+		case 4:
+			glVertex4fv(vptr);
+			break;
+		}
+		vptr += vadv;
+	}
+	glEnd();
+#endif
 }
 
 void gaw_draw_indexed(int prim, const unsigned int *idxarr, int nidx)
 {
+#ifdef GL_VERSION_1_1
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glVertexPointer(3, GL_FLOAT, 0, vertex_ptr);
 	if(normal_ptr) {
@@ -355,6 +430,10 @@ void gaw_draw_indexed(int prim, const unsigned int *idxarr, int nidx)
 		glEnableClientState(GL_COLOR_ARRAY);
 		glTexCoordPointer(color_nelem, GL_FLOAT, color_stride, color_ptr);
 	}
+	if(edgef_ptr) {
+		glEnableClientState(GL_EDGE_FLAG_ARRAY);
+		glEdgeFlagPointer(edgef_stride, edgef_ptr);
+	}
 
 	glDrawElements(glprim[prim], nidx, GL_UNSIGNED_INT, idxarr);
 
@@ -362,6 +441,66 @@ void gaw_draw_indexed(int prim, const unsigned int *idxarr, int nidx)
 	glDisableClientState(GL_NORMAL_ARRAY);
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	glDisableClientState(GL_COLOR_ARRAY);
+	glDisableClientState(GL_EDGE_FLAG_ARRAY);
+#else
+	int i, vstride, nstride, tstride, cstride, estride;
+	const void *ptr;
+	unsigned int vidx;
+
+	vstride = vertex_stride ? vertex_stride : vertex_nelem * sizeof(float);
+	if(normal_ptr) {
+		nstride = normal_stride ? normal_stride : 3 * sizeof(float);
+	}
+	if(texcoord_ptr) {
+		tstride = texcoord_stride ? texcoord_stride : texcoord_nelem * sizeof(float);
+	}
+	if(color_ptr) {
+		cstride = color_stride ? color_stride : color_nelem * sizeof(float);
+	}
+	if(edgef_ptr) {
+		estride = edgef_stride ? edgef_stride : sizeof(int);
+	}
+
+	glBegin(glprim[prim]);
+	for(i=0; i<nidx; i++) {
+		vidx = *idxarr++;
+
+		if(normal_ptr) {
+			ptr = (char*)normal_ptr + vidx * nstride;
+			glNormal3fv(ptr);
+		}
+		if(texcoord_ptr) {
+			ptr = (char*)texcoord_ptr + vidx * tstride;
+			glTexCoord2fv(ptr);
+		}
+		if(color_ptr) {
+			ptr = (char*)color_ptr + vidx * cstride;
+			if(color_nelem > 3) {
+				glColor4fv(ptr);
+			} else {
+				glColor3fv(ptr);
+			}
+		}
+		if(edgef_ptr) {
+			ptr = (char*)edgef_ptr + vidx * estride;
+			glEdgeFlagv(ptr);
+		}
+
+		ptr = (char*)vertex_ptr + vidx * vstride;
+		switch(vertex_nelem) {
+		case 2:
+			glVertex2fv(ptr);
+			break;
+		case 3:
+			glVertex3fv(ptr);
+			break;
+		case 4:
+			glVertex4fv(ptr);
+			break;
+		}
+	}
+	glEnd();
+#endif
 }
 
 void gaw_begin(int prim)
@@ -402,6 +541,11 @@ void gaw_texcoord1f(float u)
 void gaw_texcoord2f(float u, float v)
 {
 	glTexCoord2f(u, v);
+}
+
+void gaw_edgeflag(int e)
+{
+	glEdgeFlag(e);
 }
 
 void gaw_vertex2f(float x, float y)

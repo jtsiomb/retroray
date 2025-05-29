@@ -33,7 +33,8 @@ static int roffs;
 static int xstep, ystep;
 static int pan_x, pan_y;
 
-static struct light def_light = {0, {0, 0, 0}, {1, 1, 1}, {1, 1, 1}, 1, 1};
+static struct light def_light = {OBJ_LIGHT, "light_default", {0, 0, 0}, {1, 1, 1},
+	{0, 0, 0}, {0, 0, 0, 1}, {0}, {0}, {0}, 0, 0, {1, 1, 1}, {1, 1, 1}, 1, 1};
 
 
 int rend_init(void)
@@ -213,7 +214,7 @@ cgm_vec3 shade(const cgm_ray *ray, const struct rayhit *hit, int maxiter)
 	if(mtl->refl) {
 		rray.origin = hit->pos;
 		rray.dir = vdir;
-		cgm_vreflect(&rray.dir, &hit->norm);
+		cgm_vreflect(&rray.dir, &norm);
 		cgm_vscale(&rray.dir, -500.0f);
 		ray_trace(&rray, maxiter - 1, &color);
 		cgm_vadd_scaled(&scol, &color, mtl->refl);		/* TODO fresnel */

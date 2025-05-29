@@ -84,6 +84,8 @@ static int rband_valid;
 static int rendering;
 static rtk_rect rendrect;
 
+static struct rayhit dbg_hit;
+
 
 static int mdl_init(void)
 {
@@ -201,6 +203,18 @@ static void mdl_display(void)
 				}
 			}
 		}
+
+		if(dbg_hit.obj) {
+			gaw_save();
+			gaw_disable(GAW_LIGHTING);
+			gaw_begin(GAW_LINES);
+			gaw_color3f(0, 1, 0);
+			gaw_vertex3f(dbg_hit.pos.x, dbg_hit.pos.y, dbg_hit.pos.z);
+			gaw_vertex3f(dbg_hit.pos.x + dbg_hit.norm.x, dbg_hit.pos.y + dbg_hit.norm.y,
+					dbg_hit.pos.z + dbg_hit.norm.z);
+			gaw_end();
+			gaw_restore();
+		}
 		vpdirty = 0;
 
 		/* dirty all GUI windows */
@@ -255,7 +269,39 @@ static void draw_object(struct object *obj)
 		break;
 
 	case OBJ_BOX:
-		cmesh_draw(mesh_box);
+		/* TODO move to a better mesh, cmesh sucks balls */
+		gaw_begin(GAW_QUADS);
+		gaw_normal(0, 0, 1);
+		gaw_vertex3f(-0.5, -0.5, 0.5);
+		gaw_vertex3f(0.5, -0.5, 0.5);
+		gaw_vertex3f(0.5, 0.5, 0.5);
+		gaw_vertex3f(-0.5, 0.5, 0.5);
+		gaw_normal(1, 0, 0);
+		gaw_vertex3f(0.5, -0.5, 0.5);
+		gaw_vertex3f(0.5, -0.5, -0.5);
+		gaw_vertex3f(0.5, 0.5, -0.5);
+		gaw_vertex3f(0.5, 0.5, 0.5);
+		gaw_normal(0, 0, -1);
+		gaw_vertex3f(0.5, -0.5, -0.5);
+		gaw_vertex3f(-0.5, -0.5, -0.5);
+		gaw_vertex3f(-0.5, 0.5, -0.5);
+		gaw_vertex3f(0.5, 0.5, -0.5);
+		gaw_normal(-1, 0, 0);
+		gaw_vertex3f(-0.5, -0.5, -0.5);
+		gaw_vertex3f(-0.5, -0.5, 0.5);
+		gaw_vertex3f(-0.5, 0.5, 0.5);
+		gaw_vertex3f(-0.5, 0.5, -0.5);
+		gaw_normal(0, 1, 0);
+		gaw_vertex3f(-0.5, 0.5, 0.5);
+		gaw_vertex3f(0.5, 0.5, 0.5);
+		gaw_vertex3f(0.5, 0.5, -0.5);
+		gaw_vertex3f(-0.5, 0.5, -0.5);
+		gaw_normal(0, -1, 0);
+		gaw_vertex3f(-0.5, -0.5, -0.5);
+		gaw_vertex3f(0.5, -0.5, -0.5);
+		gaw_vertex3f(0.5, -0.5, 0.5);
+		gaw_vertex3f(-0.5, -0.5, 0.5);
+		gaw_end();
 		break;
 
 	default:
@@ -387,6 +433,10 @@ static void mdl_keyb(int key, int press)
 			act_rmobj();
 			break;
 
+		case KEY_F1:
+			act_settool(TOOL_DBG);
+			break;
+
 		default:
 			break;
 		}
@@ -448,16 +498,27 @@ static void mdl_mouse(int bn, int press, int x, int y)
 		} else if(bn == 0 && x == rband.x && y == rband.y) {
 			primray(&pickray, x, y);
 			if(scn_pick(scn, &pickray, &hit)) {
-				int newsel = scn_object_index(scn, hit.obj);
-				if(newsel != selobj) {
-					selobj = newsel;
+				if(cur_tool == TOOL_DBG) {
+					dbg_hit = hit;
+					cgm_vnormalize(&dbg_hit.norm);
 					inval_vport();
+				} else {
+					int newsel = scn_object_index(scn, hit.obj);
+					if(newsel != selobj) {
+						selobj = newsel;
+						inval_vport();
+					}
 				}
 			} else {
-				if(selobj != -1) {
+				if(cur_tool == TOOL_DBG) {
+					dbg_hit.obj = 0;
 					inval_vport();
+				} else {
+					if(selobj != -1) {
+						inval_vport();
+					}
+					selobj = -1;
 				}
-				selobj = -1;
 			}
 		}
 	}
@@ -640,6 +701,7 @@ static void act_settool(int tidx)
 	/*prev_tool = cur_tool;*/
 	cur_tool = tidx;
 	for(i=0; i<NUM_TOOLS; i++) {
+		if(!tools[i]) continue;
 		if(i == cur_tool) {
 			if(!rtk_get_value(tools[i])) {
 				rtk_set_value(tools[i], 1);

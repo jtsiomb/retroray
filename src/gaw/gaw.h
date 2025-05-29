@@ -136,6 +136,7 @@ void gaw_vertex_array(int nelem, int stride, const void *ptr);
 void gaw_normal_array(int stride, const void *ptr);
 void gaw_texcoord_array(int nelem, int stride, const void *ptr);
 void gaw_color_array(int nelem, int stride, const void *ptr);
+void gaw_edge_flags_array(int stride, const void *ptr);
 void gaw_draw(int prim, int nverts);
 void gaw_draw_indexed(int prim, const unsigned int *idxarr, int nidx);
 
@@ -147,6 +148,7 @@ void gaw_color3ub(int r, int g, int b);
 void gaw_normal(float x, float y, float z);
 void gaw_texcoord1f(float u);
 void gaw_texcoord2f(float u, float v);
+void gaw_edgeflag(int e);
 void gaw_vertex2f(float x, float y);
 void gaw_vertex3f(float x, float y, float z);
 void gaw_vertex4f(float x, float y, float z, float w);

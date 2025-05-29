@@ -129,7 +129,6 @@ static int create_toolbar(void)
 			}
 		}
 	}
-	assert(toolidx == NUM_TOOLS);
 
 	/* constraint menu */
 	if(!(xyzmenu = rtk_create_window(0, "xyzmenu", TBN_XYZ * 24 - 4, TOOLBAR_HEIGHT, 22, 22 * 7, 0))) {

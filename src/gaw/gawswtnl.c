@@ -396,6 +396,15 @@ void gaw_color_array(int nelem, int stride, const void *ptr)
 	st.color_ptr = ptr;
 }
 
+void gaw_edge_flags_array(int stride, const void *ptr)
+{
+	if(stride <= 0) {
+		stride = sizeof(unsigned int);
+	}
+	st.edgef_stride = stride;
+	st.edgef_ptr = ptr;
+}
+
 void gaw_draw(int prim, int nverts)
 {
 	gaw_draw_indexed(prim, 0, nverts);
@@ -626,6 +635,11 @@ void gaw_texcoord2f(float u, float v)
 {
 	st.imm_curv.u = u;
 	st.imm_curv.v = v;
+}
+
+void gaw_edgeflag(int e)
+{
+	st.imm_curedgef = e;
 }
 
 void gaw_vertex2f(float x, float y)

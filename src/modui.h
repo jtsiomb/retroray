@@ -10,6 +10,8 @@
 enum {
 	TOOL_SEL, TOOL_MOVE, TOOL_ROT, TOOL_SCALE,
 	TOOL_UNION, TOOL_ISECT, TOOL_DIFF, TOOL_REND_AREA,
+
+	TOOL_DBG,
 	NUM_TOOLS
 };
 
@@ -26,7 +28,7 @@ enum {
 
 extern rtk_screen *modui;
 extern rtk_widget *toolbar, *objmenu, *xyzmenu, *mtlwin, *colordlg;
-extern rtk_widget *tools[NUM_TOOLS];
+extern rtk_widget *tools[];
 
 extern int selobj;
 extern unsigned int axismask;

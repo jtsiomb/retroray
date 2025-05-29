@@ -86,8 +86,9 @@ struct gaw_state {
 	uint32_t clear_depth;
 
 	const float *vertex_ptr, *normal_ptr, *texcoord_ptr, *color_ptr;
+	const unsigned int *edgef_ptr;
 	int vertex_nelem, texcoord_nelem, color_nelem;
-	int vertex_stride, normal_stride, texcoord_stride, color_stride;
+	int vertex_stride, normal_stride, texcoord_stride, color_stride, edgef_stride;
 
 	float zoffs;
 
@@ -96,6 +97,7 @@ struct gaw_state {
 	int imm_numv, imm_pcount;
 	struct vertex imm_curv;
 	float imm_curcol[4];
+	int imm_curedgef;
 	struct vertex imm_vbuf[IMM_VBUF_SIZE];
 	float imm_cbuf[IMM_VBUF_SIZE * 4];
 
