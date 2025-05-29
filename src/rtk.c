@@ -30,6 +30,8 @@ static void on_any_nop();
 static void on_window_drag(rtk_widget *w, int dx, int dy, int total_dx, int total_dy);
 static void on_button_click(rtk_widget *w);
 static void on_textbox_key(rtk_widget *w, int key, int press);
+static void on_slider_mbutton(rtk_widget *w, int bn, int press, int x, int y);
+static void on_slider_drag(rtk_widget *w, int dx, int dy, int total_dx, int total_dy);
 
 void inval_vport(void);	/* scr_mod.c */
 
@@ -618,6 +620,9 @@ rtk_widget *rtk_create_slider(rtk_widget *par, int vmin, int vmax, int val, rtk_
 	rtk_set_callback(w, cbfunc, 0);
 	rtk_slider_set_range(w, vmin, vmax);
 	rtk_set_value(w, val);
+
+	rtk_set_mbutton_handler(w, on_slider_mbutton);
+	rtk_set_drag_handler(w, on_slider_drag);
 	return w;
 }
 
@@ -1202,6 +1207,62 @@ static void on_textbox_key(rtk_widget *w, int key, int press)
 
 	if(w->cbfunc) w->cbfunc(w, w->cbcls);
 	rtk_invalidate(w);
+}
+
+void rtk_slider_handle_rect(rtk_widget *w, rtk_rect *hr)
+{
+	rtk_rect rect;
+	int offs, val_min, val_max, val_range, move_range;
+
+	rtk_get_rect(w, &rect);
+	move_range = rect.width - 2 - SLIDER_HANDLE_SZ;
+
+	rtk_slider_get_range(w, &val_min, &val_max);
+	val_range = val_max - val_min;
+	offs = rtk_get_value(w) * move_range / val_range;
+	hr->x = offs + 1;
+	hr->y = 1;
+	hr->width = SLIDER_HANDLE_SZ;
+	hr->height = rect.height - 2;
+}
+
+static void on_slider_mbutton(rtk_widget *w, int bn, int press, int x, int y)
+{
+	rtk_slider *slider = (rtk_slider*)w;
+	rtk_rect hr;
+
+	if(bn != 0 || !press) {
+		slider->dragging = 0;
+		return;
+	}
+
+	rtk_slider_handle_rect(w, &hr);
+	if(x < hr.x || x >= hr.x + hr.width || y < hr.y || y >= hr.y + hr.height) {
+		slider->dragging = 0;
+		return;
+	}
+	slider->dragging = 1;
+	slider->prev_val = w->value;
+}
+
+static void on_slider_drag(rtk_widget *w, int dx, int dy, int total_dx, int total_dy)
+{
+	int newval, val_range, move_range;
+	rtk_slider *slider = (rtk_slider*)w;
+
+	if(!slider->dragging) return;
+
+	move_range = w->width - 2 - SLIDER_HANDLE_SZ;
+	val_range = slider->vmax - slider->vmin;
+
+	newval = slider->prev_val + total_dx * val_range / move_range;
+	if(newval < slider->vmin) newval = slider->vmin;
+	if(newval > slider->vmax) newval = slider->vmax;
+
+	if(newval != w->value) {
+		w->value = newval;
+		if(w->cbfunc) w->cbfunc(w, w->cbcls);
+	}
 }
 
 void rtk_dbg_showrect(rtk_widget *w, int show)

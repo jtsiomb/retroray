@@ -389,10 +389,12 @@ void gui_blit(int x, int y, rtk_icon *icon)
 
 void gui_drawtext(int x, int y, const char *str)
 {
+#ifdef GFX_GL
 	gaw_matrix_mode(GAW_MODELVIEW);
 	gaw_push_matrix();
 	gaw_translate(x, y, 0);
 	gaw_scale(1, -1, 1);
+#endif
 
 	use_font(uifont);
 #ifdef GFX_GL
@@ -404,8 +406,10 @@ void gui_drawtext(int x, int y, const char *str)
 	dtx_string(str);
 	dtx_flush();
 
+#ifdef GFX_GL
 	gaw_matrix_mode(GAW_MODELVIEW);
 	gaw_pop_matrix();
+#endif
 }
 
 void gui_textrect(const char *str, rtk_rect *rect)

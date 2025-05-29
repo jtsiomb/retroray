@@ -87,6 +87,7 @@ typedef struct rtk_textbox {
 typedef struct rtk_slider {
 	WIDGET_COMMON;
 	int vmin, vmax;
+	int dragging, prev_val;
 } rtk_slider;
 
 typedef struct rtk_iconsheet {
@@ -122,5 +123,7 @@ int rtk_hittest(rtk_widget *w, int x, int y);
 void rtk_invalfb(rtk_widget *w);
 void rtk_clearfb(rtk_widget *w);
 
+#define SLIDER_HANDLE_SZ	8
+void rtk_slider_handle_rect(rtk_widget *w, rtk_rect *hr);
 
 #endif	/* RTK_IMPL_H_ */

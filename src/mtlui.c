@@ -11,6 +11,7 @@ static void draw_colorbn(rtk_widget *w, void *cls);
 static void mtlpreview_draw(rtk_widget *w, void *cls);
 static void mbn_callback(rtk_widget *w, void *cls);
 static void mtx_callback(rtk_widget *w, void *cls);
+static void slider_callback(rtk_widget *w, void *cls);
 static void start_color_picker(cgm_vec3 *dest, rtk_widget *updw);
 static void colbn_handler(rtk_widget *w, void *cls);
 static void colbox_mbutton(rtk_widget *w, int bn, int press, int x, int y);
@@ -26,7 +27,7 @@ struct mtlw {
 	rtk_widget *tx_mtlname;
 	rtk_widget *bn_prev, *bn_next, *bn_add, *bn_del, *bn_dup, *bn_assign;
 	rtk_widget *bn_kd, *bn_ks, *bn_ke;
-	rtk_widget *slider_shin;
+	rtk_widget *slider_shin, *slider_refl, *slider_trans, *slider_ior;
 	rtk_widget *preview;
 
 	uint32_t preview_pixels[MTL_PREVIEW_SZ * MTL_PREVIEW_SZ];
@@ -105,6 +106,30 @@ int create_mtlwin(void)
 	rtk_set_drawfunc(mtlw.bn_ke, draw_colorbn, (void*)offsetof(struct material, ke));
 	rtk_autosize(mtlw.bn_ke, RTK_AUTOSZ_NONE);
 	rtk_resize(mtlw.bn_ke, 18, 18);
+	/* shininess */
+	hbox = rtk_create_hbox(mtlwin);
+	rtk_create_label(hbox, "shininess ..");
+	mtlw.slider_shin = rtk_create_slider(hbox, 0, 128, 0, slider_callback);
+	rtk_set_text(mtlw.slider_shin, "  0");
+	rtk_resize(mtlw.slider_shin, 85, 0);
+	/* reflection */
+	hbox = rtk_create_hbox(mtlwin);
+	rtk_create_label(hbox, "reflection ..");
+	mtlw.slider_refl = rtk_create_slider(hbox, 0, 1024, 0, slider_callback);
+	rtk_set_text(mtlw.slider_refl, "  0%");
+	rtk_resize(mtlw.slider_refl, 85, 0);
+	/* transmission */
+	hbox = rtk_create_hbox(mtlwin);
+	rtk_create_label(hbox, "transmit ....");
+	mtlw.slider_trans = rtk_create_slider(hbox, 0, 1024, 0, slider_callback);
+	rtk_set_text(mtlw.slider_trans, "  0%");
+	rtk_resize(mtlw.slider_trans, 85, 0);
+	/* ior */
+	hbox = rtk_create_hbox(mtlwin);
+	rtk_create_label(hbox, "IOR ..........");
+	mtlw.slider_ior = rtk_create_slider(hbox, 0, 1024, 0, slider_callback);
+	rtk_set_text(mtlw.slider_ior, "1.00");
+	rtk_resize(mtlw.slider_ior, 85, 0);
 
 	curmtl = 0;
 	curmtl_idx = -1;
@@ -148,6 +173,12 @@ void select_material(int midx)
 	sprintf(buf, "%d/%d", midx + 1, num_mtl);
 	rtk_set_text(mtlw.lb_mtlidx, buf);
 	rtk_set_text(mtlw.tx_mtlname, curmtl->name);
+
+	rtk_set_value(mtlw.slider_shin, curmtl->shin);
+	rtk_set_value(mtlw.slider_refl, (int)(curmtl->refl * 1024.0f));
+	rtk_set_value(mtlw.slider_trans, (int)(curmtl->trans * 1024.0f));
+	rtk_set_value(mtlw.slider_ior, (int)((curmtl->ior - 1.0f) * 1024.0f));
+	/* TODO update slider text */
 
 	rtk_invalidate(mtlwin);
 	mtlw.preview_valid = 0;
@@ -314,6 +345,39 @@ static void mbn_callback(rtk_widget *w, void *cls)
 		}
 
 	}
+}
+
+static void slider_callback(rtk_widget *w, void *cls)
+{
+	int val;
+	char buf[64];
+
+	if(!curmtl) return;
+
+	val = rtk_get_value(w);
+
+	if(w == mtlw.slider_shin) {
+		curmtl->shin = (float)val;
+		sprintf(buf, "%3d", val);
+		rtk_set_text(w, buf);
+
+	} else if(w == mtlw.slider_refl) {
+		curmtl->refl = (float)val / 1024.0f;
+		sprintf(buf, "%3d%%", val * 100 / 1024);
+		rtk_set_text(w, buf);
+
+	} else if(w == mtlw.slider_trans) {
+		curmtl->trans = (float)val / 1024.0f;
+		sprintf(buf, "%3d%%", val * 100 / 1024);
+		rtk_set_text(w, buf);
+
+	} else if(w == mtlw.slider_ior) {
+		curmtl->ior = (float)val / 1024.0f + 1.0f;
+		sprintf(buf, "%1.2f", curmtl->ior);
+		rtk_set_text(w, buf);
+	}
+
+	mtlw.preview_valid = 0;
 }
 
 static void start_color_picker(cgm_vec3 *dest, rtk_widget *updw)

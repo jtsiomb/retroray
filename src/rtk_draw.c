@@ -171,6 +171,16 @@ void rtk_calc_widget_rect(rtk_widget *w, rtk_rect *rect)
 		}
 		break;
 
+	case RTK_SLIDER:
+		gfx.textrect("1234567890%%", &txrect);
+		if(w->flags & AUTOWIDTH) {
+			rect->width = 100;
+		}
+		if(w->flags & AUTOHEIGHT) {
+			rect->height = txrect.height + OFFS * 2;
+		}
+		break;
+
 	default:
 		if(w->flags & AUTOWIDTH) {
 			rect->width = 0;
@@ -410,9 +420,10 @@ void rtk_draw_widget(rtk_widget *w)
 	}
 
 	if(w->flags & DBGRECT) {
+		uint32_t col = PACK_RGB32(0xff, 0, 0);
 		rtk_rect r;
 		abs_widget_rect(w, &r);
-		uicolor(0xffff0000, 0xffff0000, 0xffff0000);
+		uicolor(col, col, col);
 		draw_frame(&r, FRM_SOLID, 1);
 	}
 
@@ -450,6 +461,8 @@ static void abs_widget_rect(rtk_widget *w, rtk_rect *rect)
 #define COL_WINFRM_LIT			PACK_RGB32(0x88, 0x99, 0xaa)
 #define COL_WINFRM_SHAD			PACK_RGB32(0x22, 0x44, 0x55)
 #define COL_TBOX				PACK_RGB32(0xee, 0xcc, 0xbb)
+#define COL_PROG				PACK_RGB32(0x70, 0x70, 0xaa)
+#define COL_PROGHL				PACK_RGB32(0x60, 0x60, 0xff)
 
 static void hline(int x, int y, int sz, uint32_t col)
 {
@@ -651,7 +664,7 @@ static void draw_textbox(rtk_widget *w)
 	if(w->flags & FOCUS) {
 		int x = rect.x + PAD + curx - 1;
 		int y = rect.y + rect.height - PAD - fontheight;
-		vline(x, y, fontheight, 0xff000000);
+		vline(x, y, fontheight, PACK_RGB32(0, 0, 0));
 	}
 
 	rtk_invalfb(w);
@@ -659,6 +672,37 @@ static void draw_textbox(rtk_widget *w)
 
 static void draw_slider(rtk_widget *w)
 {
+	rtk_rect full_rect, rect, thumb, txrect = {0};
+
+	abs_widget_rect(w, &full_rect);
+	if(w->text) {
+		gfx.textrect(w->text, &txrect);
+	}
+
+	rect = full_rect;
+	uicolor(w->flags & HOVER ? COL_BGHL : COL_BG, COL_LBEV, COL_SBEV);
+	draw_frame(&rect, FRM_INSET | FRM_FILLBG, 1);
+
+	rtk_slider_handle_rect(w, &thumb);
+	thumb.x += full_rect.x;
+	thumb.y += full_rect.y;
+
+	rect.x = full_rect.x + 1;
+	rect.width = thumb.x - rect.x;
+	if(rect.width > 0) {
+		rect.y = full_rect.y + 1;
+		rect.height = thumb.height;
+		gfx.fill(&rect, w->flags & HOVER ? COL_PROGHL : COL_PROG);
+	}
+	draw_frame(&thumb, FRM_OUTSET | FRM_FILLBG, 1);
+
+	if(w->text) {
+		rect = full_rect;
+		gfx.drawtext(rect.x + rect.width - PAD - txrect.width,
+				rect.y + rect.height - 2 - PAD, w->text);
+	}
+
+	rtk_invalfb(w);
 }
 
 static void draw_separator(rtk_widget *w)
