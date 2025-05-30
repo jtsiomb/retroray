@@ -55,10 +55,13 @@ static void moveobj(struct object *obj, int px0, int py0, int px1, int py1);
 static void rotobj(struct object *obj, int px0, int py0, int px1, int py1);
 static void scaleobj(struct object *obj, int px0, int py0, int px1, int py1);
 
+static void act_render(void);
+static void act_viewer(void);
 static void save_render(void);
 
 void inval_vport(void);
 
+void cancel_op(void);
 
 struct app_screen scr_model = {
 	"modeller",
@@ -415,6 +418,7 @@ static void mdl_keyb(int key, int press)
 	if(press) {
 		switch(key) {
 		case 27:
+			cancel_op();
 			act_settool(TOOL_SEL);
 			break;
 		case 'g':
@@ -428,15 +432,7 @@ static void mdl_keyb(int key, int press)
 			break;
 
 		case KEY_F5:
-			rendering = 1;
-			rend_size(win_width, win_height);
-			rendrect.x = rendrect.y = 0;
-			rendrect.width = win_width;
-			rendrect.height = win_height;
-			rend_begin(rendrect.x, rendrect.y, rendrect.width, rendrect.height);
-			app_redisplay(rendrect.x, rendrect.y, rendrect.width, rendrect.height);
-			totalrend = rendrect;
-			memset(framebuf, 0, win_width * win_height * sizeof *framebuf);
+			act_render();
 			break;
 
 		case KEY_F6:
@@ -444,10 +440,7 @@ static void mdl_keyb(int key, int press)
 			break;
 
 		case KEY_F7:
-			totalrend.x = totalrend.y = 0;
-			totalrend.width = win_width;
-			totalrend.height = win_height;
-			save_render();
+			act_viewer();
 			break;
 
 		case KEY_DEL:
@@ -674,8 +667,16 @@ void tbn_callback(rtk_widget *w, void *cls)
 		}
 		break;
 
+	case TBN_REND:
+		act_render();
+		break;
+
 	case TBN_REND_AREA:
 		act_settool(TOOL_REND_AREA);
+		break;
+
+	case TBN_VIEWREND:
+		act_viewer();
 		break;
 
 	case TBN_ADD:
@@ -886,6 +887,27 @@ static void scaleobj(struct object *obj, int px0, int py0, int px1, int py1)
 	inval_vport();
 }
 
+static void act_render(void)
+{
+	rendering = 1;
+	rend_size(win_width, win_height);
+	rendrect.x = rendrect.y = 0;
+	rendrect.width = win_width;
+	rendrect.height = win_height;
+	rend_begin(rendrect.x, rendrect.y, rendrect.width, rendrect.height);
+	app_redisplay(rendrect.x, rendrect.y, rendrect.width, rendrect.height);
+	totalrend = rendrect;
+	memset(framebuf, 0, win_width * win_height * sizeof *framebuf);
+}
+
+static void act_viewer(void)
+{
+	totalrend.x = totalrend.y = 0;
+	totalrend.width = win_width;
+	totalrend.height = win_height;
+	save_render();
+}
+
 #define RENDFILE	"render.png"
 static void save_render(void)
 {
@@ -902,6 +924,14 @@ void inval_vport(void)
 	app_redisplay(0, 0, 0, 0);
 
 	totalrend.width = totalrend.height = 0;
+}
+
+void cancel_op(void)
+{
+	if(rendering) {
+		rendering = 0;
+	}
+	inval_vport();
 }
 
 cgm_vec3 get_view_pos(void)

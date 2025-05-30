@@ -239,6 +239,7 @@ static void objadd_handler(rtk_widget *w, void *cls)
 static void addlight_handler(rtk_widget *w, void *cls)
 {
 	struct light *lt;
+	int newidx = scn_num_objects(scn);
 
 	rtk_hide(objmenu);
 
@@ -248,6 +249,7 @@ static void addlight_handler(rtk_widget *w, void *cls)
 	lt->pos = get_view_pos();
 
 	scn_add_light(scn, lt);
+	selobj = newidx;
 	inval_vport();
 }
 

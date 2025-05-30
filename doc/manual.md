@@ -8,7 +8,7 @@ interactions documented here will change, and the this manual will be updated.
 Saving and Loading scenes
 -------------------------
 Currently the only way to load a previously saved scene, is to pass it as a
-command-line argument. When you hit the save toolnbar button, scenes are always
+command-line argument. When you hit the save toolbar button, scenes are always
 saved as `foo.rry` in the current directory.
 
 Navigating
@@ -18,6 +18,7 @@ the mouse buttons pressed:
   - Left button: rotate
   - Middle button: pan
   - Right button: zoom
+
 Additionally the mouse-wheel can be used to zoom on some systems.
 
 Constructing a scene
@@ -51,3 +52,6 @@ To do a full-screen render click the "render" button on the toolbar, or hit F5.
 
 To display a previous render and also at the same time save it as "render.png" to the current
 directory, press the "view last render" button, or hit F7.
+
+Hitting ESC cancels any current operation, including rendering, and returns the
+current tool to "select". Double-tapping ESC, quits the program.

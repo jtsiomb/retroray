@@ -755,6 +755,7 @@ struct light *create_light(void)
 	set_light_energy(lt, 1);
 
 	lt->shadows = 1;
+	lt->xform_valid = 0;
 	return lt;
 }
 
