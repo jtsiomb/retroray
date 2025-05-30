@@ -1,6 +1,6 @@
 /*
 RetroRay - integrated standalone vintage modeller/renderer
-Copyright (C) 2023  John Tsiombikas <nuclear@mutantstargoat.com>
+Copyright (C) 2023-2025  John Tsiombikas <nuclear@mutantstargoat.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

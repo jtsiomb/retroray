@@ -55,6 +55,8 @@ static void moveobj(struct object *obj, int px0, int py0, int px1, int py1);
 static void rotobj(struct object *obj, int px0, int py0, int px1, int py1);
 static void scaleobj(struct object *obj, int px0, int py0, int px1, int py1);
 
+static void save_render(void);
+
 void inval_vport(void);
 
 
@@ -425,8 +427,27 @@ static void mdl_keyb(int key, int press)
 			act_settool(TOOL_SCALE);
 			break;
 
+		case KEY_F5:
+			rendering = 1;
+			rend_size(win_width, win_height);
+			rendrect.x = rendrect.y = 0;
+			rendrect.width = win_width;
+			rendrect.height = win_height;
+			rend_begin(rendrect.x, rendrect.y, rendrect.width, rendrect.height);
+			app_redisplay(rendrect.x, rendrect.y, rendrect.width, rendrect.height);
+			totalrend = rendrect;
+			memset(framebuf, 0, win_width * win_height * sizeof *framebuf);
+			break;
+
 		case KEY_F6:
 			act_settool(TOOL_REND_AREA);
+			break;
+
+		case KEY_F7:
+			totalrend.x = totalrend.y = 0;
+			totalrend.width = win_width;
+			totalrend.height = win_height;
+			save_render();
 			break;
 
 		case KEY_DEL:
@@ -863,6 +884,16 @@ static void scaleobj(struct object *obj, int px0, int py0, int px1, int py1)
 	obj->xform_valid = 0;
 
 	inval_vport();
+}
+
+#define RENDFILE	"render.png"
+static void save_render(void)
+{
+	if(img_save_pixels(RENDFILE, framebuf, win_width, win_height, IMG_FMT_RGBA32) == -1) {
+		fprintf(stderr, "failed to save \"%s\"\n", RENDFILE);
+	} else {
+		printf("saved render: %s\n", RENDFILE);
+	}
 }
 
 void inval_vport(void)
