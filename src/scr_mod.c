@@ -630,9 +630,15 @@ void tbn_callback(rtk_widget *w, void *cls)
 
 	switch(id) {
 	case TBN_NEW:
+	case TBN_OPEN:
+		cancel_op();
+		act_settool(TOOL_SEL);
 		scn_clear(scn);
 		selobj = -1;
 		select_material(-1);
+		if(id == TBN_OPEN) {
+			scn_load(scn, scn_fname ? scn_fname : "foo.rry");
+		}
 		rtk_invalidate_screen(modui);
 		inval_vport();
 		break;
@@ -931,6 +937,7 @@ void cancel_op(void)
 	if(rendering) {
 		rendering = 0;
 	}
+	rtk_hide(mtlwin);
 	inval_vport();
 }
 
