@@ -7,6 +7,7 @@
 #include "material.h"
 #include "rend.h"
 #include "gfxutil.h"
+#include "darray.h"
 
 static void draw_colorbn(rtk_widget *w, void *cls);
 static void mtlpreview_draw(rtk_widget *w, void *cls);
@@ -215,11 +216,12 @@ static void mtlpreview_draw(rtk_widget *w, void *cls)
 	int i, j, r, g, b;
 	rtk_rect rect;
 	uint32_t *pix, *savpix;
-	cgm_vec3 dcol, scol, norm, vdir = {0, 0, 1};
+	cgm_vec3 dcol, scol, norm;
+	cgm_ray ray;
 	float reflval;
 	struct rayhit hit;
 	struct object obj;
-	struct light lt;
+	static struct light lt, **ltarr, **ltsaved;
 
 	rtk_get_absrect(w, &rect);
 
@@ -240,32 +242,47 @@ static void mtlpreview_draw(rtk_widget *w, void *cls)
 		icon.pixels = savpix;
 		gui_blit(rect.x, rect.y, &icon);
 	} else {
-		cgm_vcons(&lt.color, 1, 1, 1);
-		lt.energy = 1;
-		lt.shadows = 0;
-		cgm_vcons(&lt.pos, -5, 5, 5);
+		if(!ltarr) {
+			ltarr = darr_alloc(1, sizeof *ltarr);
+			ltarr[0] = &lt;
+
+			cgm_vcons(&lt.color, 1, 1, 1);
+			lt.energy = 1;
+			lt.shadows = 0;
+			cgm_vcons(&lt.pos, -5, 5, 5);
+		}
+
 		obj.mtl = curmtl;
+
+		ltsaved = scn->lights;
+		scn->lights = ltarr;
 
 		for(i=0; i<MTL_PREVIEW_SZ; i++) {
 			for(j=0; j<MTL_PREVIEW_SZ; j++) {
 				norm = mtlsph_norm[j][i];
+
+				if(norm.z == 0) {
+					pix[j] = savpix[j] = PACK_RGB32(0, 0, 0);
+					continue;
+				}
 
 				hit.pos = norm;
 				hit.norm = norm;
 				hit.uv = mtlsph_uv[j][i];
 				hit.obj = &obj;
 
-				dcol = curmtl->kd;
-				cgm_vscale(&dcol, 0.05);
-				scol.x = scol.y = scol.z = 0.0f;
-				calc_light(&hit, &lt, &norm, &vdir, &dcol, &scol);
+				cgm_vcons(&ray.dir, 0, 0, -1);
+
+				dcol = shade(&ray, &hit, 1);
 
 				if(curmtl->refl) {
 					reflval = mtlsph_refl[j][i];
 					/* TODO fresnel */
-					scol.x += reflval * curmtl->refl;
-					scol.y += reflval * curmtl->refl;
-					scol.z += reflval * curmtl->refl;
+					scol.x = reflval * curmtl->refl;
+					scol.y = reflval * curmtl->refl;
+					scol.z = reflval * curmtl->refl;
+				} else {
+					scol.x = scol.y = scol.z = 0.0f;
 				}
 
 				r = (dcol.x + scol.x) * 255.0f;
@@ -281,6 +298,7 @@ static void mtlpreview_draw(rtk_widget *w, void *cls)
 			savpix += MTL_PREVIEW_SZ;
 		}
 
+		scn->lights = ltsaved;
 		mtlw.preview_valid = 1;
 	}
 }

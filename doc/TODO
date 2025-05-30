@@ -1,18 +1,17 @@
 Bugs
 ----
  - Color picker: constrain movement to bounds
+ - textbox: fix focus bugs
 
 Features
 --------
  - 6dof input
  - Duplicate objects
  - Improve the renderer
-   * Reflection
    * Transmission
    * Texture mapping
  - File dialogs
- - Save rendering/do full render at arbitrary resolutions
- - Visualize and manipulate lights
+ - do full render at arbitrary resolutions
  - separate UI scale
  - Scene graph window with selection, visibility, renaming ...
  - better viewport wireframe visualization

@@ -191,10 +191,15 @@ cgm_vec3 shade(const cgm_ray *ray, const struct rayhit *hit, int maxiter)
 	struct material *mtl;
 	struct light *lt;
 
-	dcol = ambient;
-	cgm_vcons(&scol, 0, 0, 0);
-
 	mtl = hit->obj->mtl;
+	if(mtl->texmap) {
+		texel = mtl->texmap->lookup(mtl->texmap, hit);
+		cgm_vcmul(&dcol, &ambient, &texel);
+	} else {
+		dcol = ambient;
+	}
+	cgm_vadd(&dcol, &mtl->ke);
+	cgm_vcons(&scol, 0, 0, 0);
 
 	norm = hit->norm;
 	cgm_vnormalize(&norm);
@@ -221,7 +226,6 @@ cgm_vec3 shade(const cgm_ray *ray, const struct rayhit *hit, int maxiter)
 	}
 
 	if(mtl->texmap) {
-		texel = mtl->texmap->lookup(mtl->texmap, hit);
 		cgm_vmul(&dcol, &texel);
 	}
 
